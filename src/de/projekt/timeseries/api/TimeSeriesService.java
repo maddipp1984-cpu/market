@@ -2,9 +2,11 @@ package de.projekt.timeseries.api;
 
 import de.projekt.timeseries.repository.HeaderRepository;
 import de.projekt.timeseries.repository.TimeSeriesRepository;
+import de.projekt.timeseries.model.Currency;
 import de.projekt.timeseries.model.TimeDimension;
 import de.projekt.timeseries.model.TimeSeriesHeader;
 import de.projekt.timeseries.model.TimeSeriesSlice;
+import de.projekt.timeseries.model.Unit;
 
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -25,14 +27,21 @@ public class TimeSeriesService {
     // Header-Operationen
     // ================================================================
 
-    public long createTimeSeries(String key, TimeDimension dimension, String unit) throws SQLException {
+    public long createTimeSeries(String key, TimeDimension dimension, Unit unit) throws SQLException {
         TimeSeriesHeader header = new TimeSeriesHeader(key, dimension, unit);
         return headerRepo.create(header);
     }
 
-    public long createTimeSeries(String key, TimeDimension dimension, String unit,
+    public long createTimeSeries(String key, TimeDimension dimension, Unit unit,
                                  String description) throws SQLException {
         TimeSeriesHeader header = new TimeSeriesHeader(key, dimension, unit);
+        header.setDescription(description);
+        return headerRepo.create(header);
+    }
+
+    public long createTimeSeries(String key, TimeDimension dimension, Unit unit,
+                                 Currency currency, String description) throws SQLException {
+        TimeSeriesHeader header = new TimeSeriesHeader(key, dimension, unit, currency);
         header.setDescription(description);
         return headerRepo.create(header);
     }

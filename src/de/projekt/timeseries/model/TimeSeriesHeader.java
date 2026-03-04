@@ -7,7 +7,8 @@ public class TimeSeriesHeader {
     private long tsId;
     private String tsKey;
     private TimeDimension timeDimension;
-    private String unit;
+    private Unit unit;
+    private Currency currency;
     private String description;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
@@ -15,10 +16,17 @@ public class TimeSeriesHeader {
     public TimeSeriesHeader() {
     }
 
-    public TimeSeriesHeader(String tsKey, TimeDimension timeDimension, String unit) {
+    public TimeSeriesHeader(String tsKey, TimeDimension timeDimension, Unit unit) {
         this.tsKey = tsKey;
         this.timeDimension = timeDimension;
         this.unit = unit;
+    }
+
+    public TimeSeriesHeader(String tsKey, TimeDimension timeDimension, Unit unit, Currency currency) {
+        this.tsKey = tsKey;
+        this.timeDimension = timeDimension;
+        this.unit = unit;
+        this.currency = currency;
     }
 
     public long getTsId() {
@@ -45,12 +53,20 @@ public class TimeSeriesHeader {
         this.timeDimension = timeDimension;
     }
 
-    public String getUnit() {
+    public Unit getUnit() {
         return unit;
     }
 
-    public void setUnit(String unit) {
+    public void setUnit(Unit unit) {
         this.unit = unit;
+    }
+
+    public Currency getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(Currency currency) {
+        this.currency = currency;
     }
 
     public String getDescription() {
@@ -79,6 +95,11 @@ public class TimeSeriesHeader {
 
     @Override
     public String toString() {
-        return "TimeSeriesHeader{tsId=" + tsId + ", tsKey='" + tsKey + "', dim=" + timeDimension + ", unit='" + unit + "'}";
+        String s = "TimeSeriesHeader{tsId=" + tsId + ", tsKey='" + tsKey
+                + "', dim=" + timeDimension + ", unit=" + unit;
+        if (currency != null) {
+            s += ", currency=" + currency;
+        }
+        return s + "}";
     }
 }

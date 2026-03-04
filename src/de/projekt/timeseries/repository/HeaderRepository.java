@@ -1,8 +1,10 @@
 package de.projekt.timeseries.repository;
 
 import de.projekt.common.db.ConnectionPool;
+import de.projekt.timeseries.model.Currency;
 import de.projekt.timeseries.model.TimeDimension;
 import de.projekt.timeseries.model.TimeSeriesHeader;
+import de.projekt.timeseries.model.Unit;
 
 import java.sql.*;
 import java.time.OffsetDateTime;
@@ -19,16 +21,21 @@ public class HeaderRepository {
     }
 
     public long create(TimeSeriesHeader header) throws SQLException {
-        String sql = "INSERT INTO ts_header (ts_key, time_dim, unit, description) " +
-                     "VALUES (?, ?, ?, ?) RETURNING ts_id";
+        String sql = "INSERT INTO ts_header (ts_key, time_dim, unit_id, currency_id, description) " +
+                     "VALUES (?, ?, ?, ?, ?) RETURNING ts_id";
 
         try (Connection conn = pool.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, header.getTsKey());
             ps.setInt(2, header.getTimeDimension().getCode());
-            ps.setString(3, header.getUnit());
-            ps.setString(4, header.getDescription());
+            ps.setInt(3, header.getUnit().getCode());
+            if (header.getCurrency() != null) {
+                ps.setInt(4, header.getCurrency().getCode());
+            } else {
+                ps.setNull(4, Types.SMALLINT);
+            }
+            ps.setString(5, header.getDescription());
 
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
@@ -40,7 +47,7 @@ public class HeaderRepository {
     }
 
     public Optional<TimeSeriesHeader> findById(long tsId) throws SQLException {
-        String sql = "SELECT ts_id, ts_key, time_dim, unit, description, created_at, updated_at " +
+        String sql = "SELECT ts_id, ts_key, time_dim, unit_id, currency_id, description, created_at, updated_at " +
                      "FROM ts_header WHERE ts_id = ?";
 
         try (Connection conn = pool.getConnection();
@@ -58,7 +65,7 @@ public class HeaderRepository {
     }
 
     public Optional<TimeSeriesHeader> findByKey(String tsKey) throws SQLException {
-        String sql = "SELECT ts_id, ts_key, time_dim, unit, description, created_at, updated_at " +
+        String sql = "SELECT ts_id, ts_key, time_dim, unit_id, currency_id, description, created_at, updated_at " +
                      "FROM ts_header WHERE ts_key = ?";
 
         try (Connection conn = pool.getConnection();
@@ -76,7 +83,7 @@ public class HeaderRepository {
     }
 
     public List<TimeSeriesHeader> findByDimension(TimeDimension dimension) throws SQLException {
-        String sql = "SELECT ts_id, ts_key, time_dim, unit, description, created_at, updated_at " +
+        String sql = "SELECT ts_id, ts_key, time_dim, unit_id, currency_id, description, created_at, updated_at " +
                      "FROM ts_header WHERE time_dim = ?";
 
         List<TimeSeriesHeader> result = new ArrayList<>();
@@ -96,16 +103,21 @@ public class HeaderRepository {
     }
 
     public void update(TimeSeriesHeader header) throws SQLException {
-        String sql = "UPDATE ts_header SET ts_key = ?, unit = ?, description = ?, " +
+        String sql = "UPDATE ts_header SET ts_key = ?, unit_id = ?, currency_id = ?, description = ?, " +
                      "updated_at = NOW() WHERE ts_id = ?";
 
         try (Connection conn = pool.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, header.getTsKey());
-            ps.setString(2, header.getUnit());
-            ps.setString(3, header.getDescription());
-            ps.setLong(4, header.getTsId());
+            ps.setInt(2, header.getUnit().getCode());
+            if (header.getCurrency() != null) {
+                ps.setInt(3, header.getCurrency().getCode());
+            } else {
+                ps.setNull(3, Types.SMALLINT);
+            }
+            ps.setString(4, header.getDescription());
+            ps.setLong(5, header.getTsId());
 
             ps.executeUpdate();
         }
@@ -127,7 +139,11 @@ public class HeaderRepository {
         h.setTsId(rs.getLong("ts_id"));
         h.setTsKey(rs.getString("ts_key"));
         h.setTimeDimension(TimeDimension.fromCode(rs.getInt("time_dim")));
-        h.setUnit(rs.getString("unit"));
+        h.setUnit(Unit.fromCode(rs.getInt("unit_id")));
+        int currencyId = rs.getInt("currency_id");
+        if (!rs.wasNull()) {
+            h.setCurrency(Currency.fromCode(currencyId));
+        }
         h.setDescription(rs.getString("description"));
         h.setCreatedAt(rs.getObject("created_at", OffsetDateTime.class));
         h.setUpdatedAt(rs.getObject("updated_at", OffsetDateTime.class));

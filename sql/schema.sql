@@ -9,22 +9,89 @@
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 
 -- ============================================================
--- 1. Header-Tabelle (Metadaten)
+-- 1. Referenztabellen
+-- ============================================================
+
+-- Einheiten
+CREATE TABLE ts_unit (
+    unit_id      SMALLINT PRIMARY KEY,
+    symbol       VARCHAR(20) NOT NULL UNIQUE,
+    description  TEXT
+);
+
+INSERT INTO ts_unit (unit_id, symbol, description) VALUES
+    -- Energie
+    (1,  'kWh',    'Kilowattstunde'),
+    (2,  'MWh',    'Megawattstunde'),
+    (3,  'GWh',    'Gigawattstunde'),
+    (4,  'kJ',     'Kilojoule'),
+    (5,  'MJ',     'Megajoule'),
+    (6,  'GJ',     'Gigajoule'),
+    -- Leistung
+    (10, 'W',      'Watt'),
+    (11, 'kW',     'Kilowatt'),
+    (12, 'MW',     'Megawatt'),
+    (13, 'GW',     'Gigawatt'),
+    (14, 'kVA',    'Kilovoltampere'),
+    (15, 'MVA',    'Megavoltampere'),
+    (16, 'kvar',   'Kilovar'),
+    (17, 'Mvar',   'Megavar'),
+    -- Gas - Volumen
+    (20, 'm³',     'Kubikmeter'),
+    (21, 'Nm³',    'Normkubikmeter'),
+    (22, 'Tm³',    'Tausend Kubikmeter'),
+    -- Temperatur / Druck / Physik
+    (30, '°C',     'Grad Celsius'),
+    (31, 'K',      'Kelvin'),
+    (32, 'bar',    'Bar'),
+    (33, 'mbar',   'Millibar'),
+    (34, '%',      'Prozent'),
+    -- Mengen / Sonstiges
+    (50, 't',      'Tonne'),
+    (51, 'kg',     'Kilogramm'),
+    (52, 't CO₂',  'Tonne CO₂'),
+    (53, 'h',      'Stunden'),
+    (54, '',       'Dimensionslos');
+
+-- Währungen
+CREATE TABLE ts_currency (
+    currency_id  SMALLINT PRIMARY KEY,
+    iso_code     VARCHAR(3) NOT NULL UNIQUE,
+    description  TEXT
+);
+
+INSERT INTO ts_currency (currency_id, iso_code, description) VALUES
+    (1, 'EUR', 'Euro'),
+    (2, 'USD', 'US-Dollar'),
+    (3, 'GBP', 'Britisches Pfund'),
+    (4, 'CHF', 'Schweizer Franken'),
+    (5, 'DKK', 'Dänische Krone'),
+    (6, 'NOK', 'Norwegische Krone'),
+    (7, 'SEK', 'Schwedische Krone'),
+    (8, 'PLN', 'Polnischer Zloty'),
+    (9, 'CZK', 'Tschechische Krone');
+
+-- ============================================================
+-- 2. Header-Tabelle (Metadaten)
 -- ============================================================
 CREATE TABLE ts_header (
     ts_id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     ts_key        VARCHAR(255) NOT NULL UNIQUE,
     time_dim      SMALLINT NOT NULL,
-    unit          VARCHAR(50),
-    timezone      VARCHAR(50) NOT NULL DEFAULT 'Europe/Berlin',
+    unit_id       SMALLINT NOT NULL,
+    currency_id   SMALLINT,
     description   TEXT,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    CONSTRAINT chk_time_dim CHECK (time_dim IN (1, 2, 3, 4, 5))
+    CONSTRAINT chk_time_dim CHECK (time_dim IN (1, 2, 3, 4, 5)),
+    CONSTRAINT fk_unit FOREIGN KEY (unit_id) REFERENCES ts_unit (unit_id),
+    CONSTRAINT fk_currency FOREIGN KEY (currency_id) REFERENCES ts_currency (currency_id)
 );
 
 COMMENT ON COLUMN ts_header.time_dim IS '1=15min, 2=1h, 3=Tag, 4=Monat, 5=Jahr';
+COMMENT ON COLUMN ts_header.unit_id IS 'Referenz auf ts_unit';
+COMMENT ON COLUMN ts_header.currency_id IS 'Nur bei Preiszeitreihen, sonst NULL';
 CREATE INDEX idx_header_time_dim ON ts_header (time_dim);
 
 -- ============================================================
