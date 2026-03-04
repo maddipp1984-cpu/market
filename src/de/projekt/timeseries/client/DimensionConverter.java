@@ -51,12 +51,23 @@ class DimensionConverter {
 
         // Kaskadierung: QH/H → Monat (über Tag)
         if (src.useTimestamptz() && target == TimeDimension.MONTH) {
+            if (func == AggregationFunction.AVG) {
+                // Gewichteter Durchschnitt: SUM kaskadieren, dann durch Quell-Intervalle teilen
+                TimeSeriesSlice daily = aggregateSubdailyToDay(source, AggregationFunction.SUM);
+                TimeSeriesSlice monthly = aggregateDayToMonth(daily, AggregationFunction.SUM);
+                return weightedAverage(monthly, source, target);
+            }
             TimeSeriesSlice daily = aggregateSubdailyToDay(source, func);
             return aggregateDayToMonth(daily, func);
         }
 
         // Kaskadierung: QH/H → Jahr (über Tag → Monat)
         if (src.useTimestamptz() && target == TimeDimension.YEAR) {
+            if (func == AggregationFunction.AVG) {
+                TimeSeriesSlice daily = aggregateSubdailyToDay(source, AggregationFunction.SUM);
+                TimeSeriesSlice yearly = aggregateDayToYear(daily, AggregationFunction.SUM);
+                return weightedAverage(yearly, source, target);
+            }
             TimeSeriesSlice daily = aggregateSubdailyToDay(source, func);
             return aggregateDayToYear(daily, func);
         }
@@ -389,6 +400,91 @@ class DimensionConverter {
     // ================================================================
     // Hilfsmethoden
     // ================================================================
+
+    /**
+     * Gewichteter Durchschnitt für kaskadierte Aggregation.
+     * Teilt die SUMmen durch die tatsächliche Anzahl der Quell-Intervalle
+     * pro Zielperiode (DST-korrekt).
+     */
+    private static TimeSeriesSlice weightedAverage(TimeSeriesSlice sumSlice,
+                                                    TimeSeriesSlice source,
+                                                    TimeDimension target) {
+        double[] sums = sumSlice.getValues();
+        double[] result = new double[sums.length];
+        TimeDimension srcDim = source.getDimension();
+        double[] srcValues = source.getValues();
+
+        if (target == TimeDimension.MONTH) {
+            LocalDate startDate = source.getStart().toLocalDate();
+            int srcOffset = 0;
+
+            for (int m = 0; m < sums.length; m++) {
+                // Anzahl Quell-Intervalle in diesem Monat zählen (nur nicht-NaN)
+                YearMonth ym = YearMonth.from(startDate);
+                int daysInMonth = ym.lengthOfMonth();
+                int intervalsInMonth = 0;
+
+                for (int d = 0; d < daysInMonth && srcOffset + intervalsInMonth < srcValues.length; d++) {
+                    LocalDate day = startDate.plusDays(d);
+                    int slotsForDay = srcDim.intervalsPerDay(day);
+                    for (int s = 0; s < slotsForDay && srcOffset + intervalsInMonth < srcValues.length; s++) {
+                        if (!Double.isNaN(srcValues[srcOffset + intervalsInMonth])) {
+                            // zählt mit
+                        }
+                        intervalsInMonth++;
+                    }
+                }
+
+                // Nicht-NaN-Werte im Quellbereich zählen
+                int nonNanCount = 0;
+                for (int i = srcOffset; i < srcOffset + intervalsInMonth && i < srcValues.length; i++) {
+                    if (!Double.isNaN(srcValues[i])) {
+                        nonNanCount++;
+                    }
+                }
+
+                result[m] = nonNanCount > 0 ? sums[m] / nonNanCount : Double.NaN;
+                srcOffset += intervalsInMonth;
+                startDate = startDate.plusDays(daysInMonth);
+            }
+        } else if (target == TimeDimension.YEAR) {
+            LocalDate startDate = source.getStart().toLocalDate();
+            int srcOffset = 0;
+
+            for (int y = 0; y < sums.length; y++) {
+                int year = startDate.getYear();
+                int daysInYear = startDate.isLeapYear() ? 366 : 365;
+                int dayOfYear = startDate.getDayOfYear();
+                int daysRemaining = daysInYear - dayOfYear + 1;
+
+                // Alle Quell-Intervalle in diesem Jahr zählen
+                int intervalsInYear = 0;
+                for (int d = 0; d < daysRemaining; d++) {
+                    LocalDate day = startDate.plusDays(d);
+                    int slotsForDay = srcDim.intervalsPerDay(day);
+                    intervalsInYear += slotsForDay;
+                    if (srcOffset + intervalsInYear >= srcValues.length) {
+                        intervalsInYear = srcValues.length - srcOffset;
+                        break;
+                    }
+                }
+
+                int nonNanCount = 0;
+                for (int i = srcOffset; i < srcOffset + intervalsInYear && i < srcValues.length; i++) {
+                    if (!Double.isNaN(srcValues[i])) {
+                        nonNanCount++;
+                    }
+                }
+
+                result[y] = nonNanCount > 0 ? sums[y] / nonNanCount : Double.NaN;
+                srcOffset += intervalsInYear;
+                startDate = LocalDate.of(year + 1, 1, 1);
+            }
+        }
+
+        return new TimeSeriesSlice(sumSlice.getStart(), sumSlice.getEnd(),
+                target, result);
+    }
 
     /**
      * Wendet die Aggregationsfunktion auf values[from..to) an.

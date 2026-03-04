@@ -107,7 +107,7 @@ TS_DB_PASSWORD=postgres
 ## Benchmark
 - **Code:** `src/de/projekt/benchmark/Benchmark.java`
 - **Aufruf:** `./gradlew run --args="benchmark"` (Main.java leitet weiter)
-- **Testdaten:** 20.000 PERF_TEST-Zeitreihen (PERF_TEST_00001–20000) in der DB, nicht löschen!
+- **Testdaten:** 120.000 PERF_TEST-Zeitreihen (PERF_TEST_00001–300000) in der DB, nicht löschen!
 - **Ergebnisse:** `benchmarks/` – Dateien nach Schema `YYYY-MM-DD_beschreibung.md`
 - Nur Lese-Benchmarks gegen existierende PERF_TEST-Daten (kein Schreiben/Cleanup)
 

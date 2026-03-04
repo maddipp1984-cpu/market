@@ -12,12 +12,8 @@
 ### Aggregation / DimensionConverter
 - [ ] **D1** — Start-Normalisierung fixen: Ergebnis-Slice darf nicht über Startzeitpunkt lügen bei Teildaten
 - [ ] **D2** — Jahr→Monat SUM: Proportional nach Monatslänge verteilen statt /12
-- [ ] **D3** — AVG-Kaskadierung: DST-Tage korrekt gewichten (92 vs 96 QH)
+- [x] **D3** — AVG-Kaskadierung: DST-Tage korrekt gewichten (92 vs 96 QH)
 - [ ] **D4** — Review-Findings fixen: Fehlende Tests (Anschnitt bei Aggregation, Metadaten, MIN/MAX, Fehlerfälle)
-
-### Write-API
-- [x] **W0** — Write-API im TimeSeriesClient: write(tsId, slice) mit automatischer Dimensions-Konvertierung
-- [ ] **W1** — Unit-Konvertierung beim Schreiben: Eingabewerte automatisch in DB-Unit konvertieren (z.B. MWh→kWh)
 
 ### Sonstiges
 - [ ] **S1** — TimescaleDB per Docker aufsetzen und Schema testen
@@ -25,7 +21,6 @@
 - [ ] **S3** — Performance-Benchmark: Bulk-Insert und Lese-Geschwindigkeit
 - [ ] **S4** — Upsert-Logik für Hypertables (Unique-Constraint auf Hypertables)
 - [ ] **S5** — Continuous Aggregates evaluieren: Materialisierte Views für häufig abgefragte Aggregationen (QH→Tag) statt separate Tabellen
-- [ ] **S6** — MSCONS-Import/Export: EDIFACT-Lastgänge einlesen/schreiben (Branchenstandard Energiewirtschaft)
 
 ## Erledigt
 - [x] Datenbankarchitektur entworfen (TimescaleDB)

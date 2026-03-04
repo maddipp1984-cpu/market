@@ -409,6 +409,64 @@ class DimensionConverterTest {
             assertEquals(1, result.size());
             assertEquals(288.0, result.getValue(0));
         }
+
+        @Test
+        void qhToMonth_avg_dstWeighted() {
+            // März 2025: 30 normale Tage (96 QH) + 1 DST-Tag am 30. März (92 QH)
+            // 30 × 96 + 92 = 2972 QH
+            // Alle QH-Werte = 10.0
+            // Korrekter gewichteter AVG = (2972 × 10.0) / 2972 = 10.0
+            // Naiver AVG wäre: (30 × 10.0 + 10.0) / 31 = 10.0 (bei gleichen Werten kein Unterschied)
+
+            // Besser: unterschiedliche Werte pro Tag, damit der Unterschied sichtbar wird
+            // 29 normale Tage à 96 QH = 2784, DST-Tag (30. März) 92 QH, 31. März 96 QH = 2972
+            // Tag 1-29: QH-Werte = 1.0 → Tagessumme je 96.0
+            // Tag 30 (DST): QH-Werte = 2.0 → Tagessumme 184.0
+            // Tag 31: QH-Werte = 1.0 → Tagessumme 96.0
+            int normalDays = 29 * 96;   // 2784
+            int dstDay = 92;             // 30. März
+            int lastDay = 96;            // 31. März
+            double[] qh = new double[normalDays + dstDay + lastDay]; // 2972
+
+            Arrays.fill(qh, 0, normalDays, 1.0);
+            Arrays.fill(qh, normalDays, normalDays + dstDay, 2.0);
+            Arrays.fill(qh, normalDays + dstDay, qh.length, 1.0);
+
+            TimeSeriesSlice src = slice(TimeDimension.QUARTER_HOUR, dt(2025, 3, 1), dt(2025, 4, 1), qh);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.MONTH, AggregationFunction.AVG);
+
+            assertEquals(1, result.size());
+            // Gewichteter AVG = (2784 × 1.0 + 92 × 2.0 + 96 × 1.0) / 2972
+            //                  = (2784 + 184 + 96) / 2972
+            //                  = 3064 / 2972 ≈ 1.030957
+            double expected = 3064.0 / 2972.0;
+            assertEquals(expected, result.getValue(0), 1e-6);
+
+            // Naiver (falscher) AVG wäre:
+            // Tag-AVGs: 29×1.0 + 1×2.0 + 1×1.0 = 32.0 → 32.0/31 ≈ 1.032258
+            // Differenz: ~0.0013 — klein aber abrechnungsrelevant!
+        }
+
+        @Test
+        void qhToYear_avg_dstWeighted() {
+            // 3 Tage: 29. März (96 QH), 30. März DST (92 QH), 31. März (96 QH) = 284 QH
+            // Tag 1: Werte = 1.0, Tag 2 (DST): Werte = 3.0, Tag 3: Werte = 1.0
+            double[] qh = new double[284];
+            Arrays.fill(qh, 0, 96, 1.0);
+            Arrays.fill(qh, 96, 96 + 92, 3.0);
+            Arrays.fill(qh, 96 + 92, 284, 1.0);
+
+            TimeSeriesSlice src = slice(TimeDimension.QUARTER_HOUR, dt(2025, 3, 29), dt(2025, 4, 1), qh);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.YEAR, AggregationFunction.AVG);
+
+            assertEquals(1, result.size());
+            // Gewichteter AVG = (96×1.0 + 92×3.0 + 96×1.0) / 284
+            //                  = (96 + 276 + 96) / 284 = 468 / 284 ≈ 1.647887
+            double expected = 468.0 / 284.0;
+            assertEquals(expected, result.getValue(0), 1e-6);
+        }
     }
 
     // ================================================================
