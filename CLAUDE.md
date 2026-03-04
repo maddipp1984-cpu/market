@@ -15,7 +15,8 @@ Performantes Zeitreihensystem für >10 Mio Zeitreihen mit TimescaleDB (PostgreSQ
 ## Architektur
 
 ### Tabellendesign
-- **Header-Tabelle** (`ts_header`): Metadaten (Key, Dimension, Einheit, Zeitzone)
+- **Header-Tabelle** (`ts_header`): Metadaten (Key, Dimension, Einheit, optional Objekt-Zuordnung)
+- **Objekt-Tabellen** (`ts_object`, `ts_object_type`): Übergeordnete Objekte mit 1:n zu Zeitreihen
 - **Separate Werte-Tabellen** pro Dimension: Unterschiedliche Chunk-Größen/Kompression
 - **TimescaleDB Hypertables** für 15min, 1h, Tag, Monat (nicht für Jahr)
 - **Hash-Partitionierung** auf `ts_id` für schnellen Einzelreihen-Zugriff
@@ -52,10 +53,13 @@ src/de/projekt/
             TimeSeriesService.java         -- Öffentliche Fassade der Domäne
         model/
             TimeDimension.java             -- Enum mit Tabellen-Mapping
-            TimeSeriesHeader.java          -- Metadaten-Modell
+            TimeSeriesHeader.java          -- Metadaten-Modell (inkl. objectId)
             TimeSeriesSlice.java           -- Tages-Slices mit lazy Timestamps
+            ObjectType.java                -- Enum: Objekttypen (CONTRACT_VHP, CONTRACT, etc.)
+            TsObject.java                  -- Übergeordnetes Objekt (Vertrag, Anschluss etc.)
         repository/
-            HeaderRepository.java          -- CRUD ts_header
+            HeaderRepository.java          -- CRUD ts_header (inkl. object_id, findByObjectId)
+            ObjectRepository.java          -- CRUD ts_object
             TimeSeriesRepository.java      -- Lesen/Schreiben/Löschen
     benchmark/
         Benchmark.java                     -- Lese-Benchmark gegen PERF_TEST-Daten
@@ -75,6 +79,9 @@ sql/
         ts_read_1h_raw.sql             -- 1h: Raw lesen
         ts_delete_15min.sql            -- 15min: Löschen
         ts_delete_1h.sql               -- 1h: Löschen
+    migrations/                        -- Nummerierte Schema-Migrationen
+        002_align_schema_to_current.sql    -- unit→unit_id, timezone entfernt, Referenztabellen, SPs
+        003_add_objects.sql                -- ts_object_type, ts_object, object_id in ts_header
 benchmarks/
     YYYY-MM-DD_beschreibung.md         -- Benchmark-Ergebnisse
 ```
@@ -84,6 +91,7 @@ benchmarks/
 
 ## Berechtigungen
 - Alle `./gradlew`-Befehle dürfen ohne Rückfrage ausgeführt werden
+- Alle `git`-Befehle (add, commit, push, status, diff, log etc.) dürfen ohne Rückfrage ausgeführt werden
 
 ## Build & Run
 ```bash

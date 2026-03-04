@@ -10,6 +10,7 @@ public class TimeSeriesHeader {
     private Unit unit;
     private Currency currency;
     private String description;
+    private Long objectId;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 
@@ -69,6 +70,14 @@ public class TimeSeriesHeader {
         this.currency = currency;
     }
 
+    public Long getObjectId() {
+        return objectId;
+    }
+
+    public void setObjectId(Long objectId) {
+        this.objectId = objectId;
+    }
+
     public String getDescription() {
         return description;
     }
@@ -99,6 +108,9 @@ public class TimeSeriesHeader {
                 + "', dim=" + timeDimension + ", unit=" + unit;
         if (currency != null) {
             s += ", currency=" + currency;
+        }
+        if (objectId != null) {
+            s += ", objectId=" + objectId;
         }
         return s + "}";
     }

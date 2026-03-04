@@ -71,6 +71,33 @@ INSERT INTO ts_currency (currency_id, iso_code, description) VALUES
     (8, 'PLN', 'Polnischer Zloty'),
     (9, 'CZK', 'Tschechische Krone');
 
+-- Objekttypen
+CREATE TABLE ts_object_type (
+    type_id      SMALLINT PRIMARY KEY,
+    type_key     VARCHAR(50) NOT NULL UNIQUE,
+    description  TEXT
+);
+
+INSERT INTO ts_object_type (type_id, type_key, description) VALUES
+    (1, 'CONTRACT_VHP',    'Vertrag VHP'),
+    (2, 'CONTRACT',        'Vertrag'),
+    (3, 'CONTRACT_VERANS', 'Vertragsanschluss'),
+    (4, 'ANS',             'Anschluss');
+
+-- Objekte
+CREATE TABLE ts_object (
+    object_id    BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    type_id      SMALLINT NOT NULL,
+    object_key   VARCHAR(255) NOT NULL UNIQUE,
+    description  TEXT,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT fk_object_type FOREIGN KEY (type_id) REFERENCES ts_object_type (type_id)
+);
+
+CREATE INDEX idx_object_type ON ts_object (type_id);
+
 -- ============================================================
 -- 2. Header-Tabelle (Metadaten)
 -- ============================================================
@@ -80,19 +107,22 @@ CREATE TABLE ts_header (
     time_dim      SMALLINT NOT NULL,
     unit_id       SMALLINT NOT NULL,
     currency_id   SMALLINT,
+    object_id     BIGINT,
     description   TEXT,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT chk_time_dim CHECK (time_dim IN (1, 2, 3, 4, 5)),
     CONSTRAINT fk_unit FOREIGN KEY (unit_id) REFERENCES ts_unit (unit_id),
-    CONSTRAINT fk_currency FOREIGN KEY (currency_id) REFERENCES ts_currency (currency_id)
+    CONSTRAINT fk_currency FOREIGN KEY (currency_id) REFERENCES ts_currency (currency_id),
+    CONSTRAINT fk_header_object FOREIGN KEY (object_id) REFERENCES ts_object (object_id)
 );
 
 COMMENT ON COLUMN ts_header.time_dim IS '1=15min, 2=1h, 3=Tag, 4=Monat, 5=Jahr';
 COMMENT ON COLUMN ts_header.unit_id IS 'Referenz auf ts_unit';
 COMMENT ON COLUMN ts_header.currency_id IS 'Nur bei Preiszeitreihen, sonst NULL';
 CREATE INDEX idx_header_time_dim ON ts_header (time_dim);
+CREATE INDEX idx_header_object ON ts_header (object_id);
 
 -- ============================================================
 -- 2. Viertelstundenwerte (horizontal: 1 Zeile/Tag, 92-100 Werte)

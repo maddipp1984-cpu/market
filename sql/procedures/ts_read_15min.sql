@@ -4,15 +4,10 @@ CREATE OR REPLACE FUNCTION ts_read_15min(
     p_from   DATE DEFAULT NULL,
     p_to     DATE DEFAULT NULL    -- exklusiv
 ) RETURNS TABLE(ts_time TIMESTAMPTZ, value DOUBLE PRECISION) AS $$
-DECLARE
-    v_timezone TEXT;
 BEGIN
-    SELECT timezone INTO STRICT v_timezone
-    FROM ts_header WHERE ts_id = p_ts_id;
-
     RETURN QUERY
     SELECT
-        (d.ts_date::TIMESTAMP AT TIME ZONE v_timezone) + ((gs.i - 1) * INTERVAL '15 minutes'),
+        (d.ts_date::TIMESTAMP AT TIME ZONE 'Europe/Berlin') + ((gs.i - 1) * INTERVAL '15 minutes'),
         d.vals[gs.i]
     FROM ts_values_15min d
     CROSS JOIN LATERAL generate_series(1, array_length(d.vals, 1)) AS gs(i)

@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-03-04 — Übergeordnete Objekte (ts_object)
+- `ts_object_type` + `ts_object` Tabellen: Zeitreihen können Objekten zugeordnet werden (1:n)
+- `ObjectType` Enum, `TsObject` Model, `ObjectRepository` CRUD
+- `TimeSeriesHeader` um `objectId` (nullable) erweitert
+- `HeaderRepository`: `object_id` in INSERT/UPDATE/SELECT, neue `findByObjectId()`
+- `TimeSeriesService`: Objekt-Operationen (create, get, assign, remove)
+- Migration 003, schema.sql aktualisiert
+- 4 initiale Objekttypen: CONTRACT_VHP, CONTRACT, CONTRACT_VERANS, ANS
+
+## 2026-03-04 — Write-API im TimeSeriesClient
+- `TimeSeriesClient.write(tsId, slice)`: Schreibt Zeitreihen mit automatischer Dimensionskonvertierung
+- Subdaily (QH/H): Tageweiser Split mit DST-aware intervalsPerDay
+- DAY/MONTH/YEAR: Einzelwerte über `writeSimple`
+- `TimeSeriesService.writeSimple()`: Zwei Overloads (LocalDate + int year)
+- Aggregation (QH→Tag) und Disaggregation (Tag→QH, Gleichverteilung) beim Schreiben
+- 12 Tests: Gleiche Dimension, Disaggregation (inkl. DST Frühling/Herbst), Aggregation, NaN, Fehlerfälle
+
 ## 2026-03-04 — Package-Struktur für Monolith-Architektur
 - Package-Struktur umgebaut: `de.projekt` als Basis, `common.db` für Infrastruktur, `timeseries.api` als Domänen-Fassade, `timeseries.repository` statt `db`
 - `benchmark` auf `de.projekt.benchmark` verschoben

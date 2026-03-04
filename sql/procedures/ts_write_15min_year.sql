@@ -6,21 +6,17 @@ CREATE OR REPLACE FUNCTION ts_write_15min_year(
     p_values DOUBLE PRECISION[]
 ) RETURNS INTEGER AS $$
 DECLARE
-    v_timezone  TEXT;
     v_date      DATE;
     v_end_date  DATE;
     v_expected  INTEGER;
     v_offset    INTEGER := 1;
     v_days      INTEGER := 0;
 BEGIN
-    SELECT timezone INTO STRICT v_timezone
-    FROM ts_header WHERE ts_id = p_ts_id;
-
     v_date := make_date(p_year, 1, 1);
     v_end_date := make_date(p_year + 1, 1, 1);
 
     WHILE v_date < v_end_date LOOP
-        v_expected := ts_intervals_per_day(v_date, v_timezone, INTERVAL '15 minutes');
+        v_expected := ts_intervals_per_day(v_date, INTERVAL '15 minutes');
 
         INSERT INTO ts_values_15min (ts_id, ts_date, vals)
         VALUES (p_ts_id, v_date, p_values[v_offset : v_offset + v_expected - 1])
