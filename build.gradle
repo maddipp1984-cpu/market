@@ -1,34 +1,20 @@
 plugins {
     id 'java'
     id 'application'
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 group = 'de.projekt'
 version = '1.0.0'
 
-sourceCompatibility = '11'
-targetCompatibility = '11'
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
 
 repositories {
     mavenCentral()
-}
-
-sourceSets {
-    main {
-        java {
-            srcDirs = ['src']
-        }
-        resources {
-            srcDirs = ['src']
-            excludes = ['**/*.java']
-        }
-    }
-    test {
-        java {
-            srcDirs = ['test']
-        }
-    }
 }
 
 dependencies {
@@ -38,8 +24,8 @@ dependencies {
     implementation 'org.slf4j:slf4j-simple:2.0.12'
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
-    testImplementation 'org.mockito:mockito-core:5.11.0'
-    testImplementation 'org.mockito:mockito-junit-jupiter:5.11.0'
+    testImplementation 'org.mockito:mockito-core:5.15.2'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.15.2'
 }
 
 tasks.withType(JavaCompile) {
