@@ -2,6 +2,14 @@
 
 ## Übersicht
 Performantes Zeitreihensystem für >10 Mio Zeitreihen mit TimescaleDB (PostgreSQL-Extension).
+Spring Boot 3.4.x Anwendung mit Raw JDBC (kein JPA).
+
+## Tech-Stack
+- **Java 17** (LTS), Gradle mit Spring Boot Plugin
+- **Spring Boot 3.4.1** (starter-web, starter-jdbc)
+- **TimescaleDB** (PostgreSQL-Extension)
+- **Raw JDBC** für Timeseries-Zugriff (kein JPA)
+- **HikariCP** (via Spring auto-config)
 
 ## Zeitdimensionen
 | Code | Dimension | Tabelle | Zeittyp |
@@ -21,12 +29,33 @@ Performantes Zeitreihensystem für >10 Mio Zeitreihen mit TimescaleDB (PostgreSQ
 - **TimescaleDB Hypertables** für 15min, 1h, Tag, Monat (nicht für Jahr)
 - **Hash-Partitionierung** auf `ts_id` für schnellen Einzelreihen-Zugriff
 
-### Monolith-Architektur & Schichten
-- **`de.projekt`** als Basis-Package — `timeseries` ist eine Domäne unter vielen (zukünftig)
-- **`common.db`** — Shared Infrastruktur (ConnectionPool), nicht domänenspezifisch
-- **`timeseries.api`** — einzige öffentliche Schnittstelle der Domäne
-- **Schichten-Regel**: `REST-Controller → Business-Layer → timeseries.api → repository`
-- Nichts unterhalb von `timeseries.api` wird direkt von außen aufgerufen
+### Spring Boot Architektur & Schichten
+- **`de.projekt`** als Basis-Package — `@SpringBootApplication` in `TimeSeriesApplication`
+- **`timeseries.rest`** — REST-Controller + DTOs + GlobalExceptionHandler
+- **`timeseries.api`** — `@Service` TimeSeriesService (Fassade)
+- **`timeseries.repository`** — `@Repository` mit Raw JDBC über `DataSource`
+- **`timeseries.client`** — `@Component` TimeSeriesClient (Entwickler-API mit Konvertierung)
+- **`timeseries.model`** — POJOs + Enums (keine Spring-Annotationen)
+- **Schichten-Regel**: `REST-Controller → TimeSeriesService → Repository`
+
+### REST-API
+| Methode | Pfad | Beschreibung |
+|---------|------|-------------|
+| POST | `/api/timeseries` | Zeitreihe anlegen |
+| GET | `/api/timeseries/{tsId}` | Header lesen |
+| GET | `/api/timeseries?key=...` | Header per Key |
+| POST | `/api/timeseries/{tsId}/values` | Tag schreiben |
+| GET | `/api/timeseries/{tsId}/values?start=...&end=...` | Werte lesen |
+| DELETE | `/api/timeseries/{tsId}` | Zeitreihe löschen |
+| POST | `/api/objects` | Objekt anlegen |
+| GET | `/api/objects/{objectId}` | Objekt lesen |
+| PUT | `/api/objects/{objectId}/timeseries/{tsId}` | Zuordnung |
+| DELETE | `/api/objects/{objectId}` | Objekt löschen |
+
+### Exception Handling (GlobalExceptionHandler)
+- `IllegalArgumentException` → 400 Bad Request
+- `IllegalStateException` → 409 Conflict
+- `SQLException` → 500 Internal Server Error
 
 ### DST-Handling
 - `TIMESTAMPTZ` speichert intern UTC → jeder Zeitpunkt eindeutig
@@ -42,46 +71,41 @@ Performantes Zeitreihensystem für >10 Mio Zeitreihen mit TimescaleDB (PostgreSQ
 
 ## Projektstruktur
 ```
-src/de/projekt/
-    Main.java                              -- Einstiegspunkt
-    common/
-        EnvUtil.java                       -- Umgebungsvariablen-Hilfsmethoden
-        db/
-            ConnectionPool.java            -- HikariCP Wrapper (shared Infrastruktur)
+src/main/java/de/projekt/
+    TimeSeriesApplication.java             -- @SpringBootApplication
     timeseries/
         api/
-            TimeSeriesService.java         -- Öffentliche Fassade der Domäne
+            TimeSeriesService.java         -- @Service, öffentliche Fassade
+        client/
+            TimeSeriesClient.java          -- @Component, Entwickler-API mit Konvertierung
+            DimensionConverter.java         -- Aggregation/Disaggregation
+            UnitConverter.java             -- Unit-Konvertierung
+            AggregationFunction.java       -- Enum: SUM, AVG, MIN, MAX
         model/
             TimeDimension.java             -- Enum mit Tabellen-Mapping
             TimeSeriesHeader.java          -- Metadaten-Modell (inkl. objectId)
             TimeSeriesSlice.java           -- Tages-Slices mit lazy Timestamps
-            ObjectType.java                -- Enum: Objekttypen (CONTRACT_VHP, CONTRACT, etc.)
-            TsObject.java                  -- Übergeordnetes Objekt (Vertrag, Anschluss etc.)
+            ObjectType.java                -- Enum: Objekttypen
+            TsObject.java                  -- Übergeordnetes Objekt
+            Unit.java                      -- Enum: physikalische Einheiten
+            Currency.java                  -- Enum: Währungen
         repository/
-            HeaderRepository.java          -- CRUD ts_header (inkl. object_id, findByObjectId)
-            ObjectRepository.java          -- CRUD ts_object
-            TimeSeriesRepository.java      -- Lesen/Schreiben/Löschen
+            HeaderRepository.java          -- @Repository, CRUD ts_header
+            ObjectRepository.java          -- @Repository, CRUD ts_object
+            TimeSeriesRepository.java      -- @Repository, Lesen/Schreiben/Löschen
+        rest/
+            TimeSeriesController.java      -- @RestController /api/timeseries
+            ObjectController.java          -- @RestController /api/objects
+            GlobalExceptionHandler.java    -- @RestControllerAdvice
+            dto/                           -- Request/Response DTOs
     benchmark/
-        Benchmark.java                     -- Lese-Benchmark gegen PERF_TEST-Daten
+        Benchmark.java                     -- Standalone Lese-Benchmark
+src/main/resources/
+    application.properties                 -- Spring-Config (DB, HikariCP)
 sql/
     schema.sql                         -- Komplettes DB-Schema
-    procedures/                        -- Eine Datei pro Stored Procedure
-        ts_intervals_per_day.sql       -- DST-bewusste Intervallberechnung
-        ts_generate_timestamps.sql     -- Timestamps für einen Tag erzeugen
-        ts_write_15min_day.sql         -- 15min: Tag schreiben (Upsert)
-        ts_write_15min_year.sql        -- 15min: Jahr schreiben
-        ts_write_15min_range.sql       -- 15min: Bereich schreiben
-        ts_write_1h_day.sql            -- 1h: Tag schreiben (Upsert)
-        ts_write_1h_year.sql           -- 1h: Jahr schreiben
-        ts_read_15min.sql              -- 15min: Expanded lesen
-        ts_read_15min_raw.sql          -- 15min: Raw lesen
-        ts_read_1h.sql                 -- 1h: Expanded lesen
-        ts_read_1h_raw.sql             -- 1h: Raw lesen
-        ts_delete_15min.sql            -- 15min: Löschen
-        ts_delete_1h.sql               -- 1h: Löschen
+    procedures/                        -- Stored Procedures
     migrations/                        -- Nummerierte Schema-Migrationen
-        002_align_schema_to_current.sql    -- unit→unit_id, timezone entfernt, Referenztabellen, SPs
-        003_add_objects.sql                -- ts_object_type, ts_object, object_id in ts_header
 benchmarks/
     YYYY-MM-DD_beschreibung.md         -- Benchmark-Ergebnisse
 ```
@@ -96,23 +120,31 @@ benchmarks/
 ## Build & Run
 ```bash
 ./gradlew build                        # Kompilieren + Tests
-./gradlew shadowJar                    # Fat-JAR erstellen
+./gradlew bootRun                      # Spring Boot starten (Port 8080)
+./gradlew bootJar                      # Fat-JAR erstellen
+./gradlew benchmark                    # Standalone Benchmark
 
-# Umgebungsvariablen
+# DB-Config via Umgebungsvariablen oder application.properties
 TS_JDBC_URL=jdbc:postgresql://localhost:5432/timeseries
 TS_DB_USER=postgres
 TS_DB_PASSWORD=postgres
 ```
 
 ## Benchmark
-- **Code:** `src/de/projekt/benchmark/Benchmark.java`
-- **Aufruf:** `./gradlew run --args="benchmark"` (Main.java leitet weiter)
+- **Code:** `src/main/java/de/projekt/benchmark/Benchmark.java`
+- **Aufruf:** `./gradlew benchmark`
+- **Standalone** — erstellt eigenen HikariDataSource, kein Spring-Kontext
 - **Testdaten:** 120.000 PERF_TEST-Zeitreihen (PERF_TEST_00001–300000) in der DB, nicht löschen!
 - **Ergebnisse:** `benchmarks/` – Dateien nach Schema `YYYY-MM-DD_beschreibung.md`
 - Nur Lese-Benchmarks gegen existierende PERF_TEST-Daten (kein Schreiben/Cleanup)
 
-## Dependencies
-- PostgreSQL JDBC 42.7.3
-- HikariCP 5.1.0
-- SLF4J 2.0.12
-- JUnit 5.10.2 (Test)
+## Dependencies (via Spring Boot BOM)
+- Spring Boot 3.4.1 (Web, JDBC)
+- PostgreSQL JDBC (Version via BOM)
+- HikariCP (Version via BOM)
+- SLF4J + Logback (via Spring Boot)
+- JUnit 5 + Mockito (via spring-boot-starter-test)
+
+## Gradle-Konfiguration
+- `gradle.properties`: `org.gradle.java.home` zeigt auf JDK 17 (Foojay-Download unter `~/.gradle/jdks/`)
+- Spring Boot Plugin baut Fat-JAR (kein Shadow-Plugin mehr)

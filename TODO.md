@@ -13,10 +13,10 @@
 - [x] **D1** — Start-Normalisierung: Kein Bug — Slice bildet immer den angeforderten Zeitraum ab, fehlende Daten = NaN
 - [ ] **D2** — Jahr→Monat SUM: Proportional nach Monatslänge verteilen statt /12
 - [x] **D3** — AVG-Kaskadierung: DST-Tage korrekt gewichten (92 vs 96 QH)
-- [ ] **D4** — Review-Findings fixen: Fehlende Tests (Anschnitt bei Aggregation, Metadaten, MIN/MAX, Fehlerfälle)
+- [x] **D4** — Review-Findings fixen: Fehlende Tests (Anschnitt bei Aggregation, Metadaten, MIN/MAX, Fehlerfälle)
 
 ### Sonstiges
-- [ ] **S1** — TimescaleDB per Docker aufsetzen und Schema testen
+- [x] **S1** — TimescaleDB per Docker aufsetzen und Schema testen
 - [ ] **S2** — Integrationstests mit Testcontainers
 - [ ] **S3** — Performance-Benchmark: Bulk-Insert und Lese-Geschwindigkeit
 - [ ] **S4** — Upsert-Logik für Hypertables (Unique-Constraint auf Hypertables)
@@ -31,3 +31,4 @@
 - [x] Unit-Konvertierung: UnitCategory, UnitConverter (Faktor, Offset, Power↔Energy DST-aware), Client-Integration, Tests + Mockito
 - [x] Write-API: TimeSeriesClient.write() mit Disaggregation/Aggregation, writeSimple im Service, Tests
 - [x] Übergeordnete Objekte (ts_object): ObjectType-Enum, TsObject-Model, ObjectRepository, Service-Integration, Migration, Tests
+- [x] **Spring Boot Migration**: Java 17, Maven-Standard-Layout, Spring Boot 3.4.1, REST-Controller, Exception Handling

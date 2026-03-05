@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-03-05 — Spring Boot Migration
+- **Phase 0**: Source-Layout auf Maven-Standard (`src/main/java/`, `src/test/java/`), Java 17
+- **Phase 1**: Spring Boot 3.4.1 mit `starter-web`, `starter-jdbc` — Shadow-Plugin durch Spring Boot Plugin ersetzt
+- **Phase 2**: Repositories als `@Repository` mit `DataSource`, Service als `@Service`, Client als `@Component`
+- **Phase 2**: `ConnectionPool.java`, `Main.java`, `EnvUtil.java` gelöscht
+- **Phase 3**: REST-Controller (`/api/timeseries`, `/api/objects`) + DTOs + `GlobalExceptionHandler`
+- **Phase 4**: Benchmark auf standalone HikariDataSource umgestellt (kein Spring-Kontext)
+- `application.properties` für DB-Config mit Spring-Properties
+- `gradle.properties`: Gradle läuft auf JDK 17 (Foojay auto-provisioned)
+
 ## 2026-03-04 — Übergeordnete Objekte (ts_object)
 - `ts_object_type` + `ts_object` Tabellen: Zeitreihen können Objekten zugeordnet werden (1:n)
 - `ObjectType` Enum, `TsObject` Model, `ObjectRepository` CRUD
