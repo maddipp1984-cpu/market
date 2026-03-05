@@ -1,9 +1,14 @@
 package de.projekt.timeseries.rest.dto;
 
+import jakarta.validation.constraints.NotBlank;
+
 public class CreateTimeSeriesRequest {
 
+    @NotBlank
     private String key;
+    @NotBlank
     private String dimension;
+    @NotBlank
     private String unit;
     private String currency;
     private String description;

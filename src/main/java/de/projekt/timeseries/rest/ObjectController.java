@@ -2,11 +2,12 @@ package de.projekt.timeseries.rest;
 
 import de.projekt.timeseries.api.TimeSeriesService;
 import de.projekt.timeseries.model.ObjectType;
-import de.projekt.timeseries.model.TsObject;
+import de.projekt.timeseries.model.TimeSeriesHeader;
 import de.projekt.timeseries.rest.dto.CreateObjectRequest;
 import de.projekt.timeseries.rest.dto.ObjectResponse;
 import de.projekt.timeseries.rest.dto.TimeSeriesHeaderResponse;
 
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,8 +26,8 @@ public class ObjectController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Long>> create(@RequestBody CreateObjectRequest req) throws SQLException {
-        ObjectType type = ObjectType.valueOf(req.getType());
+    public ResponseEntity<Map<String, Long>> create(@Valid @RequestBody CreateObjectRequest req) throws SQLException {
+        ObjectType type = parseEnum(ObjectType.class, req.getType(), "type");
         long objectId = service.createObject(type, req.getKey(), req.getDescription());
         return ResponseEntity.status(201).body(Map.of("objectId", objectId));
     }
@@ -47,7 +48,7 @@ public class ObjectController {
 
     @GetMapping(params = "type")
     public ResponseEntity<List<ObjectResponse>> getByType(@RequestParam String type) throws SQLException {
-        ObjectType objectType = ObjectType.valueOf(type);
+        ObjectType objectType = parseEnum(ObjectType.class, type, "type");
         List<ObjectResponse> result = service.getObjectsByType(objectType).stream()
                 .map(ObjectResponse::from)
                 .toList();
@@ -70,6 +71,12 @@ public class ObjectController {
 
     @DeleteMapping("/{objectId}/timeseries/{tsId}")
     public ResponseEntity<Void> unassign(@PathVariable long objectId, @PathVariable long tsId) throws SQLException {
+        TimeSeriesHeader header = service.getHeader(tsId)
+                .orElseThrow(() -> new IllegalArgumentException("Zeitreihe nicht gefunden: tsId=" + tsId));
+        if (header.getObjectId() == null || header.getObjectId() != objectId) {
+            throw new IllegalArgumentException(
+                    "Zeitreihe tsId=" + tsId + " ist nicht dem Objekt objectId=" + objectId + " zugeordnet");
+        }
         service.removeFromObject(tsId);
         return ResponseEntity.noContent().build();
     }
@@ -78,5 +85,15 @@ public class ObjectController {
     public ResponseEntity<Void> delete(@PathVariable long objectId) throws SQLException {
         service.deleteObject(objectId);
         return ResponseEntity.noContent().build();
+    }
+
+    private static <E extends Enum<E>> E parseEnum(Class<E> enumClass, String value, String fieldName) {
+        try {
+            return Enum.valueOf(enumClass, value);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(
+                    "Ungueltiger Wert fuer '" + fieldName + "': " + value
+                    + ". Erlaubt: " + java.util.Arrays.toString(enumClass.getEnumConstants()));
+        }
     }
 }

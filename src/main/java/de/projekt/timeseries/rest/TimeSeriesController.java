@@ -3,7 +3,6 @@ package de.projekt.timeseries.rest;
 import de.projekt.timeseries.api.TimeSeriesService;
 import de.projekt.timeseries.model.Currency;
 import de.projekt.timeseries.model.TimeDimension;
-import de.projekt.timeseries.model.TimeSeriesHeader;
 import de.projekt.timeseries.model.TimeSeriesSlice;
 import de.projekt.timeseries.model.Unit;
 import de.projekt.timeseries.rest.dto.CreateTimeSeriesRequest;
@@ -11,6 +10,7 @@ import de.projekt.timeseries.rest.dto.TimeSeriesHeaderResponse;
 import de.projekt.timeseries.rest.dto.TimeSeriesValuesResponse;
 import de.projekt.timeseries.rest.dto.WriteValuesRequest;
 
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,10 +29,11 @@ public class TimeSeriesController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Long>> create(@RequestBody CreateTimeSeriesRequest req) throws SQLException {
-        TimeDimension dim = TimeDimension.valueOf(req.getDimension());
-        Unit unit = Unit.valueOf(req.getUnit());
-        Currency currency = req.getCurrency() != null ? Currency.valueOf(req.getCurrency()) : null;
+    public ResponseEntity<Map<String, Long>> create(@Valid @RequestBody CreateTimeSeriesRequest req) throws SQLException {
+        TimeDimension dim = parseEnum(TimeDimension.class, req.getDimension(), "dimension");
+        Unit unit = parseEnum(Unit.class, req.getUnit(), "unit");
+        Currency currency = req.getCurrency() != null
+                ? parseEnum(Currency.class, req.getCurrency(), "currency") : null;
 
         long tsId;
         if (currency != null) {
@@ -60,7 +61,7 @@ public class TimeSeriesController {
 
     @PostMapping("/{tsId}/values")
     public ResponseEntity<Void> writeDay(@PathVariable long tsId,
-                                         @RequestBody WriteValuesRequest req) throws SQLException {
+                                         @Valid @RequestBody WriteValuesRequest req) throws SQLException {
         service.writeDay(tsId, req.getDate(), req.getValues());
         return ResponseEntity.noContent().build();
     }
@@ -89,5 +90,15 @@ public class TimeSeriesController {
     public ResponseEntity<Map<String, Long>> count(@PathVariable long tsId) throws SQLException {
         long count = service.count(tsId);
         return ResponseEntity.ok(Map.of("count", count));
+    }
+
+    private static <E extends Enum<E>> E parseEnum(Class<E> enumClass, String value, String fieldName) {
+        try {
+            return Enum.valueOf(enumClass, value);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(
+                    "Ungueltiger Wert fuer '" + fieldName + "': " + value
+                    + ". Erlaubt: " + java.util.Arrays.toString(enumClass.getEnumConstants()));
+        }
     }
 }

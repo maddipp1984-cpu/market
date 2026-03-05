@@ -1,8 +1,12 @@
 package de.projekt.timeseries.rest.dto;
 
+import jakarta.validation.constraints.NotBlank;
+
 public class CreateObjectRequest {
 
+    @NotBlank
     private String type;
+    @NotBlank
     private String key;
     private String description;
 

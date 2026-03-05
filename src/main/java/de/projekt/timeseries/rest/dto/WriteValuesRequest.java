@@ -1,10 +1,14 @@
 package de.projekt.timeseries.rest.dto;
 
+import jakarta.validation.constraints.NotNull;
+
 import java.time.LocalDate;
 
 public class WriteValuesRequest {
 
+    @NotNull
     private LocalDate date;
+    @NotNull
     private double[] values;
 
     public LocalDate getDate() { return date; }
