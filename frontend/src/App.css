@@ -136,6 +136,86 @@ h1 {
   font-size: 0.9rem;
 }
 
+/* TimeSeriesEditor */
+.ts-editor {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.ts-editor-header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.ts-editor-header .header-info {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.ts-editor-header .save-btn {
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+/* Filter Bar */
+.filter-bar {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.filter-bar label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.filter-bar input {
+  padding: 6px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: #1e293b;
+  background: #f8fafc;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.filter-bar input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  background: #fff;
+}
+
+.filter-reset {
+  padding: 6px 14px;
+  background: transparent;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.filter-reset:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
 /* Header Info */
 .header-info {
   background: #fff;
@@ -146,14 +226,18 @@ h1 {
   border: 1px solid #e2e8f0;
 }
 
-.header-grid {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 6px 20px;
-  font-size: 0.9rem;
+.header-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 0.88rem;
 }
 
-.header-grid .label {
+.chip {
+  white-space: nowrap;
+}
+
+.chip .label {
   font-weight: 600;
   color: #64748b;
 }

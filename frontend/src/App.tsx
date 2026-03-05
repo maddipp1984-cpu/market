@@ -1,35 +1,17 @@
 import { useState } from 'react';
-import { useTimeSeries } from './data/useTimeSeries';
-import { HeaderInfo } from './table/HeaderInfo';
-import { ValuesTable } from './table/ValuesTable';
-
-function toLocalDateTimeString(d: Date): string {
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function getDefaultStart(): string {
-  const d = new Date();
-  d.setMonth(0, 1);
-  d.setHours(0, 0, 0, 0);
-  return toLocalDateTimeString(d);
-}
-
-function getDefaultEnd(): string {
-  return toLocalDateTimeString(new Date());
-}
+import { TimeSeriesEditor } from './components/TimeSeriesEditor';
 
 export default function App() {
   const [tsId, setTsId] = useState('15201');
   const [start, setStart] = useState('2022-01-01T00:00');
   const [end, setEnd] = useState('2025-01-01T00:00');
-  const { header, rows, edits, hasEdits, loading, saving, error, load, updateValue, save } = useTimeSeries();
+  const [activeTs, setActiveTs] = useState({ tsId: 15201, start: '2022-01-01T00:00', end: '2025-01-01T00:00' });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const id = parseInt(tsId, 10);
     if (isNaN(id) || id <= 0) return;
-    load(id, start, end);
+    setActiveTs({ tsId: id, start, end });
   };
 
   return (
@@ -67,34 +49,15 @@ export default function App() {
               required
             />
           </label>
-          <button type="submit" disabled={loading || saving}>
-            {loading ? 'Lade...' : 'Laden'}
-          </button>
-          {hasEdits && (
-            <button type="button" onClick={save} disabled={saving} className="save-btn">
-              {saving ? 'Speichere...' : `Speichern (${edits.size})`}
-            </button>
-          )}
+          <button type="submit">Laden</button>
         </div>
       </form>
 
-      {error && <div className="error">{error}</div>}
-
-      {header && <HeaderInfo header={header} rowCount={rows.length} />}
-
-      {header && rows.length === 0 && !loading && !error && (
-        <div className="info">Keine Werte im gewählten Zeitraum.</div>
-      )}
-
-      {rows.length > 0 && header && (
-        <ValuesTable
-          rows={rows}
-          edits={edits}
-          unit={header.unit}
-          dimension={header.dimension}
-          onEdit={updateValue}
-        />
-      )}
+      <TimeSeriesEditor
+        tsId={activeTs.tsId}
+        start={activeTs.start}
+        end={activeTs.end}
+      />
     </div>
   );
 }
