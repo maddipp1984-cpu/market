@@ -1,4 +1,4 @@
-import type { Dimension } from '../api/types';
+import type { Dimension } from '../../api/types';
 
 /**
  * Berechnet den Timestamp für einen Wert an Position index.

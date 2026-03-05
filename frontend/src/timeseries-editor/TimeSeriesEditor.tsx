@@ -1,26 +1,19 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { useTimeSeries } from '../data/useTimeSeries';
-import { getAvailableDimensions, aggregateRows } from '../data/aggregation';
-import { HeaderInfo } from '../table/HeaderInfo';
-import { ValuesTable } from '../table/ValuesTable';
+import { useMultiTimeSeries } from './data/useMultiTimeSeries';
+import { getAvailableDimensions, aggregateMultiRows, dimensionLabels, type AggregationMode } from './data/aggregation';
+import { ValuesTable } from './table/ValuesTable';
 import type { Dimension } from '../api/types';
 
-const dimensionLabels: Record<Dimension, string> = {
-  QUARTER_HOUR: '15 Minuten',
-  HOUR: '1 Stunde',
-  DAY: 'Tag',
-  MONTH: 'Monat',
-  YEAR: 'Jahr',
-};
+const EMPTY_EDITS: Map<string, number> = new Map();
 
 interface TimeSeriesEditorProps {
-  tsId: number;
+  tsIds: number[];
   start: string;
   end: string;
 }
 
-export function TimeSeriesEditor({ tsId, start, end }: TimeSeriesEditorProps) {
-  const { header, rows, edits, hasEdits, loading, saving, error, load, updateValue, save } = useTimeSeries();
+export function TimeSeriesEditor({ tsIds, start, end }: TimeSeriesEditorProps) {
+  const { headers, rows, edits, hasEdits, loading, saving, error, load, updateValue, save } = useMultiTimeSeries();
   const loadedRef = useRef('');
   const [filterStart, setFilterStart] = useState(start);
   const [filterEnd, setFilterEnd] = useState(end);
@@ -28,22 +21,22 @@ export function TimeSeriesEditor({ tsId, start, end }: TimeSeriesEditorProps) {
   const [viewDimension, setViewDimension] = useState<Dimension | null>(null);
 
   useEffect(() => {
-    const key = `${tsId}|${start}|${end}`;
+    const key = `${tsIds.join(',')}|${start}|${end}`;
     if (key === loadedRef.current) return;
     loadedRef.current = key;
     setFilterStart(start);
     setFilterEnd(end);
-    if (tsId > 0 && start && end) {
-      load(tsId, start, end);
+    if (tsIds.length > 0 && start && end) {
+      load(tsIds, start, end);
     }
-  }, [tsId, start, end, load]);
+  }, [tsIds, start, end, load]);
 
   useEffect(() => {
-    if (!header) return;
-    const currencyOnly = header.currency && (!header.unit || header.unit === header.currency);
-    setDecimals(currencyOnly ? 2 : 5);
-    setViewDimension(header.dimension);
-  }, [header]);
+    if (headers.length === 0) return;
+    const hasCurrencyOnly = headers.every(h => h.currency && (!h.unit || h.unit === h.currency));
+    setDecimals(hasCurrencyOnly ? 2 : 5);
+    setViewDimension(headers[0].dimension);
+  }, [headers]);
 
   const filteredRows = useMemo(() => {
     if (!filterStart && !filterEnd) return rows;
@@ -52,31 +45,25 @@ export function TimeSeriesEditor({ tsId, start, end }: TimeSeriesEditorProps) {
     return rows.filter(r => r.timestampMs >= startMs && r.timestampMs < endMs);
   }, [rows, filterStart, filterEnd]);
 
-  const isAggregated = header != null && viewDimension != null && viewDimension !== header.dimension;
+  const isAggregated = headers.length > 0 && viewDimension != null && viewDimension !== headers[0].dimension;
+
+  const aggregationModes: AggregationMode[] = useMemo(
+    () => headers.map(h => (h.currency && h.unit) ? 'avg' : 'sum'),
+    [headers]
+  );
 
   const displayRows = useMemo(() => {
     if (!isAggregated || !viewDimension) return filteredRows;
-    return aggregateRows(filteredRows, edits, viewDimension);
-  }, [filteredRows, edits, viewDimension, isAggregated]);
+    return aggregateMultiRows(filteredRows, edits, headers.length, viewDimension, aggregationModes);
+  }, [filteredRows, edits, headers.length, viewDimension, isAggregated, aggregationModes]);
 
   return (
     <div className="ts-editor">
-      {loading && <div className="info">Lade Zeitreihe...</div>}
+      {loading && <div className="info">Lade Zeitreihe{tsIds.length > 1 ? 'n' : ''}...</div>}
 
       {error && <div className="error">{error}</div>}
 
-      {header && (
-        <div className="ts-editor-header">
-          <HeaderInfo header={header} />
-          {hasEdits && (
-            <button type="button" onClick={save} disabled={saving} className="save-btn">
-              {saving ? 'Speichere...' : `Speichern (${edits.size})`}
-            </button>
-          )}
-        </div>
-      )}
-
-      {header && rows.length > 0 && (
+      {headers.length > 0 && rows.length > 0 && (
         <div className="filter-bar">
           <label>
             Von
@@ -100,7 +87,7 @@ export function TimeSeriesEditor({ tsId, start, end }: TimeSeriesEditorProps) {
               value={viewDimension ?? ''}
               onChange={(e) => setViewDimension(e.target.value as Dimension)}
             >
-              {header && getAvailableDimensions(header.dimension).map(d => (
+              {getAvailableDimensions(headers[0].dimension).map(d => (
                 <option key={d} value={d}>{dimensionLabels[d]}</option>
               ))}
             </select>
@@ -125,22 +112,27 @@ export function TimeSeriesEditor({ tsId, start, end }: TimeSeriesEditorProps) {
               Zurücksetzen
             </button>
           )}
+          {hasEdits && (
+            <button type="button" onClick={save} disabled={saving} className="save-btn">
+              {saving ? 'Speichere...' : `Speichern (${edits.size})`}
+            </button>
+          )}
         </div>
       )}
 
-      {header && rows.length === 0 && !loading && !error && (
+      {headers.length > 0 && rows.length === 0 && !loading && !error && (
         <div className="info">Keine Werte im gewählten Zeitraum.</div>
       )}
 
-      {header && rows.length > 0 && displayRows.length === 0 && (
+      {headers.length > 0 && rows.length > 0 && displayRows.length === 0 && (
         <div className="info">Keine Werte im Filterbereich.</div>
       )}
 
-      {displayRows.length > 0 && header && viewDimension && (
+      {displayRows.length > 0 && headers.length > 0 && viewDimension && (
         <ValuesTable
           rows={displayRows}
-          edits={isAggregated ? new Map() : edits}
-          unit={header.unit}
+          headers={headers}
+          edits={isAggregated ? EMPTY_EDITS : edits}
           dimension={viewDimension}
           decimals={decimals}
           readOnly={isAggregated}

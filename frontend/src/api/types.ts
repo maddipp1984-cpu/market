@@ -20,10 +20,10 @@ export interface TimeSeriesValuesResponse {
   values: number[];
 }
 
-export interface TimeSeriesRow {
+export interface MultiSeriesRow {
   index: number;
   timestampMs: number;
-  value: number;
+  values: number[];  // Wert pro Serie, Index = Position in headers[]
 }
 
 export interface WriteValuesRequest {

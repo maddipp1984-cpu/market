@@ -9,33 +9,35 @@ import {
 } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { formatTimestamp } from '../data/timestampCalculator';
-import type { Dimension, TimeSeriesRow } from '../api/types';
+import type { Dimension, MultiSeriesRow, TimeSeriesHeaderResponse } from '../../api/types';
 
 interface ValuesTableProps {
-  rows: TimeSeriesRow[];
-  edits: Map<number, number>;
-  unit: string;
+  rows: MultiSeriesRow[];
+  headers: TimeSeriesHeaderResponse[];
+  edits: Map<string, number>;
   dimension: Dimension;
   decimals: number;
   readOnly?: boolean;
-  onEdit: (index: number, value: number) => void;
+  onEdit: (seriesIdx: number, rowIndex: number, value: number) => void;
 }
 
 function formatValue(v: number, decimals: number): string {
   return v.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: decimals });
 }
 
-function EditableCell({ row, edits, decimals, onEdit }: {
-  row: TimeSeriesRow;
-  edits: Map<number, number>;
+function EditableCell({ seriesIdx, row, edits, decimals, onEdit }: {
+  seriesIdx: number;
+  row: MultiSeriesRow;
+  edits: Map<string, number>;
   decimals: number;
-  onEdit: (index: number, value: number) => void;
+  onEdit: (seriesIdx: number, rowIndex: number, value: number) => void;
 }) {
   const [focused, setFocused] = useState(false);
   const [localValue, setLocalValue] = useState('');
-  const edited = edits.get(row.index);
-  const effectiveValue = edited ?? row.value;
-  const isEdited = edits.has(row.index);
+  const editKey = `${seriesIdx}:${row.index}`;
+  const edited = edits.get(editKey);
+  const effectiveValue = edited ?? row.values[seriesIdx];
+  const isEdited = edits.has(editKey);
   const isEmpty = effectiveValue == null || isNaN(effectiveValue);
 
   const displayValue = focused
@@ -47,6 +49,7 @@ function EditableCell({ row, edits, decimals, onEdit }: {
       className={`value-input${isEdited ? ' edited' : ''}`}
       type="text"
       data-row-index={row.index}
+      data-series-idx={seriesIdx}
       value={displayValue}
       onFocus={() => {
         setLocalValue(isEmpty ? '' : effectiveValue.toLocaleString('de-DE', { useGrouping: false, maximumFractionDigits: 20 }));
@@ -56,11 +59,11 @@ function EditableCell({ row, edits, decimals, onEdit }: {
         setFocused(false);
         const raw = localValue.replace(',', '.');
         if (raw === '' || raw === '-') {
-          onEdit(row.index, NaN);
+          if (!isEmpty) onEdit(seriesIdx, row.index, NaN);
           return;
         }
         const num = parseFloat(raw);
-        if (!isNaN(num)) onEdit(row.index, num);
+        if (!isNaN(num) && num !== effectiveValue) onEdit(seriesIdx, row.index, num);
       }}
       onKeyDown={(e) => {
         if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
@@ -70,14 +73,16 @@ function EditableCell({ row, edits, decimals, onEdit }: {
   );
 }
 
-export function ValuesTable({ rows, edits, unit, dimension, decimals, readOnly, onEdit }: ValuesTableProps) {
+export function ValuesTable({ rows, headers, edits, dimension, decimals, readOnly, onEdit }: ValuesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [copied, setCopied] = useState(false);
   const [pastedCount, setPastedCount] = useState(0);
   const parentRef = useRef<HTMLDivElement>(null);
+  const editsRef = useRef(edits);
+  editsRef.current = edits;
 
   const getEffectiveValue = useCallback(
-    (row: TimeSeriesRow) => edits.get(row.index) ?? row.value,
+    (row: MultiSeriesRow, seriesIdx: number) => edits.get(`${seriesIdx}:${row.index}`) ?? row.values[seriesIdx],
     [edits]
   );
 
@@ -85,7 +90,8 @@ export function ValuesTable({ rows, edits, unit, dimension, decimals, readOnly, 
     if (readOnly) return;
     const active = document.activeElement as HTMLElement | null;
     const startIndex = active?.dataset.rowIndex != null ? parseInt(active.dataset.rowIndex, 10) : null;
-    if (startIndex == null) return;
+    const seriesIdx = active?.dataset.seriesIdx != null ? parseInt(active.dataset.seriesIdx, 10) : null;
+    if (startIndex == null || seriesIdx == null) return;
 
     e.preventDefault();
     const text = e.clipboardData.getData('text/plain');
@@ -101,7 +107,7 @@ export function ValuesTable({ rows, edits, unit, dimension, decimals, readOnly, 
       const raw = lines[i].trim().replace(/\./g, '').replace(',', '.');
       const num = parseFloat(raw);
       if (!isNaN(num)) {
-        onEdit(rows[rowPos].index, num);
+        onEdit(seriesIdx, rows[rowPos].index, num);
         count++;
       }
     }
@@ -109,40 +115,46 @@ export function ValuesTable({ rows, edits, unit, dimension, decimals, readOnly, 
       setPastedCount(count);
       setTimeout(() => setPastedCount(0), 2000);
     }
-  }, [rows, onEdit]);
+  }, [rows, readOnly, onEdit]);
 
   const handleCopy = useCallback((e: React.ClipboardEvent) => {
     e.preventDefault();
+    const headerLine = ['Datum', ...headers.map(h => h.tsKey)].join('\t');
     const tsv = rows
       .map(r => {
         const ts = formatTimestamp(r.timestampMs, dimension);
-        const val = getEffectiveValue(r);
-        return `${ts}\t${(val == null || isNaN(val)) ? '' : formatValue(val, decimals)}`;
+        const vals = headers.map((_, i) => {
+          const val = getEffectiveValue(r, i);
+          return (val == null || isNaN(val)) ? '' : formatValue(val, decimals);
+        });
+        return [ts, ...vals].join('\t');
       })
       .join('\n');
-    e.clipboardData.setData('text/plain', `Datum\tWert\n${tsv}`);
+    e.clipboardData.setData('text/plain', `${headerLine}\n${tsv}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [rows, dimension, decimals, getEffectiveValue]);
+  }, [rows, headers, dimension, decimals, getEffectiveValue]);
 
-  const stats = useMemo(() => {
-    const valid: number[] = [];
-    for (const r of rows) {
-      const v = getEffectiveValue(r);
-      if (v != null && !isNaN(v)) valid.push(v);
-    }
-    if (valid.length === 0) return null;
-    let min = Infinity, max = -Infinity, sum = 0;
-    for (const v of valid) {
-      if (v < min) min = v;
-      if (v > max) max = v;
-      sum += v;
-    }
-    return { min, max, avg: sum / valid.length, count: valid.length };
-  }, [rows, getEffectiveValue]);
+  const allStats = useMemo(() => {
+    return headers.map((_, seriesIdx) => {
+      const valid: number[] = [];
+      for (const r of rows) {
+        const v = getEffectiveValue(r, seriesIdx);
+        if (v != null && !isNaN(v)) valid.push(v);
+      }
+      if (valid.length === 0) return null;
+      let min = Infinity, max = -Infinity, sum = 0;
+      for (const v of valid) {
+        if (v < min) min = v;
+        if (v > max) max = v;
+        sum += v;
+      }
+      return { min, max, avg: sum / valid.length, count: valid.length };
+    });
+  }, [rows, headers, getEffectiveValue]);
 
-  const columns = useMemo<ColumnDef<TimeSeriesRow>[]>(
-    () => [
+  const columns = useMemo<ColumnDef<MultiSeriesRow>[]>(() => {
+    const cols: ColumnDef<MultiSeriesRow>[] = [
       {
         accessorKey: 'index',
         header: '#',
@@ -155,21 +167,35 @@ export function ValuesTable({ rows, edits, unit, dimension, decimals, readOnly, 
         size: 170,
         cell: ({ getValue }) => formatTimestamp(getValue() as number, dimension),
       },
-      {
-        accessorKey: 'value',
-        header: `Wert (${unit})`,
+    ];
+
+    for (let i = 0; i < headers.length; i++) {
+      const h = headers[i];
+      const seriesIdx = i;
+      cols.push({
+        id: `value_${h.tsId}`,
+        header: () => headers.length > 1 ? (
+          <div title={`TS-ID: ${h.tsId}`}>
+            <div className="col-header-key">{h.tsKey}</div>
+            <div className="col-header-unit">Wert ({h.unit})</div>
+          </div>
+        ) : (
+          <span title={`TS-ID: ${h.tsId}`}>Wert ({h.unit})</span>
+        ),
+        accessorFn: (row) => row.values[seriesIdx],
         meta: { flex: true },
         cell: ({ row: tableRow }) => {
+          const v = tableRow.original.values[seriesIdx];
           if (readOnly) {
-            const v = tableRow.original.value;
             return (v == null || isNaN(v)) ? '' : formatValue(v, decimals);
           }
-          return <EditableCell row={tableRow.original} edits={edits} decimals={decimals} onEdit={onEdit} />;
+          return <EditableCell seriesIdx={seriesIdx} row={tableRow.original} edits={editsRef.current} decimals={decimals} onEdit={onEdit} />;
         },
-      },
-    ],
-    [unit, dimension, decimals, edits, readOnly, onEdit]
-  );
+      });
+    }
+
+    return cols;
+  }, [headers, dimension, decimals, readOnly, onEdit]);
 
   const table = useReactTable({
     data: rows,
@@ -188,6 +214,8 @@ export function ValuesTable({ rows, edits, unit, dimension, decimals, readOnly, 
     estimateSize: () => 35,
     overscan: 20,
   });
+
+  const hasAnyStats = allStats.some(s => s !== null);
 
   return (
     <div className="grid-table" tabIndex={0} onCopy={handleCopy} onPaste={handlePaste} onKeyDown={(e) => {
@@ -246,26 +274,24 @@ export function ValuesTable({ rows, edits, unit, dimension, decimals, readOnly, 
           })}
         </div>
       </div>
-      {stats && (
+      {hasAnyStats && (
         <div className="grid-footer">
           {copied && <div className="copy-hint">Kopiert!</div>}
           {pastedCount > 0 && <div className="copy-hint">{pastedCount} Werte eingefügt!</div>}
-          <div className="stat">
-            <span className="stat-label">Min</span>
-            <span className="stat-value">{formatValue(stats.min, decimals)}</span>
-          </div>
-          <div className="stat">
-            <span className="stat-label">Max</span>
-            <span className="stat-value">{formatValue(stats.max, decimals)}</span>
-          </div>
-          <div className="stat">
-            <span className="stat-label">Avg</span>
-            <span className="stat-value">{formatValue(stats.avg, decimals)}</span>
-          </div>
-          <div className="stat">
-            <span className="stat-label">Werte</span>
-            <span className="stat-value">{stats.count.toLocaleString('de-DE')}</span>
-          </div>
+          {(['Min', 'Max', 'Avg'] as const).map(label => (
+            <div key={label} className="grid-row stat-row">
+              <div className="grid-cell" style={{ width: 80 }} />
+              <div className="grid-cell stat-label-cell" style={{ width: 170 }}>{label}</div>
+              {allStats.map((stats, i) => (
+                <div key={headers[i].tsId} className="grid-cell stat-value-cell" style={{ flex: 1 }}>
+                  {stats ? formatValue(
+                    label === 'Min' ? stats.min : label === 'Max' ? stats.max : stats.avg,
+                    decimals
+                  ) : ''}
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
       )}
     </div>
