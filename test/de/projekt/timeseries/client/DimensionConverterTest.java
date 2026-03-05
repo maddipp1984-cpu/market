@@ -470,6 +470,370 @@ class DimensionConverterTest {
     }
 
     // ================================================================
+    // Aggregation: Metadaten-Prüfung
+    // ================================================================
+
+    @Nested
+    class MetadataTest {
+
+        @Test
+        void qhToH_metadataCorrect() {
+            double[] qh = filled(96, 1.0);
+            TimeSeriesSlice src = slice(TimeDimension.QUARTER_HOUR, dt(2025, 6, 15), dt(2025, 6, 16), qh);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.HOUR, AggregationFunction.SUM);
+
+            assertEquals(dt(2025, 6, 15), result.getStart());
+            assertEquals(dt(2025, 6, 16), result.getEnd());
+            assertEquals(TimeDimension.HOUR, result.getDimension());
+        }
+
+        @Test
+        void subdailyToDay_metadataCorrect() {
+            double[] qh = filled(96, 1.0);
+            TimeSeriesSlice src = slice(TimeDimension.QUARTER_HOUR, dt(2025, 6, 15), dt(2025, 6, 16), qh);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.DAY, AggregationFunction.SUM);
+
+            assertEquals(dt(2025, 6, 15), result.getStart());
+            assertEquals(dt(2025, 6, 16), result.getEnd());
+            assertEquals(TimeDimension.DAY, result.getDimension());
+        }
+
+        @Test
+        void dayToMonth_metadataCorrect() {
+            double[] days = filled(59, 1.0); // Jan + Feb
+            TimeSeriesSlice src = slice(TimeDimension.DAY, dt(2025, 1, 1), dt(2025, 3, 1), days);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.MONTH, AggregationFunction.SUM);
+
+            assertEquals(dt(2025, 1, 1), result.getStart());
+            assertEquals(dt(2025, 3, 1), result.getEnd());
+            assertEquals(TimeDimension.MONTH, result.getDimension());
+            assertEquals(2, result.size());
+        }
+
+        @Test
+        void dayToYear_metadataCorrect() {
+            double[] days = filled(365, 1.0);
+            TimeSeriesSlice src = slice(TimeDimension.DAY, dt(2025, 1, 1), dt(2026, 1, 1), days);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.YEAR, AggregationFunction.SUM);
+
+            assertEquals(dt(2025, 1, 1), result.getStart());
+            assertEquals(dt(2026, 1, 1), result.getEnd());
+            assertEquals(TimeDimension.YEAR, result.getDimension());
+            assertEquals(1, result.size());
+        }
+
+        @Test
+        void monthToYear_metadataCorrect() {
+            double[] months = filled(12, 1.0);
+            TimeSeriesSlice src = slice(TimeDimension.MONTH, dt(2025, 1, 1), dt(2026, 1, 1), months);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.YEAR, AggregationFunction.SUM);
+
+            assertEquals(dt(2025, 1, 1), result.getStart());
+            assertEquals(dt(2026, 1, 1), result.getEnd());
+            assertEquals(TimeDimension.YEAR, result.getDimension());
+            assertEquals(1, result.size());
+        }
+    }
+
+    // ================================================================
+    // Aggregation: MIN / MAX
+    // ================================================================
+
+    @Nested
+    class MinMaxTest {
+
+        @Test
+        void qhToH_min() {
+            double[] qh = {1.0, 5.0, 3.0, 2.0};
+            TimeSeriesSlice src = slice(TimeDimension.QUARTER_HOUR,
+                    dt(2025, 6, 15), dt(2025, 6, 15, 1, 0), qh);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.HOUR, AggregationFunction.MIN);
+
+            assertEquals(1, result.size());
+            assertEquals(1.0, result.getValue(0));
+        }
+
+        @Test
+        void qhToH_max() {
+            double[] qh = {1.0, 5.0, 3.0, 2.0};
+            TimeSeriesSlice src = slice(TimeDimension.QUARTER_HOUR,
+                    dt(2025, 6, 15), dt(2025, 6, 15, 1, 0), qh);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.HOUR, AggregationFunction.MAX);
+
+            assertEquals(1, result.size());
+            assertEquals(5.0, result.getValue(0));
+        }
+
+        @Test
+        void subdailyToDay_min() {
+            double[] qh = new double[96];
+            for (int i = 0; i < 96; i++) qh[i] = i;
+            TimeSeriesSlice src = slice(TimeDimension.QUARTER_HOUR, dt(2025, 6, 15), dt(2025, 6, 16), qh);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.DAY, AggregationFunction.MIN);
+
+            assertEquals(1, result.size());
+            assertEquals(0.0, result.getValue(0));
+        }
+
+        @Test
+        void subdailyToDay_max() {
+            double[] qh = new double[96];
+            for (int i = 0; i < 96; i++) qh[i] = i;
+            TimeSeriesSlice src = slice(TimeDimension.QUARTER_HOUR, dt(2025, 6, 15), dt(2025, 6, 16), qh);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.DAY, AggregationFunction.MAX);
+
+            assertEquals(1, result.size());
+            assertEquals(95.0, result.getValue(0));
+        }
+
+        @Test
+        void dayToMonth_min() {
+            double[] days = new double[31]; // Januar
+            for (int i = 0; i < 31; i++) days[i] = 10.0 + i;
+            TimeSeriesSlice src = slice(TimeDimension.DAY, dt(2025, 1, 1), dt(2025, 2, 1), days);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.MONTH, AggregationFunction.MIN);
+
+            assertEquals(1, result.size());
+            assertEquals(10.0, result.getValue(0));
+        }
+
+        @Test
+        void dayToMonth_max() {
+            double[] days = new double[31]; // Januar
+            for (int i = 0; i < 31; i++) days[i] = 10.0 + i;
+            TimeSeriesSlice src = slice(TimeDimension.DAY, dt(2025, 1, 1), dt(2025, 2, 1), days);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.MONTH, AggregationFunction.MAX);
+
+            assertEquals(1, result.size());
+            assertEquals(40.0, result.getValue(0));
+        }
+
+        @Test
+        void monthToYear_min() {
+            double[] months = new double[12];
+            for (int i = 0; i < 12; i++) months[i] = 100.0 + i * 10;
+            TimeSeriesSlice src = slice(TimeDimension.MONTH, dt(2025, 1, 1), dt(2026, 1, 1), months);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.YEAR, AggregationFunction.MIN);
+
+            assertEquals(1, result.size());
+            assertEquals(100.0, result.getValue(0));
+        }
+
+        @Test
+        void monthToYear_max() {
+            double[] months = new double[12];
+            for (int i = 0; i < 12; i++) months[i] = 100.0 + i * 10;
+            TimeSeriesSlice src = slice(TimeDimension.MONTH, dt(2025, 1, 1), dt(2026, 1, 1), months);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.YEAR, AggregationFunction.MAX);
+
+            assertEquals(1, result.size());
+            assertEquals(210.0, result.getValue(0));
+        }
+
+        @Test
+        void cascadeQhToMonth_min() {
+            // 31 Tage, je 96 QH, aufsteigende Werte pro Tag
+            double[] qh = new double[31 * 96];
+            for (int d = 0; d < 31; d++) {
+                Arrays.fill(qh, d * 96, (d + 1) * 96, (double) d);
+            }
+            TimeSeriesSlice src = slice(TimeDimension.QUARTER_HOUR, dt(2025, 1, 1), dt(2025, 2, 1), qh);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.MONTH, AggregationFunction.MIN);
+
+            assertEquals(1, result.size());
+            assertEquals(0.0, result.getValue(0));
+        }
+
+        @Test
+        void cascadeQhToYear_max() {
+            // 3 Tage, je 96 QH mit unterschiedlichen Werten
+            double[] qh = new double[288];
+            Arrays.fill(qh, 0, 96, 1.0);
+            Arrays.fill(qh, 96, 192, 5.0);
+            Arrays.fill(qh, 192, 288, 3.0);
+            TimeSeriesSlice src = slice(TimeDimension.QUARTER_HOUR, dt(2025, 1, 1), dt(2025, 1, 4), qh);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.YEAR, AggregationFunction.MAX);
+
+            assertEquals(1, result.size());
+            assertEquals(5.0, result.getValue(0));
+        }
+    }
+
+    // ================================================================
+    // Aggregation: Anschnitt (partieller Start/Ende)
+    // ================================================================
+
+    @Nested
+    class PartialPeriodTest {
+
+        @Test
+        void qhToDay_startAt06_partialFirstDay() {
+            // Start 06:00 → 72 QH am ersten Tag (06:00-00:00), 96 am zweiten
+            double[] qh = new double[72 + 96];
+            Arrays.fill(qh, 0, 72, 1.0);  // Tag 1 (ab 06:00)
+            Arrays.fill(qh, 72, 72 + 96, 2.0);  // Tag 2 (voll)
+            TimeSeriesSlice src = slice(TimeDimension.QUARTER_HOUR,
+                    dt(2025, 6, 15, 6, 0), dt(2025, 6, 17), qh);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.DAY, AggregationFunction.SUM);
+
+            assertEquals(2, result.size());
+            assertEquals(72.0, result.getValue(0));  // 72 × 1.0
+            assertEquals(192.0, result.getValue(1)); // 96 × 2.0
+        }
+
+        @Test
+        void qhToDay_endAt12_partialLastDay() {
+            // Ganzer Tag + halber Tag (00:00-12:00 = 48 QH)
+            double[] qh = new double[96 + 48];
+            Arrays.fill(qh, 0, 96, 1.0);
+            Arrays.fill(qh, 96, 96 + 48, 3.0);
+            TimeSeriesSlice src = slice(TimeDimension.QUARTER_HOUR,
+                    dt(2025, 6, 15), dt(2025, 6, 16, 12, 0), qh);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.DAY, AggregationFunction.SUM);
+
+            assertEquals(2, result.size());
+            assertEquals(96.0, result.getValue(0));  // voller Tag
+            assertEquals(144.0, result.getValue(1)); // 48 × 3.0
+        }
+
+        @Test
+        void qhToDay_partialBothEnds() {
+            // 06:00 Tag 1 bis 12:00 Tag 2: 72 + 48 = 120 QH
+            double[] qh = new double[72 + 48];
+            Arrays.fill(qh, 0, 72, 2.0);
+            Arrays.fill(qh, 72, 72 + 48, 4.0);
+            TimeSeriesSlice src = slice(TimeDimension.QUARTER_HOUR,
+                    dt(2025, 6, 15, 6, 0), dt(2025, 6, 16, 12, 0), qh);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.DAY, AggregationFunction.SUM);
+
+            assertEquals(2, result.size());
+            assertEquals(144.0, result.getValue(0)); // 72 × 2.0
+            assertEquals(192.0, result.getValue(1)); // 48 × 4.0
+        }
+
+        @Test
+        void hToDay_startAt06_partialFirstDay() {
+            // Start 06:00 → 18 H am ersten Tag, 24 am zweiten
+            double[] h = new double[18 + 24];
+            Arrays.fill(h, 0, 18, 10.0);
+            Arrays.fill(h, 18, 18 + 24, 20.0);
+            TimeSeriesSlice src = slice(TimeDimension.HOUR,
+                    dt(2025, 6, 15, 6, 0), dt(2025, 6, 17), h);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.DAY, AggregationFunction.AVG);
+
+            assertEquals(2, result.size());
+            assertEquals(10.0, result.getValue(0));
+            assertEquals(20.0, result.getValue(1));
+        }
+
+        @Test
+        void dayToMonth_startMidMonth() {
+            // Start am 15. Januar → 17 Tage im Jan, 28 im Feb = 45 Tage
+            double[] days = new double[17 + 28];
+            Arrays.fill(days, 0, 17, 1.0);
+            Arrays.fill(days, 17, 17 + 28, 2.0);
+            TimeSeriesSlice src = slice(TimeDimension.DAY, dt(2025, 1, 15), dt(2025, 3, 1), days);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.MONTH, AggregationFunction.SUM);
+
+            assertEquals(2, result.size());
+            assertEquals(17.0, result.getValue(0));  // Rest-Januar
+            assertEquals(56.0, result.getValue(1));  // Feb: 28 × 2.0
+        }
+
+        @Test
+        void qhToDay_dstDay_startAt06() {
+            // DST-Tag 30. März 2025 ab 06:00: 92 - 24 = 68 QH
+            int slotsFrom06 = 92 - 24; // 06:00 = 24 QH-Slots offset
+            double[] qh = filled(slotsFrom06, 1.0);
+            TimeSeriesSlice src = slice(TimeDimension.QUARTER_HOUR,
+                    dt(2025, 3, 30, 6, 0), dt(2025, 3, 31), qh);
+
+            TimeSeriesSlice result = DimensionConverter.aggregate(src, TimeDimension.DAY, AggregationFunction.SUM);
+
+            assertEquals(1, result.size());
+            assertEquals((double) slotsFrom06, result.getValue(0));
+        }
+    }
+
+    // ================================================================
+    // Fehlerfälle
+    // ================================================================
+
+    @Nested
+    class ErrorCaseTest {
+
+        @Test
+        void aggregate_sameDimension_throws() {
+            double[] qh = filled(96, 1.0);
+            TimeSeriesSlice src = slice(TimeDimension.QUARTER_HOUR, dt(2025, 6, 15), dt(2025, 6, 16), qh);
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> DimensionConverter.aggregate(src, TimeDimension.QUARTER_HOUR, AggregationFunction.SUM));
+        }
+
+        @Test
+        void aggregate_wrongDirection_throws() {
+            // Tag → QH ist Disaggregation, nicht Aggregation
+            double[] days = {1.0};
+            TimeSeriesSlice src = slice(TimeDimension.DAY, dt(2025, 6, 15), dt(2025, 6, 16), days);
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> DimensionConverter.aggregate(src, TimeDimension.QUARTER_HOUR, AggregationFunction.SUM));
+        }
+
+        @Test
+        void disaggregate_sameDimension_throws() {
+            double[] days = {1.0};
+            TimeSeriesSlice src = slice(TimeDimension.DAY, dt(2025, 6, 15), dt(2025, 6, 16), days);
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> DimensionConverter.disaggregate(src, TimeDimension.DAY, AggregationFunction.SUM));
+        }
+
+        @Test
+        void disaggregate_wrongDirection_throws() {
+            // QH → Tag ist Aggregation, nicht Disaggregation
+            double[] qh = filled(96, 1.0);
+            TimeSeriesSlice src = slice(TimeDimension.QUARTER_HOUR, dt(2025, 6, 15), dt(2025, 6, 16), qh);
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> DimensionConverter.disaggregate(src, TimeDimension.DAY, AggregationFunction.SUM));
+        }
+
+        @Test
+        void applyFunction_allNaN_min_returnsNaN() {
+            double[] v = {Double.NaN, Double.NaN};
+            assertTrue(Double.isNaN(DimensionConverter.applyFunction(v, 0, 2, AggregationFunction.MIN)));
+        }
+
+        @Test
+        void applyFunction_allNaN_max_returnsNaN() {
+            double[] v = {Double.NaN, Double.NaN};
+            assertTrue(Double.isNaN(DimensionConverter.applyFunction(v, 0, 2, AggregationFunction.MAX)));
+        }
+    }
+
+    // ================================================================
     // Disaggregation: Tag → QH/H
     // ================================================================
 
