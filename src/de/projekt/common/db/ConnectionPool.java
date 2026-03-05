@@ -35,10 +35,6 @@ public class ConnectionPool implements AutoCloseable {
         return dataSource.getConnection();
     }
 
-    public HikariDataSource getDataSource() {
-        return dataSource;
-    }
-
     @Override
     public void close() {
         dataSource.close();

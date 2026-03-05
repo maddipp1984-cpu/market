@@ -3,9 +3,6 @@ package de.projekt;
 import de.projekt.benchmark.Benchmark;
 import de.projekt.common.EnvUtil;
 import de.projekt.common.db.ConnectionPool;
-import de.projekt.timeseries.repository.HeaderRepository;
-import de.projekt.timeseries.repository.TimeSeriesRepository;
-import de.projekt.timeseries.api.TimeSeriesService;
 
 public class Main {
 
@@ -24,10 +21,6 @@ public class Main {
             System.out.println("Verbinde mit: " + jdbcUrl);
 
             try (ConnectionPool pool = new ConnectionPool(jdbcUrl, username, password)) {
-                HeaderRepository headerRepo = new HeaderRepository(pool);
-                TimeSeriesRepository tsRepo = new TimeSeriesRepository(pool);
-                TimeSeriesService service = new TimeSeriesService(headerRepo, tsRepo);
-
                 System.out.println("Verbindung hergestellt.");
                 System.out.println("Zeitreihensystem bereit.");
             }

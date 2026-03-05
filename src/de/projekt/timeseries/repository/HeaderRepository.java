@@ -107,7 +107,7 @@ public class HeaderRepository {
         return result;
     }
 
-    public void update(TimeSeriesHeader header) throws SQLException {
+    public boolean update(TimeSeriesHeader header) throws SQLException {
         String sql = "UPDATE ts_header SET ts_key = ?, unit_id = ?, currency_id = ?, object_id = ?, " +
                      "description = ?, updated_at = NOW() WHERE ts_id = ?";
 
@@ -129,7 +129,21 @@ public class HeaderRepository {
             ps.setString(5, header.getDescription());
             ps.setLong(6, header.getTsId());
 
-            ps.executeUpdate();
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    public boolean updateObjectId(long tsId, Long objectId) throws SQLException {
+        String sql = "UPDATE ts_header SET object_id = ? WHERE ts_id = ?";
+        try (Connection conn = pool.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            if (objectId != null) {
+                ps.setLong(1, objectId);
+            } else {
+                ps.setNull(1, Types.BIGINT);
+            }
+            ps.setLong(2, tsId);
+            return ps.executeUpdate() > 0;
         }
     }
 

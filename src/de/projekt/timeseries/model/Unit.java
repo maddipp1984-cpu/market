@@ -82,20 +82,6 @@ public enum Unit {
     }
 
     /**
-     * Konvertiert einen Wert in die Base-Unit dieser Kategorie.
-     */
-    public double toBase(double value) {
-        return value * toBaseFactor;
-    }
-
-    /**
-     * Konvertiert einen Wert von der Base-Unit in diese Unit.
-     */
-    public double fromBase(double value) {
-        return value / toBaseFactor;
-    }
-
-    /**
      * Prüft ob eine direkte Konvertierung (Faktor oder Offset) möglich ist.
      */
     public boolean isConvertibleTo(Unit target) {

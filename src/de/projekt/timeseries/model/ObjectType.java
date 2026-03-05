@@ -19,10 +19,6 @@ public enum ObjectType {
         return code;
     }
 
-    public String getTypeKey() {
-        return name();
-    }
-
     public String getDescription() {
         return description;
     }

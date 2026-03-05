@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,6 +38,16 @@ class AssembleValuesTest {
         return true;
     }
 
+    private static LocalDate lastDayExcl(LocalDateTime end) {
+        LocalDate d = end.toLocalDate();
+        return end.toLocalTime().equals(LocalTime.MIDNIGHT) ? d : d.plusDays(1);
+    }
+
+    private static double[] assembleValues(Map<LocalDate, double[]> dayValues, TimeDimension dim,
+                                           LocalDateTime start, LocalDateTime end) {
+        return TimeSeriesRepository.assembleValues(dayValues, dim, start, end, lastDayExcl(end));
+    }
+
     // ================================================================
     // Ganztägig, keine Lücken
     // ================================================================
@@ -46,7 +57,7 @@ class AssembleValuesTest {
         Map<LocalDate, double[]> data = new HashMap<>();
         data.put(LocalDate.of(2025, 6, 15), filled(96, 1.0));
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 6, 15), dt(2025, 6, 16));
 
@@ -60,7 +71,7 @@ class AssembleValuesTest {
         Map<LocalDate, double[]> data = new HashMap<>();
         data.put(LocalDate.of(2025, 6, 15), filled(24, 2.0));
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.HOUR,
                 dt(2025, 6, 15), dt(2025, 6, 16));
 
@@ -79,7 +90,7 @@ class AssembleValuesTest {
         data.put(LocalDate.of(2025, 6, 16), filled(96, 2.0));
         data.put(LocalDate.of(2025, 6, 17), filled(96, 3.0));
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 6, 15), dt(2025, 6, 18));
 
@@ -100,7 +111,7 @@ class AssembleValuesTest {
         // 16. Juni fehlt
         data.put(LocalDate.of(2025, 6, 17), filled(96, 3.0));
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 6, 15), dt(2025, 6, 18));
 
@@ -114,7 +125,7 @@ class AssembleValuesTest {
     void allDaysMissing_allNaN() {
         Map<LocalDate, double[]> data = new HashMap<>();
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 6, 15), dt(2025, 6, 18));
 
@@ -128,7 +139,7 @@ class AssembleValuesTest {
         // 01.01 und 02.01 fehlen
         data.put(LocalDate.of(2025, 1, 3), filled(96, 5.0));
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 1, 1), dt(2025, 1, 4));
 
@@ -148,7 +159,7 @@ class AssembleValuesTest {
         for (int i = 0; i < 96; i++) day[i] = i;
         data.put(LocalDate.of(2025, 6, 15), day);
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 6, 15, 6, 0), dt(2025, 6, 16));
 
@@ -164,7 +175,7 @@ class AssembleValuesTest {
         for (int i = 0; i < 24; i++) day[i] = i;
         data.put(LocalDate.of(2025, 6, 15), day);
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.HOUR,
                 dt(2025, 6, 15, 6, 0), dt(2025, 6, 16));
 
@@ -183,7 +194,7 @@ class AssembleValuesTest {
         for (int i = 0; i < 96; i++) day[i] = i;
         data.put(LocalDate.of(2025, 6, 15), day);
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 6, 15), dt(2025, 6, 15, 18, 0));
 
@@ -203,7 +214,7 @@ class AssembleValuesTest {
         for (int i = 0; i < 96; i++) day[i] = i;
         data.put(LocalDate.of(2025, 6, 15), day);
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 6, 15, 6, 0), dt(2025, 6, 15, 18, 0));
 
@@ -219,7 +230,7 @@ class AssembleValuesTest {
         data.put(LocalDate.of(2025, 6, 16), filled(96, 2.0));
         data.put(LocalDate.of(2025, 6, 17), filled(96, 3.0));
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 6, 15, 6, 0), dt(2025, 6, 17, 18, 0));
 
@@ -240,7 +251,7 @@ class AssembleValuesTest {
         // Tag 15 fehlt
         data.put(LocalDate.of(2025, 6, 16), filled(96, 2.0));
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 6, 15, 6, 0), dt(2025, 6, 17));
 
@@ -256,7 +267,7 @@ class AssembleValuesTest {
         data.put(LocalDate.of(2025, 6, 15), filled(96, 1.0));
         // Tag 16 fehlt
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 6, 15), dt(2025, 6, 16, 18, 0));
 
@@ -277,7 +288,7 @@ class AssembleValuesTest {
         Map<LocalDate, double[]> data = new HashMap<>();
         data.put(dstDay, filled(92, 1.0));
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 3, 30), dt(2025, 3, 31));
 
@@ -289,7 +300,7 @@ class AssembleValuesTest {
         LocalDate dstDay = LocalDate.of(2025, 3, 30);
         Map<LocalDate, double[]> data = new HashMap<>();
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 3, 30), dt(2025, 3, 31));
 
@@ -308,7 +319,7 @@ class AssembleValuesTest {
         Map<LocalDate, double[]> data = new HashMap<>();
         data.put(dstDay, filled(100, 1.0));
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 10, 26), dt(2025, 10, 27));
 
@@ -320,7 +331,7 @@ class AssembleValuesTest {
         LocalDate dstDay = LocalDate.of(2025, 10, 26);
         Map<LocalDate, double[]> data = new HashMap<>();
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 10, 26), dt(2025, 10, 27));
 
@@ -339,7 +350,7 @@ class AssembleValuesTest {
         Map<LocalDate, double[]> data = new HashMap<>();
         data.put(dstDay, filled(92, 1.0));
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 3, 30, 6, 0), dt(2025, 3, 31));
 
@@ -353,7 +364,7 @@ class AssembleValuesTest {
         Map<LocalDate, double[]> data = new HashMap<>();
         data.put(dstDay, filled(100, 1.0));
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 10, 26), dt(2025, 10, 26, 18, 0));
 
@@ -368,7 +379,7 @@ class AssembleValuesTest {
         Map<LocalDate, double[]> data = new HashMap<>();
         data.put(dstDay, filled(100, 1.0));
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 10, 26, 6, 0), dt(2025, 10, 27));
 
@@ -385,7 +396,7 @@ class AssembleValuesTest {
         Map<LocalDate, double[]> data = new HashMap<>();
         data.put(dstDay, filled(23, 1.0));
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.HOUR,
                 dt(2025, 3, 30), dt(2025, 3, 31));
 
@@ -398,7 +409,7 @@ class AssembleValuesTest {
         Map<LocalDate, double[]> data = new HashMap<>();
         data.put(dstDay, filled(25, 1.0));
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.HOUR,
                 dt(2025, 10, 26), dt(2025, 10, 27));
 
@@ -417,7 +428,7 @@ class AssembleValuesTest {
         data.put(LocalDate.of(2025, 3, 30), filled(92, 2.0));
         data.put(LocalDate.of(2025, 3, 31), filled(96, 3.0));
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 3, 29), dt(2025, 4, 1));
 
@@ -438,7 +449,7 @@ class AssembleValuesTest {
         data.put(LocalDate.of(2025, 6, 16), filled(96, 2.0));
 
         // end = 16. Juni 00:00 → 16. Juni wird NICHT eingeschlossen
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 6, 15), dt(2025, 6, 16, 0, 0));
 
@@ -455,7 +466,7 @@ class AssembleValuesTest {
         Map<LocalDate, double[]> data = new HashMap<>();
         data.put(LocalDate.of(2025, 6, 15), new double[0]);
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 6, 15), dt(2025, 6, 16));
 
@@ -472,7 +483,7 @@ class AssembleValuesTest {
         Map<LocalDate, double[]> data = new HashMap<>();
         data.put(LocalDate.of(2025, 6, 15), filled(50, 1.0)); // statt 96
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 6, 15, 6, 0), dt(2025, 6, 16));
 
@@ -492,7 +503,7 @@ class AssembleValuesTest {
         Map<LocalDate, double[]> data = new HashMap<>();
         data.put(LocalDate.of(2025, 6, 15), filled(50, 1.0)); // statt 96
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 6, 15), dt(2025, 6, 16));
 
@@ -507,7 +518,7 @@ class AssembleValuesTest {
         Map<LocalDate, double[]> data = new HashMap<>();
         data.put(LocalDate.of(2025, 6, 15), filled(120, 1.0)); // statt 96
 
-        double[] result = TimeSeriesRepository.assembleValues(
+        double[] result = assembleValues(
                 data, TimeDimension.QUARTER_HOUR,
                 dt(2025, 6, 15), dt(2025, 6, 16));
 

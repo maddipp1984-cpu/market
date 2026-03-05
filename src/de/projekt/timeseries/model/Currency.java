@@ -26,10 +26,6 @@ public enum Currency {
         return code;
     }
 
-    public String getIsoCode() {
-        return isoCode;
-    }
-
     public String getDescription() {
         return description;
     }

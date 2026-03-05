@@ -20,13 +20,6 @@ class ObjectTypeTest {
     }
 
     @Test
-    void typeKeyIsEnumName() {
-        for (ObjectType t : ObjectType.values()) {
-            assertEquals(t.name(), t.getTypeKey());
-        }
-    }
-
-    @Test
     void descriptionNotNull() {
         for (ObjectType t : ObjectType.values()) {
             assertNotNull(t.getDescription());

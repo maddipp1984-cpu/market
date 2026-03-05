@@ -122,9 +122,33 @@ public class TimeSeriesService {
     // Löschen / Zählen
     // ================================================================
 
-    public int deleteAll(long tsId) throws SQLException {
+    /**
+     * Löscht eine Zeitreihe komplett (Werte + Header).
+     */
+    public void deleteTimeSeries(long tsId) throws SQLException {
+        TimeSeriesHeader h = requireHeader(tsId);
+        tsRepo.delete(tsId, h.getTimeDimension());
+        headerRepo.delete(tsId);
+    }
+
+    /**
+     * Löscht alle Werte einer Zeitreihe (Header bleibt erhalten).
+     */
+    public int deleteValues(long tsId) throws SQLException {
         TimeSeriesHeader h = requireHeader(tsId);
         return tsRepo.delete(tsId, h.getTimeDimension());
+    }
+
+    /**
+     * Löscht Werte in einem Zeitraum [from, to).
+     * Kleinste Einheit ist ein Tag (subdaily-Dimensionen speichern tageweise).
+     * @param from Beginn (inklusiv)
+     * @param to   Ende (exklusiv)
+     * @return Anzahl gelöschter Zeilen/Tage
+     */
+    public int delete(long tsId, LocalDate from, LocalDate to) throws SQLException {
+        TimeSeriesHeader h = requireHeader(tsId);
+        return tsRepo.delete(tsId, h.getTimeDimension(), from, to);
     }
 
     public long count(long tsId) throws SQLException {
@@ -164,15 +188,13 @@ public class TimeSeriesService {
     public void assignToObject(long tsId, long objectId) throws SQLException {
         requireObjectRepo();
         requireObject(objectId);
-        TimeSeriesHeader h = requireHeader(tsId);
-        h.setObjectId(objectId);
-        headerRepo.update(h);
+        requireHeader(tsId);  // prüft nur Existenz
+        headerRepo.updateObjectId(tsId, objectId);
     }
 
     public void removeFromObject(long tsId) throws SQLException {
-        TimeSeriesHeader h = requireHeader(tsId);
-        h.setObjectId(null);
-        headerRepo.update(h);
+        requireHeader(tsId);  // prüft nur Existenz
+        headerRepo.updateObjectId(tsId, null);
     }
 
     public void updateObject(TsObject object) throws SQLException {

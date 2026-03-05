@@ -137,7 +137,7 @@ public class TimeSeriesRepository {
                 }
             }
 
-            double[] values = assembleValues(dayValues, dim, start, end);
+            double[] values = assembleValues(dayValues, dim, start, end, lastDayExcl);
             return new TimeSeriesSlice(start, end, dim, values);
         }
     }
@@ -147,12 +147,9 @@ public class TimeSeriesRepository {
      * Package-private für Testbarkeit.
      */
     static double[] assembleValues(Map<LocalDate, double[]> dayValues, TimeDimension dim,
-                                   LocalDateTime start, LocalDateTime end) {
+                                   LocalDateTime start, LocalDateTime end,
+                                   LocalDate lastDayExcl) {
         LocalDate firstDay = start.toLocalDate();
-        LocalDate lastDayExcl = end.toLocalDate();
-        if (!end.toLocalTime().equals(LocalTime.MIDNIGHT)) {
-            lastDayExcl = lastDayExcl.plusDays(1);
-        }
 
         Duration interval = dim == TimeDimension.QUARTER_HOUR
                 ? Duration.ofMinutes(15) : Duration.ofHours(1);

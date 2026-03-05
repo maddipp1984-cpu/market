@@ -4,7 +4,7 @@ import java.time.OffsetDateTime;
 
 public class TsObject {
 
-    private long objectId;
+    private Long objectId;
     private ObjectType objectType;
     private String objectKey;
     private String description;
@@ -25,11 +25,11 @@ public class TsObject {
         this.description = description;
     }
 
-    public long getObjectId() {
+    public Long getObjectId() {
         return objectId;
     }
 
-    public void setObjectId(long objectId) {
+    public void setObjectId(Long objectId) {
         this.objectId = objectId;
     }
 
