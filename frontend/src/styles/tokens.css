@@ -85,6 +85,10 @@
   --color-sidebar-accent: #3b82f6;
   --sidebar-width: 240px;
 
+  /* Tree */
+  --tree-indent: 16px;
+  --tree-node-height: 32px;
+
   /* Content */
   --color-content-bg: #f1f5f9;
 }

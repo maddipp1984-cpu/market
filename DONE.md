@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-03-05 — Frontend: Sidebar Tree-Navigation + Wiederverwendbare Tree-Komponente
+- **TreeView** (`shared/TreeView.tsx`): Wiederverwendbare Baum-Komponente mit Headless Tree (`@headless-tree/core` + `@headless-tree/react`), dark/light Variante, expand/collapse, renderNode-Callback
+- **Sidebar-Baumnavigation**: Hierarchische Navigation mit klappbaren Sections (Daten, Stammdaten, System) und verschachtelten Eintraegen (z.B. Objekte > Objekttypen/Einheiten/Waehrungen)
+- **sidebarTree.ts**: Statische Sidebar-Baumdaten entkoppelt von Tab-Typ-Registry
+- **Neue Platzhalter-Seiten**: Objekttypen, Einheiten, Waehrungen (als Tab-Typen in tabTypes.tsx registriert)
+- **Design-Tokens**: `--tree-indent` und `--tree-node-height` in tokens.css
+
 ## 2026-03-05 — Frontend: Tab-System (Browser-artige Tabs)
 - **TabContext**: Zentraler State fuer Tabs (open, close, setActive, updateLabel)
 - **TabBar**: Horizontale Tab-Leiste mit Icons, Labels, Close-Buttons

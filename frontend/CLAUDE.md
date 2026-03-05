@@ -9,6 +9,7 @@ React-SPA zum Anzeigen, Vergleichen und Editieren von Zeitreihen. Kommuniziert m
 - **Vite 4** (Dev-Server + Build)
 - **TanStack Table** (`@tanstack/react-table`) — Headless-Table mit Sortierung
 - **TanStack Virtual** (`@tanstack/react-virtual`) — Virtualisierung fuer 100k+ Zeilen
+- **Headless Tree** (`@headless-tree/core` + `@headless-tree/react`) — Baumnavigation (Sidebar + wiederverwendbar)
 - **Node.js** Pfad: `C:\tools\nodejs\node.exe`
 
 ## Build & Dev
@@ -32,11 +33,13 @@ frontend/
       base.css                        -- Reset, Font-Import, Body-Styling
     shell/                            -- App-Shell (Layout + Navigation + Tabs)
       AppShell.tsx + AppShell.css     -- Sidebar + TabBar + Tab-Content-Area
-      Sidebar.tsx + Sidebar.css       -- Navigation (dunkel, Sections, openTab)
+      Sidebar.tsx + Sidebar.css       -- Baumnavigation (Headless Tree, dark-Variante)
+      sidebarTree.ts                  -- Statische Sidebar-Baumdaten (SidebarNode[])
       TabContext.tsx                   -- Tab-State (Provider + useTabContext Hook)
       TabBar.tsx + TabBar.css         -- Horizontale Tab-Leiste mit Close-Buttons
       tabTypes.tsx                    -- Tab-Typ-Registry (Typ, Label, Icon, Komponente)
     shared/                           -- Wiederverwendbare UI-Komponenten
+      TreeView.tsx + TreeView.css     -- Wiederverwendbare Tree-Komponente (Headless Tree)
       Button.tsx + Button.css         -- Button (primary/success/ghost)
       Card.tsx + Card.css             -- Card-Wrapper (Surface, Border, Shadow)
       Chip.tsx + Chip.css             -- Info-Badges (Chip + ChipGroup)
@@ -62,18 +65,29 @@ frontend/
     pages/                            -- Weitere Seiten (Platzhalter)
       DashboardPage.tsx               -- KPI-Uebersicht
       ObjectsPage.tsx                 -- Objekt-Verwaltung (Platzhalter)
+      ObjekttypenPage.tsx             -- Objekttypen (Platzhalter)
+      EinheitenPage.tsx               -- Einheiten (Platzhalter)
+      WaehrungenPage.tsx              -- Waehrungen (Platzhalter)
       SettingsPage.tsx                -- Einstellungen (Platzhalter)
     App.tsx                           -- TabProvider + AppShell (kein Router)
     main.tsx                          -- React-Einstiegspunkt (tokens, base)
 ```
 
 ### Konvention: Tab-System
-- **Neue Seite = Eintrag in `shell/tabTypes.tsx`** — automatisch in Sidebar + Tab-System
-- Tab-Typen sind gruppiert nach Sections (`daten`, `stammdaten`, `system`)
+- **Neue Seite = Eintrag in `shell/tabTypes.tsx`** + optional Eintrag in `shell/sidebarTree.ts`
+- Tab-Typen in `tabTypes.tsx` (Typ, Label, Icon, Komponente), Sidebar-Baum in `sidebarTree.ts` (Hierarchie)
 - Jede Seiten-Komponente erhaelt `tabId: string` als Prop
 - Sidebar-Klick oeffnet immer neuen Tab (ausser Singletons wie Dashboard)
 - Inaktive Tabs bleiben gemountet (`display: none`) — State bleibt erhalten
 - Tab-Labels koennen per `updateTabLabel(tabId, label)` aktualisiert werden
+
+### Konvention: Sidebar-Baumnavigation
+- **Sidebar-Struktur** in `shell/sidebarTree.ts` — statische `SidebarNode[]` Hierarchie
+- **Icons** werden aus `tabTypes.tsx` referenziert (kein Duplizieren)
+- **TreeView** (`shared/TreeView.tsx`) — generische, wiederverwendbare Baum-Komponente mit Headless Tree
+- TreeView hat `dark`/`light` Variante, `defaultExpanded`, `onSelect`, `renderNode`
+- **Neuen Sidebar-Eintrag**: Node in `sidebarTree.ts` ergaenzen + Tab-Typ in `tabTypes.tsx`
+- **Ordner vs. Blatt**: `children` → Ordner (Klick klappt auf/zu, kein Tab). `tabType` → Blatt (Klick oeffnet Tab). Beides gleichzeitig: `tabType` wird ignoriert. Guard in `Sidebar.tsx` erzwingt dies.
 
 ### Konvention: Templates
 - **Daten-Masken** (Tabellen, Listen, Editoren) nutzen `<DataPage>` als Template
@@ -100,7 +114,7 @@ Jedes Feature bekommt einen eigenen Ordner mit Unterstruktur (`data/`, `table/`,
 ### App-Shell + Tab-System
 - `AppShell` = Sidebar + TabBar + Tab-Content-Area
 - Flex-Kette: AppShell → app-shell-main → app-shell-content → tab-panel → DataPage (durchgaengig `flex: 1` + `min-height: 0`)
-- Sidebar: Dunkler Hintergrund (Slate-900), Sections, Klick oeffnet Tab
+- Sidebar: Dunkler Hintergrund (Slate-900), Baumnavigation mit klappbaren Sections und verschachtelten Eintraegen
 - TabBar: Dunkler Hintergrund, aktiver Tab mit Content-BG + blauem Akzent unten
 - Alle Tabs gemountet, inaktive mit `display: none`
 - Icons als Inline-SVGs (kein Icon-Framework)
@@ -146,4 +160,5 @@ Jedes Feature bekommt einen eigenen Ordner mit Unterstruktur (`data/`, `table/`,
 - react-router-dom: ^7 (installiert, aber nicht aktiv genutzt)
 - @tanstack/react-table: ^8.20
 - @tanstack/react-virtual: ^3.11
+- @headless-tree/core + @headless-tree/react: Baumnavigation
 - vite: ^4.5, typescript: ~5.6, @vitejs/plugin-react: ^4.3

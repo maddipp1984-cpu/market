@@ -6,6 +6,27 @@
   flex-shrink: 0;
 }
 
+.tab-bar-close-all {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  margin-left: auto;
+  border-left: 1px solid var(--color-border);
+  color: var(--color-sidebar-text);
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity var(--transition-fast), background var(--transition-fast);
+}
+
+.tab-bar-close-all:hover {
+  opacity: 1;
+  background: var(--color-sidebar-hover);
+}
+
 .tab-bar-tab {
   display: flex;
   align-items: center;

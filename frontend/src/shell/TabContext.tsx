@@ -13,6 +13,7 @@ interface TabContextValue {
   activeTabId: string | null;
   openTab: (type: string) => void;
   closeTab: (id: string) => void;
+  closeAllTabs: () => void;
   setActiveTab: (id: string) => void;
   updateTabLabel: (id: string, label: string) => void;
 }
@@ -64,6 +65,14 @@ export function TabProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const closeAllTabs = useCallback(() => {
+    const dashboard = tabTypes.find(t => t.type === 'dashboard')!;
+    const id = `tab-${++tabCounterRef.current}`;
+    const tab: Tab = { id, type: 'dashboard', label: dashboard.label, icon: dashboard.icon };
+    setTabs([tab]);
+    setActiveTabId(id);
+  }, []);
+
   const setActiveTab = useCallback((id: string) => {
     setActiveTabId(id);
   }, []);
@@ -73,7 +82,7 @@ export function TabProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <TabContext.Provider value={{ tabs, activeTabId, openTab, closeTab, setActiveTab, updateTabLabel }}>
+    <TabContext.Provider value={{ tabs, activeTabId, openTab, closeTab, closeAllTabs, setActiveTab, updateTabLabel }}>
       {children}
     </TabContext.Provider>
   );

@@ -2,7 +2,7 @@ import { useTabContext } from './TabContext';
 import './TabBar.css';
 
 export function TabBar() {
-  const { tabs, activeTabId, setActiveTab, closeTab } = useTabContext();
+  const { tabs, activeTabId, setActiveTab, closeTab, closeAllTabs } = useTabContext();
 
   return (
     <div className="tab-bar">
@@ -26,6 +26,17 @@ export function TabBar() {
           )}
         </button>
       ))}
+      {tabs.length > 1 && (
+        <button
+          className="tab-bar-close-all"
+          onClick={closeAllTabs}
+          title="Alle Tabs schließen"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }

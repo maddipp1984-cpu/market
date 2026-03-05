@@ -23,12 +23,8 @@
   color: var(--color-sidebar-accent);
 }
 
-.sidebar-section {
-  margin-top: var(--space-lg);
-}
-
+/* Section labels (root-level tree nodes, level 0) */
 .sidebar-section-label {
-  padding: var(--space-sm) var(--space-lg);
   font-size: 0.68rem;
   font-weight: 600;
   color: var(--color-sidebar-text);
@@ -37,26 +33,25 @@
   opacity: 0.6;
 }
 
-.sidebar-link {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-lg);
-  width: 100%;
-  background: none;
-  border: none;
-  border-left: 3px solid transparent;
-  color: var(--color-sidebar-text);
-  font-family: var(--font-family);
-  font-size: var(--font-size-base);
-  font-weight: 500;
-  cursor: pointer;
-  text-align: left;
-  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+/* Section nodes: extra top margin, fixed left padding, no hover effect */
+.sidebar .tree-node[data-level="0"] {
+  margin-top: var(--space-lg);
+  padding-left: var(--space-lg) !important;
 }
 
-.sidebar-link:hover {
-  background: var(--color-sidebar-hover);
-  color: var(--color-sidebar-text-active);
+.sidebar .tree-node[data-level="0"]:hover {
+  background: transparent;
 }
 
+/* Non-section nodes: add base left padding for proper indentation */
+.sidebar .tree-node:not([data-level="0"]) {
+  padding-left: calc(var(--space-lg) + var(--space-sm)) !important;
+}
+
+.sidebar .tree-node[data-level="2"] {
+  padding-left: calc(var(--space-lg) + var(--space-sm) + var(--tree-indent)) !important;
+}
+
+.sidebar .tree-node[data-level="3"] {
+  padding-left: calc(var(--space-lg) + var(--space-sm) + 2 * var(--tree-indent)) !important;
+}
