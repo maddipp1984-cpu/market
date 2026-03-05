@@ -1,7 +1,17 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useTimeSeries } from '../data/useTimeSeries';
+import { getAvailableDimensions, aggregateRows } from '../data/aggregation';
 import { HeaderInfo } from '../table/HeaderInfo';
 import { ValuesTable } from '../table/ValuesTable';
+import type { Dimension } from '../api/types';
+
+const dimensionLabels: Record<Dimension, string> = {
+  QUARTER_HOUR: '15 Minuten',
+  HOUR: '1 Stunde',
+  DAY: 'Tag',
+  MONTH: 'Monat',
+  YEAR: 'Jahr',
+};
 
 interface TimeSeriesEditorProps {
   tsId: number;
@@ -15,6 +25,7 @@ export function TimeSeriesEditor({ tsId, start, end }: TimeSeriesEditorProps) {
   const [filterStart, setFilterStart] = useState(start);
   const [filterEnd, setFilterEnd] = useState(end);
   const [decimals, setDecimals] = useState(5);
+  const [viewDimension, setViewDimension] = useState<Dimension | null>(null);
 
   useEffect(() => {
     const key = `${tsId}|${start}|${end}`;
@@ -31,6 +42,7 @@ export function TimeSeriesEditor({ tsId, start, end }: TimeSeriesEditorProps) {
     if (!header) return;
     const currencyOnly = header.currency && (!header.unit || header.unit === header.currency);
     setDecimals(currencyOnly ? 2 : 5);
+    setViewDimension(header.dimension);
   }, [header]);
 
   const filteredRows = useMemo(() => {
@@ -39,6 +51,13 @@ export function TimeSeriesEditor({ tsId, start, end }: TimeSeriesEditorProps) {
     const endMs = filterEnd ? new Date(filterEnd).getTime() : Infinity;
     return rows.filter(r => r.timestampMs >= startMs && r.timestampMs < endMs);
   }, [rows, filterStart, filterEnd]);
+
+  const isAggregated = header != null && viewDimension != null && viewDimension !== header.dimension;
+
+  const displayRows = useMemo(() => {
+    if (!isAggregated || !viewDimension) return filteredRows;
+    return aggregateRows(filteredRows, edits, viewDimension);
+  }, [filteredRows, edits, viewDimension, isAggregated]);
 
   return (
     <div className="ts-editor">
@@ -76,6 +95,17 @@ export function TimeSeriesEditor({ tsId, start, end }: TimeSeriesEditorProps) {
             />
           </label>
           <label>
+            Ansicht
+            <select
+              value={viewDimension ?? ''}
+              onChange={(e) => setViewDimension(e.target.value as Dimension)}
+            >
+              {header && getAvailableDimensions(header.dimension).map(d => (
+                <option key={d} value={d}>{dimensionLabels[d]}</option>
+              ))}
+            </select>
+          </label>
+          <label>
             Nachkommastellen
             <input
               type="number"
@@ -102,17 +132,18 @@ export function TimeSeriesEditor({ tsId, start, end }: TimeSeriesEditorProps) {
         <div className="info">Keine Werte im gewählten Zeitraum.</div>
       )}
 
-      {header && rows.length > 0 && filteredRows.length === 0 && (
+      {header && rows.length > 0 && displayRows.length === 0 && (
         <div className="info">Keine Werte im Filterbereich.</div>
       )}
 
-      {filteredRows.length > 0 && header && (
+      {displayRows.length > 0 && header && viewDimension && (
         <ValuesTable
-          rows={filteredRows}
-          edits={edits}
+          rows={displayRows}
+          edits={isAggregated ? new Map() : edits}
           unit={header.unit}
-          dimension={header.dimension}
+          dimension={viewDimension}
           decimals={decimals}
+          readOnly={isAggregated}
           onEdit={updateValue}
         />
       )}

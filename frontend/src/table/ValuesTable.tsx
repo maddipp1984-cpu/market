@@ -17,6 +17,7 @@ interface ValuesTableProps {
   unit: string;
   dimension: Dimension;
   decimals: number;
+  readOnly?: boolean;
   onEdit: (index: number, value: number) => void;
 }
 
@@ -69,7 +70,7 @@ function EditableCell({ row, edits, decimals, onEdit }: {
   );
 }
 
-export function ValuesTable({ rows, edits, unit, dimension, decimals, onEdit }: ValuesTableProps) {
+export function ValuesTable({ rows, edits, unit, dimension, decimals, readOnly, onEdit }: ValuesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [copied, setCopied] = useState(false);
   const [pastedCount, setPastedCount] = useState(0);
@@ -81,6 +82,7 @@ export function ValuesTable({ rows, edits, unit, dimension, decimals, onEdit }: 
   );
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    if (readOnly) return;
     const active = document.activeElement as HTMLElement | null;
     const startIndex = active?.dataset.rowIndex != null ? parseInt(active.dataset.rowIndex, 10) : null;
     if (startIndex == null) return;
@@ -157,12 +159,16 @@ export function ValuesTable({ rows, edits, unit, dimension, decimals, onEdit }: 
         accessorKey: 'value',
         header: `Wert (${unit})`,
         meta: { flex: true },
-        cell: ({ row: tableRow }) => (
-          <EditableCell row={tableRow.original} edits={edits} decimals={decimals} onEdit={onEdit} />
-        ),
+        cell: ({ row: tableRow }) => {
+          if (readOnly) {
+            const v = tableRow.original.value;
+            return (v == null || isNaN(v)) ? '' : formatValue(v, decimals);
+          }
+          return <EditableCell row={tableRow.original} edits={edits} decimals={decimals} onEdit={onEdit} />;
+        },
       },
     ],
-    [unit, dimension, edits, onEdit]
+    [unit, dimension, decimals, edits, readOnly, onEdit]
   );
 
   const table = useReactTable({
