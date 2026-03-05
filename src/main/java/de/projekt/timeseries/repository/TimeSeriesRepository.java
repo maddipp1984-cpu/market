@@ -1,19 +1,22 @@
 package de.projekt.timeseries.repository;
 
-import de.projekt.common.db.ConnectionPool;
 import de.projekt.timeseries.model.TimeDimension;
 import de.projekt.timeseries.model.TimeSeriesSlice;
 
+import org.springframework.stereotype.Repository;
+
+import javax.sql.DataSource;
 import java.sql.*;
 import java.time.*;
 import java.util.*;
 
+@Repository
 public class TimeSeriesRepository {
 
-    private final ConnectionPool pool;
+    private final DataSource dataSource;
 
-    public TimeSeriesRepository(ConnectionPool pool) {
-        this.pool = pool;
+    public TimeSeriesRepository(DataSource dataSource) {
+        this.dataSource = dataSource;
     }
 
     // ================================================================
@@ -28,7 +31,7 @@ public class TimeSeriesRepository {
         String func = dim == TimeDimension.QUARTER_HOUR ? "ts_write_15min_day" : "ts_write_1h_day";
         String sql = "SELECT " + func + "(?, ?, ?)";
 
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, tsId);
@@ -47,7 +50,7 @@ public class TimeSeriesRepository {
         String func = dim == TimeDimension.QUARTER_HOUR ? "ts_write_15min_year" : "ts_write_1h_year";
         String sql = "SELECT " + func + "(?, ?, ?)";
 
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, tsId);
@@ -71,7 +74,7 @@ public class TimeSeriesRepository {
 
         String sql = "SELECT " + func + "(?, ?, ?, ?)";
 
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, tsId);
@@ -115,7 +118,7 @@ public class TimeSeriesRepository {
                      " WHERE ts_id = ? AND ts_date >= ? AND ts_date < ?" +
                      " ORDER BY ts_date";
 
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, tsId);
@@ -223,7 +226,7 @@ public class TimeSeriesRepository {
                   "ON CONFLICT (ts_id, ts_date) DO UPDATE SET value = EXCLUDED.value";
         }
 
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, tsId);
@@ -247,7 +250,7 @@ public class TimeSeriesRepository {
         sb.append(" AND ").append(timeCol).append(" < ?");
         sb.append(" ORDER BY ").append(timeCol);
 
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sb.toString())) {
 
             ps.setLong(1, tsId);
@@ -287,7 +290,7 @@ public class TimeSeriesRepository {
         if (dim == TimeDimension.QUARTER_HOUR || dim == TimeDimension.HOUR) {
             String func = dim == TimeDimension.QUARTER_HOUR ? "ts_delete_15min" : "ts_delete_1h";
             String sql = "SELECT " + func + "(?, ?, ?)";
-            try (Connection conn = pool.getConnection();
+            try (Connection conn = dataSource.getConnection();
                  PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setLong(1, tsId);
                 if (from != null) ps.setObject(2, from);
@@ -306,7 +309,7 @@ public class TimeSeriesRepository {
         if (from != null) sb.append(" AND ").append(timeCol).append(" >= ?");
         if (to != null) sb.append(" AND ").append(timeCol).append(" < ?");
 
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sb.toString())) {
             int idx = 1;
             ps.setLong(idx++, tsId);
@@ -329,7 +332,7 @@ public class TimeSeriesRepository {
     public long count(long tsId, TimeDimension dim) throws SQLException {
         String sql = "SELECT COUNT(*) FROM " + dim.getTableName() + " WHERE ts_id = ?";
 
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, tsId);
             try (ResultSet rs = ps.executeQuery()) {

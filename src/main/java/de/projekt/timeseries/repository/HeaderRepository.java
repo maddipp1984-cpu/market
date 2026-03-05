@@ -1,30 +1,33 @@
 package de.projekt.timeseries.repository;
 
-import de.projekt.common.db.ConnectionPool;
 import de.projekt.timeseries.model.Currency;
 import de.projekt.timeseries.model.TimeDimension;
 import de.projekt.timeseries.model.TimeSeriesHeader;
 import de.projekt.timeseries.model.Unit;
 
+import org.springframework.stereotype.Repository;
+
+import javax.sql.DataSource;
 import java.sql.*;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public class HeaderRepository {
 
-    private final ConnectionPool pool;
+    private final DataSource dataSource;
 
-    public HeaderRepository(ConnectionPool pool) {
-        this.pool = pool;
+    public HeaderRepository(DataSource dataSource) {
+        this.dataSource = dataSource;
     }
 
     public long create(TimeSeriesHeader header) throws SQLException {
         String sql = "INSERT INTO ts_header (ts_key, time_dim, unit_id, currency_id, object_id, description) " +
                      "VALUES (?, ?, ?, ?, ?, ?) RETURNING ts_id";
 
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, header.getTsKey());
@@ -55,7 +58,7 @@ public class HeaderRepository {
         String sql = "SELECT ts_id, ts_key, time_dim, unit_id, currency_id, object_id, description, created_at, updated_at " +
                      "FROM ts_header WHERE ts_id = ?";
 
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, tsId);
@@ -73,7 +76,7 @@ public class HeaderRepository {
         String sql = "SELECT ts_id, ts_key, time_dim, unit_id, currency_id, object_id, description, created_at, updated_at " +
                      "FROM ts_header WHERE ts_key = ?";
 
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, tsKey);
@@ -93,7 +96,7 @@ public class HeaderRepository {
 
         List<TimeSeriesHeader> result = new ArrayList<>();
 
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, dimension.getCode());
@@ -111,7 +114,7 @@ public class HeaderRepository {
         String sql = "UPDATE ts_header SET ts_key = ?, unit_id = ?, currency_id = ?, object_id = ?, " +
                      "description = ?, updated_at = NOW() WHERE ts_id = ?";
 
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, header.getTsKey());
@@ -135,7 +138,7 @@ public class HeaderRepository {
 
     public boolean updateObjectId(long tsId, Long objectId) throws SQLException {
         String sql = "UPDATE ts_header SET object_id = ? WHERE ts_id = ?";
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             if (objectId != null) {
                 ps.setLong(1, objectId);
@@ -153,7 +156,7 @@ public class HeaderRepository {
 
         List<TimeSeriesHeader> result = new ArrayList<>();
 
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, objectId);
@@ -170,7 +173,7 @@ public class HeaderRepository {
     public boolean delete(long tsId) throws SQLException {
         String sql = "DELETE FROM ts_header WHERE ts_id = ?";
 
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, tsId);

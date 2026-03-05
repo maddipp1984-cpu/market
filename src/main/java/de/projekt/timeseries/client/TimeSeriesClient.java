@@ -6,6 +6,8 @@ import de.projekt.timeseries.model.TimeSeriesHeader;
 import de.projekt.timeseries.model.TimeSeriesSlice;
 import de.projekt.timeseries.model.Unit;
 
+import org.springframework.stereotype.Component;
+
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -15,6 +17,7 @@ import java.time.LocalDateTime;
  * Unterstützt automatische Dimensionskonvertierung (Aggregation/Disaggregation)
  * und Unit-Konvertierung (Faktor, Offset, Power↔Energy).
  */
+@Component
 public class TimeSeriesClient {
 
     private static final AggregationFunction DEFAULT_FUNCTION = AggregationFunction.SUM;

@@ -1,28 +1,31 @@
 package de.projekt.timeseries.repository;
 
-import de.projekt.common.db.ConnectionPool;
 import de.projekt.timeseries.model.ObjectType;
 import de.projekt.timeseries.model.TsObject;
 
+import org.springframework.stereotype.Repository;
+
+import javax.sql.DataSource;
 import java.sql.*;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public class ObjectRepository {
 
-    private final ConnectionPool pool;
+    private final DataSource dataSource;
 
-    public ObjectRepository(ConnectionPool pool) {
-        this.pool = pool;
+    public ObjectRepository(DataSource dataSource) {
+        this.dataSource = dataSource;
     }
 
     public long create(TsObject object) throws SQLException {
         String sql = "INSERT INTO ts_object (type_id, object_key, description) " +
                      "VALUES (?, ?, ?) RETURNING object_id";
 
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, object.getObjectType().getCode());
@@ -42,7 +45,7 @@ public class ObjectRepository {
         String sql = "SELECT object_id, type_id, object_key, description, created_at, updated_at " +
                      "FROM ts_object WHERE object_id = ?";
 
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, objectId);
@@ -60,7 +63,7 @@ public class ObjectRepository {
         String sql = "SELECT object_id, type_id, object_key, description, created_at, updated_at " +
                      "FROM ts_object WHERE object_key = ?";
 
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, objectKey);
@@ -80,7 +83,7 @@ public class ObjectRepository {
 
         List<TsObject> result = new ArrayList<>();
 
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, type.getCode());
@@ -98,7 +101,7 @@ public class ObjectRepository {
         String sql = "UPDATE ts_object SET type_id = ?, object_key = ?, description = ?, " +
                      "updated_at = NOW() WHERE object_id = ?";
 
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, object.getObjectType().getCode());
@@ -113,7 +116,7 @@ public class ObjectRepository {
     public boolean delete(long objectId) throws SQLException {
         String sql = "DELETE FROM ts_object WHERE object_id = ?";
 
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, objectId);

@@ -1,7 +1,7 @@
 package de.projekt.benchmark;
 
-import de.projekt.common.EnvUtil;
-import de.projekt.common.db.ConnectionPool;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import de.projekt.timeseries.repository.TimeSeriesRepository;
 import de.projekt.timeseries.model.TimeDimension;
 import de.projekt.timeseries.model.TimeSeriesSlice;
@@ -23,18 +23,25 @@ public class Benchmark {
     private static final int SAMPLE_SIZE = 100;
 
     public static void main(String[] args) throws Exception {
-        String jdbcUrl = EnvUtil.getEnvOrDefault("TS_JDBC_URL", "jdbc:postgresql://localhost:5432/timeseries");
-        String user = EnvUtil.getEnvOrDefault("TS_DB_USER", "postgres");
-        String pass = EnvUtil.getEnvOrDefault("TS_DB_PASSWORD", "postgres");
+        String jdbcUrl = env("TS_JDBC_URL", "jdbc:postgresql://localhost:5432/timeseries");
+        String user = env("TS_DB_USER", "postgres");
+        String pass = env("TS_DB_PASSWORD", "postgres");
 
         System.out.println("=== Lese-Benchmark gegen PERF_TEST-Zeitreihen ===");
         System.out.println();
 
-        try (ConnectionPool pool = new ConnectionPool(jdbcUrl, user, pass, 4)) {
-            TimeSeriesRepository tsRepo = new TimeSeriesRepository(pool);
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(jdbcUrl);
+        config.setUsername(user);
+        config.setPassword(pass);
+        config.setMaximumPoolSize(4);
+        config.setPoolName("bench-pool");
+
+        try (HikariDataSource ds = new HikariDataSource(config)) {
+            TimeSeriesRepository tsRepo = new TimeSeriesRepository(ds);
 
             // PERF_TEST ts_ids laden
-            List<Long> allIds = loadPerfTestIds(pool);
+            List<Long> allIds = loadPerfTestIds(ds);
             if (allIds.isEmpty()) {
                 System.out.println("FEHLER: Keine PERF_TEST-Zeitreihen gefunden!");
                 System.out.println("Bitte zuerst PERF_TEST-Daten einfügen.");
@@ -52,7 +59,7 @@ public class Benchmark {
 
             // 1. Tabellen-Statistik
             System.out.println("--- 1. Tabellen-Statistik ---");
-            printTableStats(pool);
+            printTableStats(ds);
 
             // 2. Read (ganzes Jahr 2024)
             System.out.println();
@@ -73,13 +80,18 @@ public class Benchmark {
         }
     }
 
+    private static String env(String key, String defaultValue) {
+        String value = System.getenv(key);
+        return value != null ? value : defaultValue;
+    }
+
     // ================================================================
     // PERF_TEST-IDs laden
     // ================================================================
 
-    private static List<Long> loadPerfTestIds(ConnectionPool pool) throws SQLException {
+    private static List<Long> loadPerfTestIds(HikariDataSource ds) throws SQLException {
         List<Long> ids = new ArrayList<>();
-        try (Connection conn = pool.getConnection();
+        try (Connection conn = ds.getConnection();
              PreparedStatement ps = conn.prepareStatement(
                      "SELECT ts_id FROM ts_header WHERE ts_key LIKE 'PERF_TEST_%' ORDER BY ts_id")) {
             try (ResultSet rs = ps.executeQuery()) {
@@ -127,8 +139,8 @@ public class Benchmark {
     // Hilfsmethoden
     // ================================================================
 
-    private static void printTableStats(ConnectionPool pool) throws SQLException {
-        try (Connection conn = pool.getConnection();
+    private static void printTableStats(HikariDataSource ds) throws SQLException {
+        try (Connection conn = ds.getConnection();
              Statement stmt = conn.createStatement()) {
 
             ResultSet rs = stmt.executeQuery(

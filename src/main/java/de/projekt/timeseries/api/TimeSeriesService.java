@@ -11,12 +11,15 @@ import de.projekt.timeseries.model.TimeSeriesSlice;
 import de.projekt.timeseries.model.TsObject;
 import de.projekt.timeseries.model.Unit;
 
+import org.springframework.stereotype.Service;
+
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+@Service
 public class TimeSeriesService {
 
     private final HeaderRepository headerRepo;
@@ -28,10 +31,6 @@ public class TimeSeriesService {
         this.headerRepo = headerRepo;
         this.objectRepo = objectRepo;
         this.tsRepo = tsRepo;
-    }
-
-    public TimeSeriesService(HeaderRepository headerRepo, TimeSeriesRepository tsRepo) {
-        this(headerRepo, null, tsRepo);
     }
 
     // ================================================================
@@ -161,23 +160,23 @@ public class TimeSeriesService {
     // ================================================================
 
     public long createObject(ObjectType type, String key, String description) throws SQLException {
-        requireObjectRepo();
+
         TsObject obj = new TsObject(type, key, description);
         return objectRepo.create(obj);
     }
 
     public Optional<TsObject> getObject(long objectId) throws SQLException {
-        requireObjectRepo();
+
         return objectRepo.findById(objectId);
     }
 
     public Optional<TsObject> getObject(String objectKey) throws SQLException {
-        requireObjectRepo();
+
         return objectRepo.findByKey(objectKey);
     }
 
     public List<TsObject> getObjectsByType(ObjectType type) throws SQLException {
-        requireObjectRepo();
+
         return objectRepo.findByType(type);
     }
 
@@ -186,7 +185,7 @@ public class TimeSeriesService {
     }
 
     public void assignToObject(long tsId, long objectId) throws SQLException {
-        requireObjectRepo();
+
         requireObject(objectId);
         requireHeader(tsId);  // prüft nur Existenz
         headerRepo.updateObjectId(tsId, objectId);
@@ -198,14 +197,14 @@ public class TimeSeriesService {
     }
 
     public void updateObject(TsObject object) throws SQLException {
-        requireObjectRepo();
+
         if (!objectRepo.update(object)) {
             throw new IllegalArgumentException("Objekt nicht gefunden: objectId=" + object.getObjectId());
         }
     }
 
     public boolean deleteObject(long objectId) throws SQLException {
-        requireObjectRepo();
+
         List<TimeSeriesHeader> assigned = headerRepo.findByObjectId(objectId);
         if (!assigned.isEmpty()) {
             throw new IllegalStateException("Objekt hat noch " + assigned.size()
@@ -228,9 +227,4 @@ public class TimeSeriesService {
                 .orElseThrow(() -> new IllegalArgumentException("Objekt nicht gefunden: objectId=" + objectId));
     }
 
-    private void requireObjectRepo() {
-        if (objectRepo == null) {
-            throw new IllegalStateException("ObjectRepository nicht konfiguriert");
-        }
-    }
 }

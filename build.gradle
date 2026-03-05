@@ -1,31 +1,25 @@
 plugins {
     id 'java'
-    id 'application'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'org.springframework.boot' version '3.4.1'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'de.projekt'
 version = '1.0.0'
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
-}
+sourceCompatibility = '17'
+targetCompatibility = '17'
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    implementation 'org.postgresql:postgresql:42.7.3'
-    implementation 'com.zaxxer:HikariCP:5.1.0'
-    implementation 'org.slf4j:slf4j-api:2.0.12'
-    implementation 'org.slf4j:slf4j-simple:2.0.12'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
-    testImplementation 'org.mockito:mockito-core:5.15.2'
-    testImplementation 'org.mockito:mockito-junit-jupiter:5.15.2'
+    runtimeOnly 'org.postgresql:postgresql'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
 tasks.withType(JavaCompile) {
@@ -36,19 +30,9 @@ test {
     useJUnitPlatform()
 }
 
-application {
-    mainClass = 'de.projekt.Main'
-}
-
 tasks.register('benchmark', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'de.projekt.benchmark.Benchmark'
     args = project.hasProperty('benchArgs') ? project.benchArgs.split(',') : ['100', '2024']
     jvmArgs = ['-Xmx2g']
-}
-
-jar {
-    manifest {
-        attributes 'Main-Class': application.mainClass
-    }
 }
