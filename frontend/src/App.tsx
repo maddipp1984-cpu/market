@@ -23,7 +23,7 @@ export default function App() {
   const [tsId, setTsId] = useState('15201');
   const [start, setStart] = useState('2022-01-01T00:00');
   const [end, setEnd] = useState('2025-01-01T00:00');
-  const { header, rows, loading, error, load } = useTimeSeries();
+  const { header, rows, edits, hasEdits, loading, saving, error, load, updateValue, save } = useTimeSeries();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,9 +67,14 @@ export default function App() {
               required
             />
           </label>
-          <button type="submit" disabled={loading}>
+          <button type="submit" disabled={loading || saving}>
             {loading ? 'Lade...' : 'Laden'}
           </button>
+          {hasEdits && (
+            <button type="button" onClick={save} disabled={saving} className="save-btn">
+              {saving ? 'Speichere...' : `Speichern (${edits.size})`}
+            </button>
+          )}
         </div>
       </form>
 
@@ -82,7 +87,13 @@ export default function App() {
       )}
 
       {rows.length > 0 && header && (
-        <ValuesTable rows={rows} unit={header.unit} dimension={header.dimension} />
+        <ValuesTable
+          rows={rows}
+          edits={edits}
+          unit={header.unit}
+          dimension={header.dimension}
+          onEdit={updateValue}
+        />
       )}
     </div>
   );

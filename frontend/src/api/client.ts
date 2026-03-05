@@ -1,4 +1,4 @@
-import type { TimeSeriesHeaderResponse, TimeSeriesValuesResponse } from './types';
+import type { TimeSeriesHeaderResponse, TimeSeriesValuesResponse, WriteValuesRequest } from './types';
 
 export async function fetchHeader(tsId: number, signal?: AbortSignal): Promise<TimeSeriesHeaderResponse> {
   const res = await fetch(`/api/timeseries/${tsId}`, { signal });
@@ -22,4 +22,16 @@ export async function fetchValues(
     throw new Error(body.error || `HTTP ${res.status}`);
   }
   return res.json();
+}
+
+export async function writeDay(tsId: number, req: WriteValuesRequest): Promise<void> {
+  const res = await fetch(`/api/timeseries/${tsId}/values`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
 }

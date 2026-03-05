@@ -13,44 +13,83 @@ import type { Dimension, TimeSeriesRow } from '../api/types';
 
 interface ValuesTableProps {
   rows: TimeSeriesRow[];
+  edits: Map<number, number>;
   unit: string;
   dimension: Dimension;
+  onEdit: (index: number, value: number) => void;
 }
 
 function formatValue(v: number): string {
   return v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
 }
 
-export function ValuesTable({ rows, unit, dimension }: ValuesTableProps) {
+function EditableCell({ row, edits, onEdit }: {
+  row: TimeSeriesRow;
+  edits: Map<number, number>;
+  onEdit: (index: number, value: number) => void;
+}) {
+  const edited = edits.get(row.index);
+  const effectiveValue = edited ?? row.value;
+  const isEdited = edits.has(row.index);
+  const displayValue = (effectiveValue == null || isNaN(effectiveValue)) ? '' : effectiveValue.toString();
+
+  return (
+    <input
+      className={`value-input${isEdited ? ' edited' : ''}`}
+      type="text"
+      value={displayValue}
+      onChange={(e) => {
+        const raw = e.target.value.replace(',', '.');
+        if (raw === '' || raw === '-') {
+          onEdit(row.index, NaN);
+          return;
+        }
+        const num = parseFloat(raw);
+        if (!isNaN(num)) onEdit(row.index, num);
+      }}
+    />
+  );
+}
+
+export function ValuesTable({ rows, edits, unit, dimension, onEdit }: ValuesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [copied, setCopied] = useState(false);
   const parentRef = useRef<HTMLDivElement>(null);
+
+  const getEffectiveValue = useCallback(
+    (row: TimeSeriesRow) => edits.get(row.index) ?? row.value,
+    [edits]
+  );
 
   const handleCopy = useCallback((e: React.ClipboardEvent) => {
     e.preventDefault();
     const tsv = rows
       .map(r => {
         const ts = formatTimestamp(r.timestampMs, dimension);
-        const val = (r.value == null || isNaN(r.value)) ? '' : formatValue(r.value);
-        return `${ts}\t${val}`;
+        const val = getEffectiveValue(r);
+        return `${ts}\t${(val == null || isNaN(val)) ? '' : formatValue(val)}`;
       })
       .join('\n');
     e.clipboardData.setData('text/plain', `Datum\tWert\n${tsv}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [rows, dimension]);
+  }, [rows, dimension, getEffectiveValue]);
 
   const stats = useMemo(() => {
-    const valid = rows.filter(r => r.value != null && !isNaN(r.value));
+    const valid: number[] = [];
+    for (const r of rows) {
+      const v = getEffectiveValue(r);
+      if (v != null && !isNaN(v)) valid.push(v);
+    }
     if (valid.length === 0) return null;
     let min = Infinity, max = -Infinity, sum = 0;
-    for (const r of valid) {
-      if (r.value < min) min = r.value;
-      if (r.value > max) max = r.value;
-      sum += r.value;
+    for (const v of valid) {
+      if (v < min) min = v;
+      if (v > max) max = v;
+      sum += v;
     }
     return { min, max, avg: sum / valid.length, count: valid.length };
-  }, [rows]);
+  }, [rows, getEffectiveValue]);
 
   const columns = useMemo<ColumnDef<TimeSeriesRow>[]>(
     () => [
@@ -70,14 +109,12 @@ export function ValuesTable({ rows, unit, dimension }: ValuesTableProps) {
         accessorKey: 'value',
         header: `Wert (${unit})`,
         meta: { flex: true },
-        cell: ({ getValue }) => {
-          const v = getValue() as number;
-          if (v == null || isNaN(v)) return '';
-          return formatValue(v);
-        },
+        cell: ({ row: tableRow }) => (
+          <EditableCell row={tableRow.original} edits={edits} onEdit={onEdit} />
+        ),
       },
     ],
-    [unit, dimension]
+    [unit, dimension, edits, onEdit]
   );
 
   const table = useReactTable({

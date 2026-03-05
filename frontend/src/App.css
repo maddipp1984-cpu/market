@@ -290,3 +290,72 @@ h1 {
   align-self: center;
   margin-left: auto;
 }
+
+/* Editable Value Input */
+.value-input {
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 2px 6px;
+  font-size: 0.88rem;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  color: #1e293b;
+  border-radius: 4px;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.value-input:hover {
+  border-color: #cbd5e1;
+  background: #fff;
+}
+
+.value-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+.value-input.edited {
+  background: #fefce8;
+  border-color: #facc15;
+  color: #854d0e;
+}
+
+.value-input.edited:focus {
+  border-color: #eab308;
+  box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.15);
+}
+
+/* Save Button */
+.save-btn {
+  padding: 9px 24px;
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  height: 39px;
+  transition: transform 0.1s, box-shadow 0.15s;
+  box-shadow: 0 1px 3px rgba(22, 163, 74, 0.3);
+}
+
+.save-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35);
+}
+
+.save-btn:active {
+  transform: translateY(0);
+}
+
+.save-btn:disabled {
+  background: #94a3b8;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
