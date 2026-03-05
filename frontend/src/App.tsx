@@ -22,7 +22,7 @@ function getDefaultEnd(): string {
 export default function App() {
   const [tsId, setTsId] = useState('15201');
   const [start, setStart] = useState('2022-01-01T00:00');
-  const [end, setEnd] = useState('2024-12-31T23:59');
+  const [end, setEnd] = useState('2025-01-01T00:00');
   const { header, rows, loading, error, load } = useTimeSeries();
 
   const handleSubmit = (e: React.FormEvent) => {

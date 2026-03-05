@@ -76,5 +76,6 @@ function getFormatter(dimension: Dimension): Intl.DateTimeFormat {
 }
 
 export function formatTimestamp(timestampMs: number, dimension: Dimension): string {
-  return getFormatter(dimension).format(timestampMs);
+  const s = getFormatter(dimension).format(timestampMs);
+  return s.replace(',', '');
 }

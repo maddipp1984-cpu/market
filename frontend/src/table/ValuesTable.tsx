@@ -1,4 +1,4 @@
-import { useRef, useMemo, useState } from 'react';
+import { useRef, useMemo, useState, useCallback } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -9,8 +9,7 @@ import {
 } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { formatTimestamp } from '../data/timestampCalculator';
-import type { Dimension } from '../api/types';
-import type { TimeSeriesRow } from '../api/types';
+import type { Dimension, TimeSeriesRow } from '../api/types';
 
 interface ValuesTableProps {
   rows: TimeSeriesRow[];
@@ -18,9 +17,40 @@ interface ValuesTableProps {
   dimension: Dimension;
 }
 
+function formatValue(v: number): string {
+  return v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+}
+
 export function ValuesTable({ rows, unit, dimension }: ValuesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [copied, setCopied] = useState(false);
   const parentRef = useRef<HTMLDivElement>(null);
+
+  const handleCopy = useCallback((e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const tsv = rows
+      .map(r => {
+        const ts = formatTimestamp(r.timestampMs, dimension);
+        const val = (r.value == null || isNaN(r.value)) ? '' : formatValue(r.value);
+        return `${ts}\t${val}`;
+      })
+      .join('\n');
+    e.clipboardData.setData('text/plain', `Datum\tWert\n${tsv}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [rows, dimension]);
+
+  const stats = useMemo(() => {
+    const valid = rows.filter(r => r.value != null && !isNaN(r.value));
+    if (valid.length === 0) return null;
+    let min = Infinity, max = -Infinity, sum = 0;
+    for (const r of valid) {
+      if (r.value < min) min = r.value;
+      if (r.value > max) max = r.value;
+      sum += r.value;
+    }
+    return { min, max, avg: sum / valid.length, count: valid.length };
+  }, [rows]);
 
   const columns = useMemo<ColumnDef<TimeSeriesRow>[]>(
     () => [
@@ -43,10 +73,7 @@ export function ValuesTable({ rows, unit, dimension }: ValuesTableProps) {
         cell: ({ getValue }) => {
           const v = getValue() as number;
           if (v == null || isNaN(v)) return '';
-          return v.toLocaleString('de-DE', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 4,
-          });
+          return formatValue(v);
         },
       },
     ],
@@ -72,7 +99,16 @@ export function ValuesTable({ rows, unit, dimension }: ValuesTableProps) {
   });
 
   return (
-    <div className="grid-table">
+    <div className="grid-table" tabIndex={0} onCopy={handleCopy} onKeyDown={(e) => {
+      if (e.ctrlKey && e.key === 'a') {
+        e.preventDefault();
+        const sel = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(e.currentTarget);
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      }
+    }}>
       <div className="grid-header">
         {table.getHeaderGroups().map((headerGroup) =>
           headerGroup.headers.map((header) => (
@@ -119,6 +155,27 @@ export function ValuesTable({ rows, unit, dimension }: ValuesTableProps) {
           })}
         </div>
       </div>
+      {stats && (
+        <div className="grid-footer">
+          {copied && <div className="copy-hint">Kopiert!</div>}
+          <div className="stat">
+            <span className="stat-label">Min</span>
+            <span className="stat-value">{formatValue(stats.min)}</span>
+          </div>
+          <div className="stat">
+            <span className="stat-label">Max</span>
+            <span className="stat-value">{formatValue(stats.max)}</span>
+          </div>
+          <div className="stat">
+            <span className="stat-label">Avg</span>
+            <span className="stat-value">{formatValue(stats.avg)}</span>
+          </div>
+          <div className="stat">
+            <span className="stat-label">Werte</span>
+            <span className="stat-value">{stats.count.toLocaleString('de-DE')}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
