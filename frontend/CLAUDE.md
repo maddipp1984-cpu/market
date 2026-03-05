@@ -32,12 +32,14 @@ frontend/
       tokens.css                      -- CSS Custom Properties (Farben, Spacing, Radien, Typo, Sidebar)
       base.css                        -- Reset, Font-Import, Body-Styling
     shell/                            -- App-Shell (Layout + Navigation + Tabs)
-      AppShell.tsx + AppShell.css     -- Sidebar + TabBar + Tab-Content-Area
+      AppShell.tsx + AppShell.css     -- Sidebar + TabBar + Tab-Content-Area + MessageBar
       Sidebar.tsx + Sidebar.css       -- Baumnavigation (Headless Tree, dark-Variante)
       sidebarTree.ts                  -- Statische Sidebar-Baumdaten (SidebarNode[])
       TabContext.tsx                   -- Tab-State (Provider + useTabContext Hook)
       TabBar.tsx + TabBar.css         -- Horizontale Tab-Leiste mit Close-Buttons
       tabTypes.tsx                    -- Tab-Typ-Registry (Typ, Label, Icon, Komponente)
+      MessageBarContext.tsx            -- MessageBar-State (Provider + useMessageBar Hook)
+      MessageBar.tsx + MessageBar.css -- Globale Statusleiste (success/info/error)
     shared/                           -- Wiederverwendbare UI-Komponenten
       TreeView.tsx + TreeView.css     -- Wiederverwendbare Tree-Komponente (Headless Tree)
       Button.tsx + Button.css         -- Button (primary/success/ghost)
@@ -76,17 +78,21 @@ frontend/
 ### Konvention: Tab-System
 - **Neue Seite = Eintrag in `shell/tabTypes.tsx`** + optional Eintrag in `shell/sidebarTree.ts`
 - Tab-Typen in `tabTypes.tsx` (Typ, Label, Icon, Komponente), Sidebar-Baum in `sidebarTree.ts` (Hierarchie)
-- Jede Seiten-Komponente erhaelt `tabId: string` als Prop
+- Jede Seiten-Komponente erhaelt `tabId: string` als Prop und nutzt `useMessageBar()` fuer Benutzer-Feedback
 - Sidebar-Klick oeffnet immer neuen Tab (ausser Singletons wie Dashboard)
 - Inaktive Tabs bleiben gemountet (`display: none`) — State bleibt erhalten
 - Tab-Labels koennen per `updateTabLabel(tabId, label)` aktualisiert werden
 
 ### Konvention: Sidebar-Baumnavigation
-- **Sidebar-Struktur** in `shell/sidebarTree.ts` — statische `SidebarNode[]` Hierarchie
+- **Sidebar-Struktur** wird per XML konfiguriert (`src/main/resources/sidebar.xml` im Backend)
+- Backend liefert die Struktur als JSON via `GET /api/config/sidebar`
+- **Fallback**: Bei Backend-Fehler greift `defaultSidebarTree` aus `shell/sidebarTree.ts`
+- **Labels** fuer Items kommen aus `tabTypes.tsx` (nicht aus der XML), Labels fuer Ordner aus der XML
 - **Icons** werden aus `tabTypes.tsx` referenziert (kein Duplizieren)
+- **Validierung**: Unbekannte `tabType`-Werte in der XML werden mit `console.warn` uebersprungen
 - **TreeView** (`shared/TreeView.tsx`) — generische, wiederverwendbare Baum-Komponente mit Headless Tree
 - TreeView hat `dark`/`light` Variante, `defaultExpanded`, `onSelect`, `renderNode`
-- **Neuen Sidebar-Eintrag**: Node in `sidebarTree.ts` ergaenzen + Tab-Typ in `tabTypes.tsx`
+- **Neuen Sidebar-Eintrag**: 1) Tab-Typ in `tabTypes.tsx` anlegen, 2) Item in `sidebar.xml` ergaenzen, 3) Optional: `defaultSidebarTree` in `sidebarTree.ts` als Fallback aktualisieren
 - **Ordner vs. Blatt**: `children` → Ordner (Klick klappt auf/zu, kein Tab). `tabType` → Blatt (Klick oeffnet Tab). Beides gleichzeitig: `tabType` wird ignoriert. Guard in `Sidebar.tsx` erzwingt dies.
 
 ### Konvention: Templates

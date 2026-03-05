@@ -12,7 +12,7 @@ export interface SidebarNode {
 // - children → Ordner (Klick klappt auf/zu, kein Tab)
 // - tabType  → Blatt  (Klick oeffnet Tab)
 // - Beides gleichzeitig: tabType wird ignoriert
-export const sidebarTree: SidebarNode[] = [
+export const defaultSidebarTree: SidebarNode[] = [
   {
     id: 'daten',
     label: 'Daten',

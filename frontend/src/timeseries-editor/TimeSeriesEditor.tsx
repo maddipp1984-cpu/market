@@ -6,6 +6,7 @@ import { Button } from '../shared/Button';
 import { StatusMessage } from '../shared/StatusMessage';
 import { FilterBar } from '../shared/FilterBar';
 import { FormField } from '../shared/FormField';
+import { useMessageBar } from '../shell/MessageBarContext';
 import type { Dimension } from '../api/types';
 import './TimeSeriesEditor.css';
 
@@ -19,6 +20,7 @@ interface TimeSeriesEditorProps {
 
 export function TimeSeriesEditor({ tsIds, start, end }: TimeSeriesEditorProps) {
   const { headers, rows, edits, hasEdits, loading, saving, error, load, updateValue, save } = useMultiTimeSeries();
+  const { showMessage } = useMessageBar();
   const loadedRef = useRef('');
   const [filterStart, setFilterStart] = useState(start);
   const [filterEnd, setFilterEnd] = useState(end);
@@ -74,7 +76,14 @@ export function TimeSeriesEditor({ tsIds, start, end }: TimeSeriesEditorProps) {
         </Button>
       )}
       {hasEdits && (
-        <Button variant="success" type="button" onClick={save} disabled={saving}>
+        <Button variant="success" type="button" onClick={async () => {
+          const ok = await save();
+          if (ok) {
+            showMessage('Zeitreihe gespeichert', 'success');
+          } else {
+            showMessage('Fehler beim Speichern', 'error');
+          }
+        }} disabled={saving}>
           {saving ? 'Speichere...' : `Speichern (${edits.size})`}
         </Button>
       )}

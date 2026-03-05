@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sidebar>
+  <folder id="daten" label="Daten">
+    <item id="dashboard" tabType="dashboard" />
+    <item id="zeitreihen" tabType="zeitreihen" />
+  </folder>
+  <folder id="stammdaten" label="Stammdaten">
+    <folder id="objekte-gruppe" label="Objekte">
+      <item id="objekttypen" tabType="objekttypen" />
+      <item id="einheiten" tabType="einheiten" />
+      <item id="waehrungen" tabType="waehrungen" />
+    </folder>
+  </folder>
+  <folder id="system" label="System">
+    <item id="einstellungen" tabType="einstellungen" />
+  </folder>
+</sidebar>

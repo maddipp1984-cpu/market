@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
-import { tabTypes, getTabType } from './tabTypes';
+import { getTabType } from './tabTypes';
 
 export interface Tab {
   id: string;
@@ -20,13 +20,14 @@ interface TabContextValue {
 
 const TabContext = createContext<TabContextValue | null>(null);
 
+function createDashboardTab(counter: React.MutableRefObject<number>): Tab {
+  const dashboard = getTabType('dashboard')!;
+  return { id: `tab-${++counter.current}`, type: 'dashboard', label: dashboard.label, icon: dashboard.icon };
+}
+
 export function TabProvider({ children }: { children: ReactNode }) {
   const tabCounterRef = useRef(0);
-  const [tabs, setTabs] = useState<Tab[]>(() => {
-    const dashboard = tabTypes.find(t => t.type === 'dashboard')!;
-    const id = `tab-${++tabCounterRef.current}`;
-    return [{ id, type: 'dashboard', label: dashboard.label, icon: dashboard.icon }];
-  });
+  const [tabs, setTabs] = useState<Tab[]>(() => [createDashboardTab(tabCounterRef)]);
   const [activeTabId, setActiveTabId] = useState<string | null>(() => tabs[0]?.id ?? null);
 
   const openTab = useCallback((type: string) => {
@@ -66,11 +67,9 @@ export function TabProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const closeAllTabs = useCallback(() => {
-    const dashboard = tabTypes.find(t => t.type === 'dashboard')!;
-    const id = `tab-${++tabCounterRef.current}`;
-    const tab: Tab = { id, type: 'dashboard', label: dashboard.label, icon: dashboard.icon };
+    const tab = createDashboardTab(tabCounterRef);
     setTabs([tab]);
-    setActiveTabId(id);
+    setActiveTabId(tab.id);
   }, []);
 
   const setActiveTab = useCallback((id: string) => {

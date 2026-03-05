@@ -14,6 +14,7 @@ interface TreeViewProps {
   data: TreeNode[];
   variant?: 'dark' | 'light';
   defaultExpanded?: string[];
+  paddingBase?: string;
   onSelect?: (node: TreeNode) => void;
   renderNode?: (node: TreeNode, item: ItemInstance<TreeNode>) => ReactNode;
 }
@@ -28,7 +29,7 @@ function flattenNodes(nodes: TreeNode[], map: Map<string, TreeNode>, childrenMap
   }
 }
 
-export function TreeView({ data, variant = 'light', defaultExpanded, onSelect, renderNode }: TreeViewProps) {
+export function TreeView({ data, variant = 'light', defaultExpanded, paddingBase = '0px', onSelect, renderNode }: TreeViewProps) {
   const { nodeMap, childrenMap, rootChildIds } = useMemo(() => {
     const nodeMap = new Map<string, TreeNode>();
     const childrenMap = new Map<string, string[]>();
@@ -74,7 +75,7 @@ export function TreeView({ data, variant = 'light', defaultExpanded, onSelect, r
           <div
             key={item.getId()}
             className={`tree-node ${item.isSelected() ? 'tree-node--selected' : ''}`}
-            style={{ paddingLeft: `calc(${level} * var(--tree-indent))` }}
+            style={{ paddingLeft: `calc(${paddingBase} + ${level} * var(--tree-indent))` }}
             data-level={level}
             {...item.getProps()}
             onClick={() => handleItemClick(item)}

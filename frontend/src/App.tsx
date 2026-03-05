@@ -1,10 +1,13 @@
 import { TabProvider } from './shell/TabContext';
+import { MessageBarProvider } from './shell/MessageBarContext';
 import { AppShell } from './shell/AppShell';
 
 export default function App() {
   return (
-    <TabProvider>
-      <AppShell />
-    </TabProvider>
+    <MessageBarProvider>
+      <TabProvider>
+        <AppShell />
+      </TabProvider>
+    </MessageBarProvider>
   );
 }

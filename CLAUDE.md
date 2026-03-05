@@ -51,6 +51,7 @@ Spring Boot 3.4.x Anwendung mit Raw JDBC (kein JPA).
 | GET | `/api/objects/{objectId}` | Objekt lesen |
 | PUT | `/api/objects/{objectId}/timeseries/{tsId}` | Zuordnung |
 | DELETE | `/api/objects/{objectId}` | Objekt löschen |
+| GET | `/api/config/sidebar` | Sidebar-Baumstruktur (aus XML) |
 
 ### Exception Handling (GlobalExceptionHandler)
 - `IllegalArgumentException` → 400 Bad Request

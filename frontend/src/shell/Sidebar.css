@@ -33,25 +33,11 @@
   opacity: 0.6;
 }
 
-/* Section nodes: extra top margin, fixed left padding, no hover effect */
+/* Section nodes: extra top margin, no hover effect */
 .sidebar .tree-node[data-level="0"] {
   margin-top: var(--space-lg);
-  padding-left: var(--space-lg) !important;
 }
 
 .sidebar .tree-node[data-level="0"]:hover {
   background: transparent;
-}
-
-/* Non-section nodes: add base left padding for proper indentation */
-.sidebar .tree-node:not([data-level="0"]) {
-  padding-left: calc(var(--space-lg) + var(--space-sm)) !important;
-}
-
-.sidebar .tree-node[data-level="2"] {
-  padding-left: calc(var(--space-lg) + var(--space-sm) + var(--tree-indent)) !important;
-}
-
-.sidebar .tree-node[data-level="3"] {
-  padding-left: calc(var(--space-lg) + var(--space-sm) + 2 * var(--tree-indent)) !important;
 }

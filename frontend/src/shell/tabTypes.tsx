@@ -11,7 +11,6 @@ export interface TabType {
   type: string;
   label: string;
   icon: ReactNode;
-  section: 'daten' | 'stammdaten' | 'system';
   singleton?: boolean;
   component: ComponentType<{ tabId: string }>;
 }
@@ -41,20 +40,15 @@ const iconSettings = (
 );
 
 export const tabTypes: TabType[] = [
-  { type: 'dashboard', label: 'Dashboard', icon: iconDashboard, section: 'daten', singleton: true, component: DashboardPage },
-  { type: 'zeitreihen', label: 'Zeitreihen', icon: iconTimeSeries, section: 'daten', component: TimeSeriesEditorPage },
-  { type: 'objekte', label: 'Objekte', icon: iconObjects, section: 'stammdaten', component: ObjectsPage },
-  { type: 'objekttypen', label: 'Objekttypen', icon: iconObjects, section: 'stammdaten', component: ObjekttypenPage },
-  { type: 'einheiten', label: 'Einheiten', icon: iconObjects, section: 'stammdaten', component: EinheitenPage },
-  { type: 'waehrungen', label: 'Waehrungen', icon: iconObjects, section: 'stammdaten', component: WaehrungenPage },
-  { type: 'einstellungen', label: 'Einstellungen', icon: iconSettings, section: 'system', component: SettingsPage },
+  { type: 'dashboard', label: 'Dashboard', icon: iconDashboard, singleton: true, component: DashboardPage },
+  { type: 'zeitreihen', label: 'Zeitreihen', icon: iconTimeSeries, component: TimeSeriesEditorPage },
+  { type: 'objekte', label: 'Objekte', icon: iconObjects, component: ObjectsPage },
+  { type: 'objekttypen', label: 'Objekttypen', icon: iconObjects, component: ObjekttypenPage },
+  { type: 'einheiten', label: 'Einheiten', icon: iconObjects, component: EinheitenPage },
+  { type: 'waehrungen', label: 'Waehrungen', icon: iconObjects, component: WaehrungenPage },
+  { type: 'einstellungen', label: 'Einstellungen', icon: iconSettings, component: SettingsPage },
 ];
 
-export const sectionLabels: Record<string, string> = {
-  daten: 'Daten',
-  stammdaten: 'Stammdaten',
-  system: 'System',
-};
 
 export function getTabType(type: string): TabType | undefined {
   return tabTypes.find(t => t.type === type);

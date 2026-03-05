@@ -1,7 +1,8 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTabContext } from './TabContext';
-import { sidebarTree, type SidebarNode } from './sidebarTree';
+import { defaultSidebarTree, type SidebarNode } from './sidebarTree';
 import { getTabType } from './tabTypes';
+import { fetchSidebarConfig, type SidebarNodeConfig } from '../api/client';
 import { TreeView, type TreeNode } from '../shared/TreeView';
 import type { ItemInstance } from '@headless-tree/core';
 import './Sidebar.css';
@@ -11,6 +12,27 @@ const logoIcon = (
     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
   </svg>
 );
+
+/** Convert backend config nodes to SidebarNode[], skipping unknown tabTypes */
+function convertConfigNodes(nodes: SidebarNodeConfig[]): SidebarNode[] {
+  const result: SidebarNode[] = [];
+  for (const node of nodes) {
+    if (node.children) {
+      // Folder
+      const children = convertConfigNodes(node.children);
+      result.push({ id: node.id, label: node.label ?? node.id, children });
+    } else if (node.tabType) {
+      // Leaf item
+      const tabType = getTabType(node.tabType);
+      if (!tabType) {
+        console.warn(`[Sidebar] Unknown tabType "${node.tabType}" for node "${node.id}" — skipping`);
+        continue;
+      }
+      result.push({ id: node.id, label: tabType.label, tabType: node.tabType });
+    }
+  }
+  return result;
+}
 
 /** Enriches sidebar nodes with icons from tabTypes registry */
 function enrichWithIcons(nodes: SidebarNode[]): TreeNode[] {
@@ -39,9 +61,22 @@ function buildNodeMap(nodes: SidebarNode[], map: Map<string, SidebarNode> = new 
 
 export function Sidebar() {
   const { openTab } = useTabContext();
+  const [sidebarTree, setSidebarTree] = useState<SidebarNode[]>(defaultSidebarTree);
 
-  const treeData = useMemo(() => enrichWithIcons(sidebarTree), []);
-  const nodeMap = useMemo(() => buildNodeMap(sidebarTree), []);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchSidebarConfig(controller.signal)
+      .then(config => setSidebarTree(convertConfigNodes(config)))
+      .catch(err => {
+        if (err.name !== 'AbortError') {
+          console.warn('[Sidebar] Failed to load config, using default tree:', err.message);
+        }
+      });
+    return () => controller.abort();
+  }, []);
+
+  const treeData = useMemo(() => enrichWithIcons(sidebarTree), [sidebarTree]);
+  const nodeMap = useMemo(() => buildNodeMap(sidebarTree), [sidebarTree]);
 
   const handleSelect = useCallback((treeNode: TreeNode) => {
     const sidebarNode = nodeMap.get(treeNode.id);
@@ -66,7 +101,7 @@ export function Sidebar() {
   }, []);
 
   // Root sections are expanded by default
-  const defaultExpanded = useMemo(() => sidebarTree.map(s => s.id), []);
+  const defaultExpanded = useMemo(() => sidebarTree.map(s => s.id), [sidebarTree]);
 
   return (
     <nav className="sidebar">
@@ -78,6 +113,7 @@ export function Sidebar() {
         data={treeData}
         variant="dark"
         defaultExpanded={defaultExpanded}
+        paddingBase="var(--space-lg)"
         onSelect={handleSelect}
         renderNode={renderNode}
       />

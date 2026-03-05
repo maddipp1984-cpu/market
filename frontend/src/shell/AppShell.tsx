@@ -1,5 +1,6 @@
 import { Sidebar } from './Sidebar';
 import { TabBar } from './TabBar';
+import { MessageBar } from './MessageBar';
 import { useTabContext } from './TabContext';
 import { getTabType } from './tabTypes';
 import './AppShell.css';
@@ -28,6 +29,7 @@ export function AppShell() {
             );
           })}
         </div>
+        <MessageBar />
       </div>
     </div>
   );

@@ -18,7 +18,7 @@ interface UseMultiTimeSeriesResult {
   error: string | null;
   load: (tsIds: number[], start: string, end: string) => Promise<void>;
   updateValue: (seriesIdx: number, rowIndex: number, value: number) => void;
-  save: () => Promise<void>;
+  save: () => Promise<boolean>;
 }
 
 export function useMultiTimeSeries(): UseMultiTimeSeriesResult {
@@ -93,8 +93,8 @@ export function useMultiTimeSeries(): UseMultiTimeSeriesResult {
     });
   }, []);
 
-  const save = useCallback(async () => {
-    if (edits.size === 0 || headers.length === 0) return;
+  const save = useCallback(async (): Promise<boolean> => {
+    if (edits.size === 0 || headers.length === 0) return false;
     setSaving(true);
     setError(null);
 
@@ -166,8 +166,10 @@ export function useMultiTimeSeries(): UseMultiTimeSeriesResult {
         }
         return next;
       });
+      return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Fehler beim Speichern');
+      return false;
     } finally {
       setSaving(false);
     }
