@@ -16,30 +16,44 @@ interface ValuesTableProps {
   edits: Map<number, number>;
   unit: string;
   dimension: Dimension;
+  decimals: number;
   onEdit: (index: number, value: number) => void;
 }
 
-function formatValue(v: number): string {
-  return v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+function formatValue(v: number, decimals: number): string {
+  return v.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: decimals });
 }
 
-function EditableCell({ row, edits, onEdit }: {
+function EditableCell({ row, edits, decimals, onEdit }: {
   row: TimeSeriesRow;
   edits: Map<number, number>;
+  decimals: number;
   onEdit: (index: number, value: number) => void;
 }) {
+  const [focused, setFocused] = useState(false);
+  const [localValue, setLocalValue] = useState('');
   const edited = edits.get(row.index);
   const effectiveValue = edited ?? row.value;
   const isEdited = edits.has(row.index);
-  const displayValue = (effectiveValue == null || isNaN(effectiveValue)) ? '' : effectiveValue.toString();
+  const isEmpty = effectiveValue == null || isNaN(effectiveValue);
+
+  const displayValue = focused
+    ? localValue
+    : (isEmpty ? '' : formatValue(effectiveValue, decimals));
 
   return (
     <input
       className={`value-input${isEdited ? ' edited' : ''}`}
       type="text"
+      data-row-index={row.index}
       value={displayValue}
-      onChange={(e) => {
-        const raw = e.target.value.replace(',', '.');
+      onFocus={() => {
+        setLocalValue(isEmpty ? '' : effectiveValue.toLocaleString('de-DE', { useGrouping: false, maximumFractionDigits: 20 }));
+        setFocused(true);
+      }}
+      onBlur={() => {
+        setFocused(false);
+        const raw = localValue.replace(',', '.');
         if (raw === '' || raw === '-') {
           onEdit(row.index, NaN);
           return;
@@ -47,13 +61,18 @@ function EditableCell({ row, edits, onEdit }: {
         const num = parseFloat(raw);
         if (!isNaN(num)) onEdit(row.index, num);
       }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+      }}
+      onChange={(e) => setLocalValue(e.target.value)}
     />
   );
 }
 
-export function ValuesTable({ rows, edits, unit, dimension, onEdit }: ValuesTableProps) {
+export function ValuesTable({ rows, edits, unit, dimension, decimals, onEdit }: ValuesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [copied, setCopied] = useState(false);
+  const [pastedCount, setPastedCount] = useState(0);
   const parentRef = useRef<HTMLDivElement>(null);
 
   const getEffectiveValue = useCallback(
@@ -61,19 +80,48 @@ export function ValuesTable({ rows, edits, unit, dimension, onEdit }: ValuesTabl
     [edits]
   );
 
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const active = document.activeElement as HTMLElement | null;
+    const startIndex = active?.dataset.rowIndex != null ? parseInt(active.dataset.rowIndex, 10) : null;
+    if (startIndex == null) return;
+
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
+
+    const startPos = rows.findIndex(r => r.index === startIndex);
+    if (startPos === -1) return;
+
+    let count = 0;
+    for (let i = 0; i < lines.length; i++) {
+      const rowPos = startPos + i;
+      if (rowPos >= rows.length) break;
+      const raw = lines[i].trim().replace(/\./g, '').replace(',', '.');
+      const num = parseFloat(raw);
+      if (!isNaN(num)) {
+        onEdit(rows[rowPos].index, num);
+        count++;
+      }
+    }
+    if (count > 0) {
+      setPastedCount(count);
+      setTimeout(() => setPastedCount(0), 2000);
+    }
+  }, [rows, onEdit]);
+
   const handleCopy = useCallback((e: React.ClipboardEvent) => {
     e.preventDefault();
     const tsv = rows
       .map(r => {
         const ts = formatTimestamp(r.timestampMs, dimension);
         const val = getEffectiveValue(r);
-        return `${ts}\t${(val == null || isNaN(val)) ? '' : formatValue(val)}`;
+        return `${ts}\t${(val == null || isNaN(val)) ? '' : formatValue(val, decimals)}`;
       })
       .join('\n');
     e.clipboardData.setData('text/plain', `Datum\tWert\n${tsv}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [rows, dimension, getEffectiveValue]);
+  }, [rows, dimension, decimals, getEffectiveValue]);
 
   const stats = useMemo(() => {
     const valid: number[] = [];
@@ -110,7 +158,7 @@ export function ValuesTable({ rows, edits, unit, dimension, onEdit }: ValuesTabl
         header: `Wert (${unit})`,
         meta: { flex: true },
         cell: ({ row: tableRow }) => (
-          <EditableCell row={tableRow.original} edits={edits} onEdit={onEdit} />
+          <EditableCell row={tableRow.original} edits={edits} decimals={decimals} onEdit={onEdit} />
         ),
       },
     ],
@@ -136,7 +184,7 @@ export function ValuesTable({ rows, edits, unit, dimension, onEdit }: ValuesTabl
   });
 
   return (
-    <div className="grid-table" tabIndex={0} onCopy={handleCopy} onKeyDown={(e) => {
+    <div className="grid-table" tabIndex={0} onCopy={handleCopy} onPaste={handlePaste} onKeyDown={(e) => {
       if (e.ctrlKey && e.key === 'a') {
         e.preventDefault();
         const sel = window.getSelection();
@@ -195,17 +243,18 @@ export function ValuesTable({ rows, edits, unit, dimension, onEdit }: ValuesTabl
       {stats && (
         <div className="grid-footer">
           {copied && <div className="copy-hint">Kopiert!</div>}
+          {pastedCount > 0 && <div className="copy-hint">{pastedCount} Werte eingefügt!</div>}
           <div className="stat">
             <span className="stat-label">Min</span>
-            <span className="stat-value">{formatValue(stats.min)}</span>
+            <span className="stat-value">{formatValue(stats.min, decimals)}</span>
           </div>
           <div className="stat">
             <span className="stat-label">Max</span>
-            <span className="stat-value">{formatValue(stats.max)}</span>
+            <span className="stat-value">{formatValue(stats.max, decimals)}</span>
           </div>
           <div className="stat">
             <span className="stat-label">Avg</span>
-            <span className="stat-value">{formatValue(stats.avg)}</span>
+            <span className="stat-value">{formatValue(stats.avg, decimals)}</span>
           </div>
           <div className="stat">
             <span className="stat-label">Werte</span>

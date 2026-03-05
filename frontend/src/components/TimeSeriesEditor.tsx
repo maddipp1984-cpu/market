@@ -14,6 +14,7 @@ export function TimeSeriesEditor({ tsId, start, end }: TimeSeriesEditorProps) {
   const loadedRef = useRef('');
   const [filterStart, setFilterStart] = useState(start);
   const [filterEnd, setFilterEnd] = useState(end);
+  const [decimals, setDecimals] = useState(5);
 
   useEffect(() => {
     const key = `${tsId}|${start}|${end}`;
@@ -25,6 +26,12 @@ export function TimeSeriesEditor({ tsId, start, end }: TimeSeriesEditorProps) {
       load(tsId, start, end);
     }
   }, [tsId, start, end, load]);
+
+  useEffect(() => {
+    if (!header) return;
+    const currencyOnly = header.currency && (!header.unit || header.unit === header.currency);
+    setDecimals(currencyOnly ? 2 : 5);
+  }, [header]);
 
   const filteredRows = useMemo(() => {
     if (!filterStart && !filterEnd) return rows;
@@ -41,7 +48,7 @@ export function TimeSeriesEditor({ tsId, start, end }: TimeSeriesEditorProps) {
 
       {header && (
         <div className="ts-editor-header">
-          <HeaderInfo header={header} rowCount={filteredRows.length} />
+          <HeaderInfo header={header} />
           {hasEdits && (
             <button type="button" onClick={save} disabled={saving} className="save-btn">
               {saving ? 'Speichere...' : `Speichern (${edits.size})`}
@@ -66,6 +73,17 @@ export function TimeSeriesEditor({ tsId, start, end }: TimeSeriesEditorProps) {
               type="datetime-local"
               value={filterEnd}
               onChange={(e) => setFilterEnd(e.target.value)}
+            />
+          </label>
+          <label>
+            Nachkommastellen
+            <input
+              type="number"
+              min={0}
+              max={10}
+              value={decimals}
+              onChange={(e) => setDecimals(Math.max(0, Math.min(10, parseInt(e.target.value, 10) || 0)))}
+              style={{ width: '60px' }}
             />
           </label>
           {(filterStart !== start || filterEnd !== end) && (
@@ -94,6 +112,7 @@ export function TimeSeriesEditor({ tsId, start, end }: TimeSeriesEditorProps) {
           edits={edits}
           unit={header.unit}
           dimension={header.dimension}
+          decimals={decimals}
           onEdit={updateValue}
         />
       )}

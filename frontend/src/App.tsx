@@ -5,13 +5,13 @@ export default function App() {
   const [tsId, setTsId] = useState('15201');
   const [start, setStart] = useState('2022-01-01T00:00');
   const [end, setEnd] = useState('2025-01-01T00:00');
-  const [activeTs, setActiveTs] = useState({ tsId: 15201, start: '2022-01-01T00:00', end: '2025-01-01T00:00' });
+  const [activeTs, setActiveTs] = useState({ tsId: 0, start: '', end: '', seq: 0 });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const id = parseInt(tsId, 10);
     if (isNaN(id) || id <= 0) return;
-    setActiveTs({ tsId: id, start, end });
+    setActiveTs(prev => ({ tsId: id, start, end, seq: prev.seq + 1 }));
   };
 
   return (
@@ -53,11 +53,14 @@ export default function App() {
         </div>
       </form>
 
-      <TimeSeriesEditor
-        tsId={activeTs.tsId}
-        start={activeTs.start}
-        end={activeTs.end}
-      />
+      {activeTs.tsId > 0 && (
+        <TimeSeriesEditor
+          key={activeTs.seq}
+          tsId={activeTs.tsId}
+          start={activeTs.start}
+          end={activeTs.end}
+        />
+      )}
     </div>
   );
 }

@@ -2,7 +2,6 @@ import type { Dimension, TimeSeriesHeaderResponse } from '../api/types';
 
 interface HeaderInfoProps {
   header: TimeSeriesHeaderResponse;
-  rowCount: number;
 }
 
 const dimensionLabels: Record<Dimension, string> = {
@@ -13,7 +12,7 @@ const dimensionLabels: Record<Dimension, string> = {
   YEAR: 'Jahr',
 };
 
-export function HeaderInfo({ header, rowCount }: HeaderInfoProps) {
+export function HeaderInfo({ header }: HeaderInfoProps) {
   return (
     <div className="header-info">
       <div className="header-chips">
@@ -24,7 +23,6 @@ export function HeaderInfo({ header, rowCount }: HeaderInfoProps) {
         {header.description && (
           <span className="chip"><span className="label">Beschreibung:</span> {header.description}</span>
         )}
-        <span className="chip"><span className="label">Werte:</span> {rowCount.toLocaleString('de-DE')}</span>
       </div>
     </div>
   );
