@@ -15,6 +15,10 @@
 - [x] **D3** — AVG-Kaskadierung: DST-Tage korrekt gewichten (92 vs 96 QH)
 - [x] **D4** — Review-Findings fixen: Fehlende Tests (Anschnitt bei Aggregation, Metadaten, MIN/MAX, Fehlerfälle)
 
+### REST-API Aufräumen
+- [ ] **R1** — ObjectController prüfen: Wird er gebraucht? Vermutlich nein → entfernen
+- [ ] **R2** — TimeSeriesController prüfen: Nicht jede interne API soll exponiert werden → Endpoints reduzieren
+
 ### Sonstiges
 - [x] **S1** — TimescaleDB per Docker aufsetzen und Schema testen
 - [ ] **S2** — Integrationstests mit Testcontainers
