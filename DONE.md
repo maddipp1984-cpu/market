@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-03-05 — Frontend: Tab-System (Browser-artige Tabs)
+- **TabContext**: Zentraler State fuer Tabs (open, close, setActive, updateLabel)
+- **TabBar**: Horizontale Tab-Leiste mit Icons, Labels, Close-Buttons
+- **tabTypes**: Registry ersetzt routes.tsx — Tab-Typ-Definition mit Komponenten-Referenz
+- **Sidebar**: Klick oeffnet neuen Tab (kein Router-NavLink mehr)
+- **Inaktive Tabs bleiben gemountet** (display: none) — State bleibt erhalten
+- **Dashboard = Singleton** (nur 1 Instanz), alle anderen Tab-Typen mehrfach oeffbar
+- **Tab-Labels aktualisierbar**: Zeitreihen-Tab zeigt "ZR 15201" nach Laden
+- React Router nicht mehr fuer Navigation genutzt (Dependency bleibt installiert)
+
+## 2026-03-05 — Frontend: App-Layout mit Sidebar-Navigation
+- **App-Shell**: Sidebar (dunkel, Slate-900) + Content-Area mit React Router
+- **Routing**: Zentrale Routen-Definition in `shell/routes.tsx` — automatisch in Nav + Router
+- **Sidebar**: Sections (Daten/Stammdaten/System), aktive Route mit blauem Akzent, Inline-SVG-Icons
+- **Neue Shared Components**: FormField (Label+Input), FilterBar (horizontale Filterzeile), Chip/ChipGroup (Info-Badges), DataPage (Standard-Template)
+- **TimeSeriesEditorPage**: Route-Seite extrahiert (Formular + Editor), nutzt DataPage
+- **TimeSeriesEditor refactored**: Nutzt FilterBar + FormField statt eigener Styles
+- **Platzhalter-Seiten**: Dashboard (KPI-Cards), Objekte, Einstellungen
+- **PageLayout**: max-width entfernt (App-Shell steuert), optionaler maxWidth-Prop
+- **App.css entfernt**: Form-Styles durch FormField-Komponente ersetzt
+- **Konsistenz-Mechanismus**: 3 Ebenen (App-Shell strukturell, DataPage als Template, Konventionen in CLAUDE.md)
+
+## 2026-03-05 — Frontend: Design-System
+- **Design Tokens**: `styles/tokens.css` mit CSS Custom Properties (Farben, Spacing, Radien, Typografie, Transitions)
+- **Basis-Styles**: `styles/base.css` (Reset, Font-Import, Body-Gradient)
+- **Shared Components**: `Button` (primary/success/ghost), `Card`, `PageLayout`, `StatusMessage`
+- **CSS aufgeteilt**: Feature-spezifische Styles aus `App.css` extrahiert nach `TimeSeriesEditor.css` und `ValuesTable.css`
+- **Migration**: App.tsx nutzt `<PageLayout>`, `<Card>`, `<Button>`; TimeSeriesEditor nutzt `<Button>`, `<StatusMessage>`
+- App.css von 479 Zeilen auf nur noch Form-Styles reduziert
+- Alle Farbwerte durch `var(--color-...)` ersetzt — zentral änderbar
+
 ## 2026-03-05 — Spring Boot Migration
 - **Phase 0**: Source-Layout auf Maven-Standard (`src/main/java/`, `src/test/java/`), Java 17
 - **Phase 1**: Spring Boot 3.4.1 mit `starter-web`, `starter-jdbc` — Shadow-Plugin durch Spring Boot Plugin ersetzt

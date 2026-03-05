@@ -1,0 +1,15 @@
+.page-layout {
+  margin: 0 auto;
+  padding: var(--space-3xl) var(--space-2xl);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-title {
+  margin-bottom: var(--space-2xl);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-text-heading);
+  letter-spacing: -0.02em;
+}

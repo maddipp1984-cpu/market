@@ -1,0 +1,19 @@
+.status-message {
+  padding: var(--space-md) var(--space-lg);
+  border-radius: 10px;
+  margin-bottom: var(--space-lg);
+  font-size: var(--font-size-lg);
+  border: 1px solid;
+}
+
+.status-error {
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
+  border-color: var(--color-error-border);
+}
+
+.status-info {
+  background: var(--color-info-bg);
+  color: var(--color-info-text);
+  border-color: var(--color-info-border);
+}

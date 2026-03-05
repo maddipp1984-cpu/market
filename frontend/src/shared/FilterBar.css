@@ -1,0 +1,14 @@
+.filter-bar {
+  display: flex;
+  gap: var(--space-md);
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: var(--space-md);
+}
+
+.filter-bar-actions {
+  margin-left: auto;
+  display: flex;
+  gap: var(--space-sm);
+  align-items: flex-end;
+}

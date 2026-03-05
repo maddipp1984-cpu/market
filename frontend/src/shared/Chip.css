@@ -1,0 +1,15 @@
+.chip {
+  white-space: nowrap;
+  font-size: var(--font-size-md);
+}
+
+.chip-label {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-lg);
+}

@@ -1,0 +1,44 @@
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.form-field input,
+.form-field select {
+  padding: 8px 12px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-lg);
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background: var(--color-surface-muted);
+  transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.form-field input:focus,
+.form-field select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-ring);
+  background: var(--color-surface);
+}
+
+.form-field input[type="number"] {
+  width: 120px;
+}
+
+.form-field--compact input,
+.form-field--compact select {
+  padding: 6px 10px;
+  font-size: var(--font-size-base);
+  border-radius: var(--radius-md);
+}

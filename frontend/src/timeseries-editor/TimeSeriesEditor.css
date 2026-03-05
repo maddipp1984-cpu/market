@@ -1,0 +1,33 @@
+/* TimeSeriesEditor */
+.ts-editor {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Header Info */
+.header-info {
+  background: var(--color-surface);
+  padding: 18px 20px;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  margin-bottom: var(--space-lg);
+  border: 1px solid var(--color-border);
+}
+
+.header-series-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border);
+}
+
+.header-series-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-md);
+  font-size: var(--font-size-base);
+}

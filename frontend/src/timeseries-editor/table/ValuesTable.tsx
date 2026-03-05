@@ -10,6 +10,7 @@ import {
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { formatTimestamp } from '../data/timestampCalculator';
 import type { Dimension, MultiSeriesRow, TimeSeriesHeaderResponse } from '../../api/types';
+import './ValuesTable.css';
 
 interface ValuesTableProps {
   rows: MultiSeriesRow[];
