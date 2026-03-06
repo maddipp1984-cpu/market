@@ -185,6 +185,7 @@ export function ValuesTable({ rows, headers, edits, dimension, decimals, readOnl
         ),
         accessorFn: (row) => row.values[seriesIdx],
         meta: { flex: true },
+        enableResizing: false,
         cell: ({ row: tableRow }) => {
           const v = tableRow.original.values[seriesIdx];
           if (readOnly) {
@@ -203,7 +204,7 @@ export function ValuesTable({ rows, headers, edits, dimension, decimals, readOnl
     columns,
     state: { sorting },
     onSortingChange: setSorting,
-    columnResizeMode: 'onChange',
+    columnResizeMode: 'onEnd',
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
@@ -287,20 +288,23 @@ export function ValuesTable({ rows, headers, edits, dimension, decimals, readOnl
         <div className="grid-footer">
           {copied && <div className="copy-hint">Kopiert!</div>}
           {pastedCount > 0 && <div className="copy-hint">{pastedCount} Werte eingefügt!</div>}
-          {(['Min', 'Max', 'Avg'] as const).map(label => (
-            <div key={label} className="grid-row stat-row">
-              <div className="grid-cell" style={{ width: 80 }} />
-              <div className="grid-cell stat-label-cell" style={{ width: 170 }}>{label}</div>
-              {allStats.map((stats, i) => (
-                <div key={headers[i].tsId} className="grid-cell stat-value-cell" style={{ flex: 1 }}>
-                  {stats ? formatValue(
-                    label === 'Min' ? stats.min : label === 'Max' ? stats.max : stats.avg,
-                    decimals
-                  ) : ''}
-                </div>
-              ))}
-            </div>
-          ))}
+          {(['Min', 'Max', 'Avg'] as const).map(label => {
+            const allCols = table.getAllColumns();
+            return (
+              <div key={label} className="grid-row stat-row">
+                <div className="grid-cell" style={{ width: allCols[0]?.getSize() }} />
+                <div className="grid-cell stat-label-cell" style={{ width: allCols[1]?.getSize() }}>{label}</div>
+                {allStats.map((stats, i) => (
+                  <div key={headers[i].tsId} className="grid-cell stat-value-cell" style={{ flex: 1 }}>
+                    {stats ? formatValue(
+                      label === 'Min' ? stats.min : label === 'Max' ? stats.max : stats.avg,
+                      decimals
+                    ) : ''}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
