@@ -2,6 +2,7 @@ import type { ReactNode, ComponentType } from 'react';
 import { DashboardPage } from '../pages/DashboardPage';
 import { TimeSeriesEditorPage } from '../timeseries-editor/TimeSeriesEditorPage';
 import { ObjectsPage } from '../pages/ObjectsPage';
+import { ObjektNeuPage } from '../pages/ObjektNeuPage';
 import { ObjekttypenPage } from '../pages/ObjekttypenPage';
 import { EinheitenPage } from '../pages/EinheitenPage';
 import { WaehrungenPage } from '../pages/WaehrungenPage';
@@ -43,6 +44,7 @@ export const tabTypes: TabType[] = [
   { type: 'dashboard', label: 'Dashboard', icon: iconDashboard, singleton: true, component: DashboardPage },
   { type: 'zeitreihen', label: 'Zeitreihen', icon: iconTimeSeries, component: TimeSeriesEditorPage },
   { type: 'objekte', label: 'Objekte', icon: iconObjects, component: ObjectsPage },
+  { type: 'objekt-neu', label: 'Neues Objekt', icon: iconObjects, component: ObjektNeuPage },
   { type: 'objekttypen', label: 'Objekttypen', icon: iconObjects, component: ObjekttypenPage },
   { type: 'einheiten', label: 'Einheiten', icon: iconObjects, component: EinheitenPage },
   { type: 'waehrungen', label: 'Waehrungen', icon: iconObjects, component: WaehrungenPage },

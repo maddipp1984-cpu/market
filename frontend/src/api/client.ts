@@ -1,10 +1,23 @@
-import type { TimeSeriesHeaderResponse, TimeSeriesValuesResponse, WriteValuesRequest } from './types';
+import type { ObjectResponse, TimeSeriesHeaderResponse, TimeSeriesValuesResponse, WriteValuesRequest } from './types';
+
+export interface TimingInfo {
+  serverMs: number | null;
+  totalMs: number;
+}
 
 export interface SidebarNodeConfig {
   id: string;
   label: string | null;
   tabType: string | null;
   children: SidebarNodeConfig[] | null;
+}
+
+function extractTiming(res: Response, startTime: number): TimingInfo {
+  const serverHeader = res.headers.get('X-Response-Time');
+  return {
+    serverMs: serverHeader ? parseInt(serverHeader, 10) : null,
+    totalMs: Math.round(performance.now() - startTime),
+  };
 }
 
 export async function fetchSidebarConfig(signal?: AbortSignal): Promise<SidebarNodeConfig[]> {
@@ -16,13 +29,15 @@ export async function fetchSidebarConfig(signal?: AbortSignal): Promise<SidebarN
   return res.json();
 }
 
-export async function fetchHeader(tsId: number, signal?: AbortSignal): Promise<TimeSeriesHeaderResponse> {
+export async function fetchHeader(tsId: number, signal?: AbortSignal): Promise<{ data: TimeSeriesHeaderResponse; timing: TimingInfo }> {
+  const t0 = performance.now();
   const res = await fetch(`/api/timeseries/${tsId}`, { signal });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(body.error || `HTTP ${res.status}`);
   }
-  return res.json();
+  const data = await res.json();
+  return { data, timing: extractTiming(res, t0) };
 }
 
 export async function fetchValues(
@@ -30,14 +45,27 @@ export async function fetchValues(
   start: string,
   end: string,
   signal?: AbortSignal
-): Promise<TimeSeriesValuesResponse> {
+): Promise<{ data: TimeSeriesValuesResponse; timing: TimingInfo }> {
+  const t0 = performance.now();
   const params = new URLSearchParams({ start, end });
   const res = await fetch(`/api/timeseries/${tsId}/values?${params}`, { signal });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(body.error || `HTTP ${res.status}`);
   }
-  return res.json();
+  const data = await res.json();
+  return { data, timing: extractTiming(res, t0) };
+}
+
+export async function fetchObjects(signal?: AbortSignal): Promise<{ data: ObjectResponse[]; timing: TimingInfo }> {
+  const t0 = performance.now();
+  const res = await fetch('/api/objects', { signal });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return { data, timing: extractTiming(res, t0) };
 }
 
 export async function writeDay(tsId: number, req: WriteValuesRequest): Promise<void> {

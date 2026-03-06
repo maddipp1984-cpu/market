@@ -27,9 +27,17 @@ public class ObjectController {
 
     @PostMapping
     public ResponseEntity<Map<String, Long>> create(@Valid @RequestBody CreateObjectRequest req) throws SQLException {
-        ObjectType type = parseEnum(ObjectType.class, req.getType(), "type");
+        ObjectType type = EnumParser.parse(ObjectType.class, req.getType(), "type");
         long objectId = service.createObject(type, req.getKey(), req.getDescription());
         return ResponseEntity.status(201).body(Map.of("objectId", objectId));
+    }
+
+    @GetMapping(params = {"!key", "!type"})
+    public ResponseEntity<List<ObjectResponse>> getAll() throws SQLException {
+        List<ObjectResponse> result = service.getAllObjects().stream()
+                .map(ObjectResponse::from)
+                .toList();
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/{objectId}")
@@ -48,7 +56,7 @@ public class ObjectController {
 
     @GetMapping(params = "type")
     public ResponseEntity<List<ObjectResponse>> getByType(@RequestParam String type) throws SQLException {
-        ObjectType objectType = parseEnum(ObjectType.class, type, "type");
+        ObjectType objectType = EnumParser.parse(ObjectType.class, type, "type");
         List<ObjectResponse> result = service.getObjectsByType(objectType).stream()
                 .map(ObjectResponse::from)
                 .toList();
@@ -87,13 +95,4 @@ public class ObjectController {
         return ResponseEntity.noContent().build();
     }
 
-    private static <E extends Enum<E>> E parseEnum(Class<E> enumClass, String value, String fieldName) {
-        try {
-            return Enum.valueOf(enumClass, value);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException(
-                    "Ungueltiger Wert fuer '" + fieldName + "': " + value
-                    + ". Erlaubt: " + java.util.Arrays.toString(enumClass.getEnumConstants()));
-        }
-    }
 }

@@ -96,7 +96,8 @@ frontend/
 - **Ordner vs. Blatt**: `children` → Ordner (Klick klappt auf/zu, kein Tab). `tabType` → Blatt (Klick oeffnet Tab). Beides gleichzeitig: `tabType` wird ignoriert. Guard in `Sidebar.tsx` erzwingt dies.
 
 ### Konvention: Templates
-- **Daten-Masken** (Tabellen, Listen, Editoren) nutzen `<DataPage>` als Template
+- **Uebersichtsseiten** (Tabellen mit Toolbar) nutzen `<OverviewPage>` (`shared/overview-page/`) — baut intern auf `<DataPage>` auf, liefert Aktualisieren/Neu-Buttons, Loading/Error-States und Footer automatisch. Jede neue Entitaets-Uebersicht (Objekte, Zeitreihen, Einheiten etc.) MUSS dieses Template verwenden.
+- **Daten-Masken** (Editoren, Detail-Ansichten) nutzen `<DataPage>` als Template
 - **Sonstige Seiten** (Einstellungen, Info) nutzen `<PageLayout>`
 - **Formularfelder** nutzen `<FormField>` (mit `compact` fuer Filter-Bars)
 - **Filter-Zeilen** nutzen `<FilterBar>` (mit `actions`-Prop fuer Buttons rechts)

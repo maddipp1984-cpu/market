@@ -2,6 +2,10 @@
 
 ## Offen
 
+### Projekt aufräumen
+- [ ] **P1** — Root aufräumen: Lose Skripte (`insert_*.sh`, Logs) in `scripts/` verschieben oder entfernen, klare Ordnerstruktur definieren
+- [ ] **P2** — Projektstruktur reviewen: Gehoeren `sql/`, `benchmarks/`, `docs/`, `frontend/` so ins Root oder besser gruppiert?
+
 ### Architektur / Infrastruktur
 - [ ] **A1** — Transaktionsmanagement: Zusammenhängende Schreiboperationen in einer Transaktion
 - [ ] **A2** — Fehlerbehandlung: Fachliche Exceptions, Logging, Retry bei Connection-Timeouts
@@ -18,6 +22,14 @@
 ### REST-API Aufräumen
 - [ ] **R1** — ObjectController prüfen: Wird er gebraucht? Vermutlich nein → entfernen
 - [ ] **R2** — TimeSeriesController prüfen: Nicht jede interne API soll exponiert werden → Endpoints reduzieren
+
+### Stammdaten-Modul (JPA)
+- [ ] **J1** — JPA/Hibernate einrichten: `spring-boot-starter-data-jpa` Dependency, Konfiguration neben Raw JDBC
+- [ ] **J2** — Geschaeftspartner Entity + Repository (JpaRepository), REST-Controller
+- [ ] **J3** — Frontend: Stammdaten-Seite (CRUD-Maske) mit DataPage-Template
+
+### Datenbereinigung
+- [ ] **B1** — Verwaiste Header loeschen: Alle ts_header-Eintraege entfernen, die keine Werte in der zugehoerigen Werte-Tabelle haben
 
 ### Sonstiges
 - [x] **S1** — TimescaleDB per Docker aufsetzen und Schema testen

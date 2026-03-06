@@ -63,7 +63,12 @@ export function TreeView({ data, variant = 'light', defaultExpanded, paddingBase
         item.expand();
       }
     }
-    onSelect?.(item.getItemData());
+  }, []);
+
+  const handleItemDblClick = useCallback((item: ItemInstance<TreeNode>) => {
+    if (!item.isFolder()) {
+      onSelect?.(item.getItemData());
+    }
   }, [onSelect]);
 
   return (
@@ -79,6 +84,7 @@ export function TreeView({ data, variant = 'light', defaultExpanded, paddingBase
             data-level={level}
             {...item.getProps()}
             onClick={() => handleItemClick(item)}
+            onDoubleClick={() => handleItemDblClick(item)}
           >
             {item.isFolder() ? (
               <span className="tree-chevron">

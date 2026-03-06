@@ -26,6 +26,15 @@ export interface MultiSeriesRow {
   values: number[];  // Wert pro Serie, Index = Position in headers[]
 }
 
+export interface ObjectResponse {
+  objectId: number;
+  type: string;
+  objectKey: string;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface WriteValuesRequest {
   date: string;
   values: number[];

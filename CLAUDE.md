@@ -117,6 +117,8 @@ benchmarks/
 ## Berechtigungen
 - Alle `./gradlew`-Befehle dürfen ohne Rückfrage ausgeführt werden
 - Alle `git`-Befehle (add, commit, push, status, diff, log etc.) dürfen ohne Rückfrage ausgeführt werden
+- Alle `bash`-Befehle (Scripts, Shell-Kommandos) dürfen ohne Rückfrage ausgeführt werden
+- Alle `docker exec`-Befehle (DB-Zugriff, Container-Kommandos) dürfen ohne Rückfrage ausgeführt werden
 
 ## Build & Run
 ```bash

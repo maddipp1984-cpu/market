@@ -19,7 +19,7 @@ interface TimeSeriesEditorProps {
 }
 
 export function TimeSeriesEditor({ tsIds, start, end }: TimeSeriesEditorProps) {
-  const { headers, rows, edits, hasEdits, loading, saving, error, load, updateValue, save } = useMultiTimeSeries();
+  const { headers, rows, edits, hasEdits, loading, saving, error, loadTiming, load, updateValue, save } = useMultiTimeSeries();
   const { showMessage } = useMessageBar();
   const loadedRef = useRef('');
   const [filterStart, setFilterStart] = useState(start);
@@ -153,6 +153,14 @@ export function TimeSeriesEditor({ tsIds, start, end }: TimeSeriesEditorProps) {
           readOnly={isAggregated}
           onEdit={updateValue}
         />
+      )}
+
+      {loadTiming && (
+        <div className="ts-timing">
+          {headers.length} Zeitreihe{headers.length > 1 ? 'n' : ''}, {rows.length} Werte
+          {' | '}Server: {Math.max(...loadTiming.valuesTimings.map(t => t.serverMs ?? 0))}ms
+          {' | '}Gesamt: {loadTiming.totalMs}ms
+        </div>
       )}
     </div>
   );

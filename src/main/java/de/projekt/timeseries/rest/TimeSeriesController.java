@@ -30,10 +30,10 @@ public class TimeSeriesController {
 
     @PostMapping
     public ResponseEntity<Map<String, Long>> create(@Valid @RequestBody CreateTimeSeriesRequest req) throws SQLException {
-        TimeDimension dim = parseEnum(TimeDimension.class, req.getDimension(), "dimension");
-        Unit unit = parseEnum(Unit.class, req.getUnit(), "unit");
+        TimeDimension dim = EnumParser.parse(TimeDimension.class, req.getDimension(), "dimension");
+        Unit unit = EnumParser.parse(Unit.class, req.getUnit(), "unit");
         Currency currency = req.getCurrency() != null
-                ? parseEnum(Currency.class, req.getCurrency(), "currency") : null;
+                ? EnumParser.parse(Currency.class, req.getCurrency(), "currency") : null;
 
         long tsId;
         if (currency != null) {
@@ -92,13 +92,4 @@ public class TimeSeriesController {
         return ResponseEntity.ok(Map.of("count", count));
     }
 
-    private static <E extends Enum<E>> E parseEnum(Class<E> enumClass, String value, String fieldName) {
-        try {
-            return Enum.valueOf(enumClass, value);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException(
-                    "Ungueltiger Wert fuer '" + fieldName + "': " + value
-                    + ". Erlaubt: " + java.util.Arrays.toString(enumClass.getEnumConstants()));
-        }
-    }
 }

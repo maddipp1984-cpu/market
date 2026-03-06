@@ -5,6 +5,7 @@
     <item id="zeitreihen" tabType="zeitreihen" />
   </folder>
   <folder id="stammdaten" label="Stammdaten">
+    <item id="objekte" tabType="objekte" />
     <folder id="objekte-gruppe" label="Objekte">
       <item id="objekttypen" tabType="objekttypen" />
       <item id="einheiten" tabType="einheiten" />

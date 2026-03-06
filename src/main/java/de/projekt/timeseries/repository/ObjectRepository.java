@@ -77,6 +77,23 @@ public class ObjectRepository {
         }
     }
 
+    public List<TsObject> findAll() throws SQLException {
+        String sql = "SELECT object_id, type_id, object_key, description, created_at, updated_at " +
+                     "FROM ts_object ORDER BY object_key";
+
+        List<TsObject> result = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                result.add(mapRow(rs));
+            }
+        }
+        return result;
+    }
+
     public List<TsObject> findByType(ObjectType type) throws SQLException {
         String sql = "SELECT object_id, type_id, object_key, description, created_at, updated_at " +
                      "FROM ts_object WHERE type_id = ?";

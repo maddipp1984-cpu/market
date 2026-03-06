@@ -159,6 +159,10 @@ public class TimeSeriesService {
     // Objekt-Operationen
     // ================================================================
 
+    public List<TsObject> getAllObjects() throws SQLException {
+        return objectRepo.findAll();
+    }
+
     public long createObject(ObjectType type, String key, String description) throws SQLException {
 
         TsObject obj = new TsObject(type, key, description);

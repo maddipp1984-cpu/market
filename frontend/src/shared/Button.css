@@ -1,6 +1,6 @@
 .btn {
   padding: 9px 24px;
-  color: #fff;
+  color: var(--color-surface);
   border: none;
   border-radius: var(--radius-lg);
   font-size: var(--font-size-lg);
@@ -24,6 +24,11 @@
 
 .btn:not(:disabled):active {
   transform: translateY(0);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 /* Primary (blau) */
@@ -62,4 +67,19 @@
   background: var(--color-surface-subtle);
   color: var(--color-text-primary);
   transform: none;
+}
+
+/* Icon-only */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  width: 34px;
+  height: 34px;
+}
+
+.btn-icon svg {
+  width: 18px;
+  height: 18px;
 }

@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useRef } from 'react';
 import { fetchHeader, fetchValues, writeDay } from '../../api/client';
+import type { TimingInfo } from '../../api/client';
 import { calculateTimestampMs } from './timestampCalculator';
 import { toDateStringBerlin } from './aggregation';
 import type {
@@ -7,6 +8,12 @@ import type {
   TimeSeriesValuesResponse,
   MultiSeriesRow,
 } from '../../api/types';
+
+export interface LoadTiming {
+  headerTimings: TimingInfo[];
+  valuesTimings: TimingInfo[];
+  totalMs: number;
+}
 
 interface UseMultiTimeSeriesResult {
   headers: TimeSeriesHeaderResponse[];
@@ -16,6 +23,7 @@ interface UseMultiTimeSeriesResult {
   loading: boolean;
   saving: boolean;
   error: string | null;
+  loadTiming: LoadTiming | null;
   load: (tsIds: number[], start: string, end: string) => Promise<void>;
   updateValue: (seriesIdx: number, rowIndex: number, value: number) => void;
   save: () => Promise<boolean>;
@@ -28,8 +36,11 @@ export function useMultiTimeSeries(): UseMultiTimeSeriesResult {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadTiming, setLoadTiming] = useState<LoadTiming | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const tsIdsRef = useRef<number[]>([]);
+  const editsRef = useRef(edits);
+  editsRef.current = edits;
 
   const rows = useMemo<MultiSeriesRow[]>(() => {
     if (valuesResponses.length === 0) return [];
@@ -52,8 +63,10 @@ export function useMultiTimeSeries(): UseMultiTimeSeriesResult {
     setHeaders([]);
     setValuesResponses([]);
     setEdits(new Map());
+    setLoadTiming(null);
 
     try {
+      const t0 = performance.now();
       const [headerResults, valuesResults] = await Promise.all([
         Promise.all(tsIds.map(id => fetchHeader(id, controller.signal))),
         Promise.all(tsIds.map(id => fetchValues(id, start, end, controller.signal))),
@@ -61,22 +74,29 @@ export function useMultiTimeSeries(): UseMultiTimeSeriesResult {
 
       if (controller.signal.aborted) return;
 
+      const totalMs = Math.round(performance.now() - t0);
+
       // Validierung: gleiche Dimension
-      const dimensions = new Set(headerResults.map(h => h.dimension));
+      const dimensions = new Set(headerResults.map(h => h.data.dimension));
       if (dimensions.size > 1) {
         setError('Alle Zeitreihen müssen die gleiche Dimension haben');
         return;
       }
 
       // Validierung: gleiche Anzahl Werte
-      const counts = new Set(valuesResults.map(v => v.count));
+      const counts = new Set(valuesResults.map(v => v.data.count));
       if (counts.size > 1) {
         setError('Alle Zeitreihen müssen die gleiche Anzahl Werte haben');
         return;
       }
 
-      setHeaders(headerResults);
-      setValuesResponses(valuesResults);
+      setHeaders(headerResults.map(r => r.data));
+      setValuesResponses(valuesResults.map(r => r.data));
+      setLoadTiming({
+        headerTimings: headerResults.map(r => r.timing),
+        valuesTimings: valuesResults.map(r => r.timing),
+        totalMs,
+      });
     } catch (e) {
       if (controller.signal.aborted) return;
       setError(e instanceof Error ? e.message : 'Unbekannter Fehler');
@@ -94,12 +114,11 @@ export function useMultiTimeSeries(): UseMultiTimeSeriesResult {
   }, []);
 
   const save = useCallback(async (): Promise<boolean> => {
-    if (edits.size === 0 || headers.length === 0) return false;
+    // Snapshot aus Ref — stabil, keine Race Condition mit neuen Edits
+    const savedEdits = new Map(editsRef.current);
+    if (savedEdits.size === 0 || headers.length === 0) return false;
     setSaving(true);
     setError(null);
-
-    // Snapshot der Edits zum Zeitpunkt des Save-Starts
-    const savedEdits = new Map(edits);
 
     try {
       // Gruppiere Edits nach Serie
@@ -173,7 +192,7 @@ export function useMultiTimeSeries(): UseMultiTimeSeriesResult {
     } finally {
       setSaving(false);
     }
-  }, [edits, rows, headers, valuesResponses]);
+  }, [rows, headers, valuesResponses]);
 
   return {
     headers,
@@ -183,6 +202,7 @@ export function useMultiTimeSeries(): UseMultiTimeSeriesResult {
     loading,
     saving,
     error,
+    loadTiming,
     load,
     updateValue,
     save,
