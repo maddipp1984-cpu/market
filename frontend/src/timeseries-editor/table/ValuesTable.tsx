@@ -203,6 +203,7 @@ export function ValuesTable({ rows, headers, edits, dimension, decimals, readOnl
     columns,
     state: { sorting },
     onSortingChange: setSorting,
+    columnResizeMode: 'onChange',
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
@@ -241,6 +242,13 @@ export function ValuesTable({ rows, headers, edits, dimension, decimals, readOnl
               {flexRender(header.column.columnDef.header, header.getContext())}
               {header.column.getIsSorted() === 'asc' && ' ▲'}
               {header.column.getIsSorted() === 'desc' && ' ▼'}
+              {header.column.getCanResize() && (
+                <div
+                  className={`resize-handle${header.column.getIsResizing() ? ' resizing' : ''}`}
+                  onPointerDown={header.getResizeHandler()}
+                  onClick={e => e.stopPropagation()}
+                />
+              )}
             </div>
           ))
         )}

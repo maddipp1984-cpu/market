@@ -1,49 +1,71 @@
-.objects-table-wrap {
-  overflow-x: auto;
+.vtable {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
 }
 
-.objects-table {
+.vtable-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: auto;
   font-size: var(--font-size-sm);
 }
 
-.objects-table th {
-  text-align: left;
+.vtable-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.vtable-table th {
   padding: var(--space-sm) var(--space-md);
   font-weight: 600;
   color: var(--color-text-secondary);
+  background: var(--color-surface);
   border-bottom: 2px solid var(--color-border);
   border-right: 1px solid var(--color-border);
-  cursor: pointer;
-  user-select: none;
+  text-align: left;
   white-space: nowrap;
+  user-select: none;
 }
 
-.objects-table th:last-child {
+.vtable-table th:last-child {
   border-right: none;
 }
 
-.objects-table th.flex-col {
-  width: 100%;
+.vtable-table th.sortable {
+  cursor: pointer;
 }
 
-.objects-table td {
+.vtable-table th.sortable:hover {
+  color: var(--color-text-primary);
+}
+
+.vtable-table td {
   padding: var(--space-sm) var(--space-md);
   border-bottom: 1px solid var(--color-border);
   border-right: 1px solid var(--color-border);
   color: var(--color-text-primary);
+  white-space: nowrap;
 }
 
-.objects-table td:last-child {
+.vtable-table td:last-child {
   border-right: none;
 }
 
-.objects-table tbody tr:hover {
+.vtable-table tbody tr:hover {
   background: var(--color-bg-hover);
 }
 
-.objects-empty {
+.vtable-table tbody tr.odd {
+  background: var(--color-surface-muted);
+}
+
+.vtable-table tbody tr.odd:hover {
+  background: var(--color-bg-hover);
+}
+
+.vtable-empty {
   text-align: center;
   padding: var(--space-2xl) var(--space-md) !important;
   color: var(--color-text-secondary);

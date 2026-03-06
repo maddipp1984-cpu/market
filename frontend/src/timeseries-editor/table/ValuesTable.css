@@ -63,6 +63,7 @@
 }
 
 .header-cell {
+  position: relative;
   font-size: var(--font-size-sm);
   font-weight: 700;
   color: var(--color-text-secondary);
@@ -181,4 +182,24 @@
 .value-input.edited:focus {
   border-color: var(--color-edit-border-focus);
   box-shadow: 0 0 0 2px var(--color-edit-ring);
+}
+
+/* Column Resize Handle */
+.resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 4px;
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+  opacity: 0;
+  background: var(--color-primary);
+  transition: opacity var(--transition-normal);
+}
+
+*:hover > .resize-handle,
+.resize-handle.resizing {
+  opacity: 1;
 }

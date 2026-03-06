@@ -20,6 +20,14 @@
   min-height: 0;
 }
 
+.overview-page-content > .card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  margin-bottom: 0;
+}
+
 .overview-page-footer {
   display: flex;
   justify-content: flex-end;
