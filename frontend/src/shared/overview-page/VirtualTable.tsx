@@ -42,6 +42,28 @@ function detectAutoFormat(sampleValue: unknown): ((v: unknown) => string) | unde
   return undefined;
 }
 
+const CHAR_WIDTH = 8;
+const PADDING = 32;
+const MIN_COL_WIDTH = 60;
+const MAX_COL_WIDTH = 400;
+
+function estimateColumnWidth<T>(
+  data: T[],
+  key: string,
+  headerText: string,
+  formatter?: (v: unknown) => string,
+): number {
+  let maxLen = headerText.length + 2; // +2 for sort indicator
+  const sampleSize = Math.min(data.length, 100);
+  for (let i = 0; i < sampleSize; i++) {
+    const raw = (data[i] as Record<string, unknown>)[key];
+    if (raw == null) continue;
+    const display = formatter ? formatter(raw) : String(raw);
+    if (display.length > maxLen) maxLen = display.length;
+  }
+  return Math.max(MIN_COL_WIDTH, Math.min(MAX_COL_WIDTH, maxLen * CHAR_WIDTH + PADDING));
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildColumns<T extends Record<string, any>>(
   data: T[],
@@ -59,11 +81,13 @@ function buildColumns<T extends Record<string, any>>(
     const headerText = override?.header ?? key;
     const sample = data.find(row => row[key] != null)?.[key];
     const formatter = override?.format ?? detectAutoFormat(sample);
+    const size = estimateColumnWidth(data, key, headerText, formatter);
 
     const col: ColumnDef<T, unknown> = {
       id: key,
       accessorKey: key as keyof T & string,
       header: headerText,
+      size,
     };
 
     if (formatter) {
@@ -98,13 +122,14 @@ export function VirtualTable<T extends Record<string, any>>({
     },
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    columnResizeMode: 'onEnd',
   });
 
   const { rows: tableRows } = table.getRowModel();
 
   return (
     <div className="vtable">
-      <table className="vtable-table">
+      <table className="vtable-table" style={{ width: table.getTotalSize() }}>
         <thead>
           {table.getHeaderGroups().map(hg => (
             <tr key={hg.id}>
@@ -113,9 +138,17 @@ export function VirtualTable<T extends Record<string, any>>({
                   key={header.id}
                   className={header.column.getCanSort() ? 'sortable' : undefined}
                   onClick={header.column.getToggleSortingHandler()}
+                  style={{ width: header.getSize() }}
                 >
                   {flexRender(header.column.columnDef.header, header.getContext())}
                   {{ asc: ' \u25B2', desc: ' \u25BC' }[header.column.getIsSorted() as string] ?? ''}
+                  {header.column.getCanResize() && (
+                    <div
+                      className={`vtable-resize-handle${header.column.getIsResizing() ? ' resizing' : ''}`}
+                      onPointerDown={header.getResizeHandler()}
+                      onClick={e => e.stopPropagation()}
+                    />
+                  )}
                 </th>
               ))}
             </tr>

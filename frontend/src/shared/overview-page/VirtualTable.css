@@ -5,9 +5,8 @@
 }
 
 .vtable-table {
-  width: 100%;
   border-collapse: collapse;
-  table-layout: auto;
+  table-layout: fixed;
   font-size: var(--font-size-sm);
 }
 
@@ -18,6 +17,7 @@
 }
 
 .vtable-table th {
+  position: relative;
   padding: var(--space-sm) var(--space-md);
   font-weight: 600;
   color: var(--color-text-secondary);
@@ -47,6 +47,8 @@
   border-right: 1px solid var(--color-border);
   color: var(--color-text-primary);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .vtable-table td:last-child {
@@ -63,6 +65,24 @@
 
 .vtable-table tbody tr.odd:hover {
   background: var(--color-bg-hover);
+}
+
+/* Resize Handle */
+.vtable-resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+}
+
+.vtable-resize-handle:hover,
+.vtable-resize-handle.resizing {
+  background: var(--color-primary);
+  opacity: 0.5;
 }
 
 .vtable-empty {

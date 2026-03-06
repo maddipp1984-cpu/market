@@ -79,6 +79,17 @@ export function OverviewPage({
 
   const data = tableData?.data ?? [];
 
+  const mergedOverrides = useMemo(() => {
+    const merged: Record<string, ColumnOverride> = {};
+    for (const col of columns) {
+      merged[col.key] = { header: col.label };
+    }
+    for (const [key, override] of Object.entries(columnOverrides)) {
+      merged[key] = { ...merged[key], ...override };
+    }
+    return merged;
+  }, [columns, columnOverrides]);
+
   const footer = useMemo(() => {
     const parts: string[] = [];
     parts.push(`${data.length} Eintr${data.length !== 1 ? 'aege' : 'ag'}`);
@@ -121,7 +132,7 @@ export function OverviewPage({
           <Card>
             <VirtualTable
               data={data}
-              columnOverrides={columnOverrides}
+              columnOverrides={mergedOverrides}
               sorting={sorting}
               onSortingChange={setSorting}
               emptyMessage={emptyMessage}
