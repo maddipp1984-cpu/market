@@ -40,16 +40,20 @@ export interface WriteValuesRequest {
   values: number[];
 }
 
+export type ColumnType = 'TEXT' | 'NUMBER' | 'DATE';
+
 export interface ColumnMeta {
   key: string;
   label: string;
   sqlColumn: string;
+  type?: ColumnType;
 }
 
 export interface FilterCondition {
   sqlColumn: string;
   operator: string;
   value: string;
+  value2?: string;
   conjunction?: string;
 }
 

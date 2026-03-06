@@ -1,5 +1,9 @@
 package de.projekt.timeseries.rest.dto;
 
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -19,7 +23,10 @@ public class FilterQueryBuilder {
         public List<Object> getParams() { return params; }
     }
 
-    private static final Set<String> VALID_OPERATORS = Set.of("=", "!=", "<", ">", "LIKE", "IN");
+    private static final Set<String> VALID_OPERATORS = Set.of(
+            "=", "!=", "<", ">", ">=", "<=", "LIKE", "IN", "BETWEEN", "IS NULL", "IS NOT NULL");
+
+    private static final ZoneId ZONE = ZoneId.of("Europe/Berlin");
 
     public static WhereClause build(List<FilterCondition> conditions, Set<String> allowedColumns) {
         if (conditions == null || conditions.isEmpty()) {
@@ -32,7 +39,10 @@ public class FilterQueryBuilder {
         for (int i = 0; i < conditions.size(); i++) {
             FilterCondition c = conditions.get(i);
 
-            // Validate column
+            // Validate column + operator not null
+            if (c.getSqlColumn() == null || c.getOperator() == null) {
+                throw new IllegalArgumentException("sqlColumn und operator duerfen nicht null sein");
+            }
             if (!allowedColumns.contains(c.getSqlColumn())) {
                 throw new IllegalArgumentException(
                         "Unbekannte Spalte: " + c.getSqlColumn()
@@ -51,8 +61,15 @@ public class FilterQueryBuilder {
             String col = c.getSqlColumn();
 
             switch (op) {
+                case "IS NULL":
+                    sql.append(col).append(" IS NULL");
+                    break;
+
+                case "IS NOT NULL":
+                    sql.append(col).append(" IS NOT NULL");
+                    break;
+
                 case "LIKE":
-                    // LIKE braucht Text — Spalte casten
                     sql.append(col).append("::text ILIKE ?");
                     params.add("%" + c.getValue() + "%");
                     break;
@@ -76,7 +93,18 @@ public class FilterQueryBuilder {
                     sql.append(")");
                     break;
 
-                default: // =, !=, <, >
+                case "BETWEEN":
+                    if (c.getValue() == null || c.getValue().isEmpty()
+                            || c.getValue2() == null || c.getValue2().isEmpty()) {
+                        throw new IllegalArgumentException(
+                                "BETWEEN erfordert zwei Werte (value und value2)");
+                    }
+                    sql.append(col).append(" BETWEEN ? AND ?");
+                    params.add(parseValue(c.getValue()));
+                    params.add(parseValue(c.getValue2()));
+                    break;
+
+                default: // =, !=, <, >, >=, <=
                     Object parsed = parseValue(c.getValue());
                     if (parsed instanceof String) {
                         sql.append("UPPER(").append(col).append("::text) ").append(op).append(" ?");
@@ -107,6 +135,8 @@ public class FilterQueryBuilder {
     }
 
     private static final int MAX_VALUE_LENGTH = 1000;
+    private static final String DATE_PATTERN = "^\\d{4}-\\d{2}-\\d{2}$";
+    private static final String DATETIME_PATTERN = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2})?$";
 
     private static Object parseValue(String value) {
         if (value == null || value.isEmpty()) {
@@ -115,6 +145,22 @@ public class FilterQueryBuilder {
         if (value.length() > MAX_VALUE_LENGTH) {
             throw new IllegalArgumentException(
                     "Filterwert zu lang (max " + MAX_VALUE_LENGTH + " Zeichen)");
+        }
+        // Datum-Parsing vor Zahlen-Parsing
+        if (value.matches(DATE_PATTERN)) {
+            try {
+                return java.sql.Date.valueOf(LocalDate.parse(value));
+            } catch (java.time.DateTimeException e) {
+                throw new IllegalArgumentException("Ungueltiges Datum: " + value);
+            }
+        }
+        if (value.matches(DATETIME_PATTERN)) {
+            try {
+                LocalDateTime ldt = LocalDateTime.parse(value);
+                return Timestamp.from(ldt.atZone(ZONE).toInstant());
+            } catch (java.time.DateTimeException e) {
+                throw new IllegalArgumentException("Ungueltiger Zeitstempel: " + value);
+            }
         }
         try {
             return Long.parseLong(value);

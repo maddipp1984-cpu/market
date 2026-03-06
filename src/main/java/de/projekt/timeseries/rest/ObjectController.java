@@ -28,12 +28,12 @@ import java.util.stream.Collectors;
 public class ObjectController {
 
     private static final List<ColumnMeta> OBJECT_COLUMNS = List.of(
-            new ColumnMeta("objectId", "ID", "o.object_id"),
-            new ColumnMeta("type", "Typ", "o.type_id"),
-            new ColumnMeta("objectKey", "Schlüssel", "o.object_key"),
-            new ColumnMeta("description", "Beschreibung", "o.description"),
-            new ColumnMeta("createdAt", "Erstellt", "o.created_at"),
-            new ColumnMeta("updatedAt", "Aktualisiert", "o.updated_at")
+            new ColumnMeta("objectId", "ID", "o.object_id", "NUMBER"),
+            new ColumnMeta("type", "Typ", "o.type_id", "TEXT"),
+            new ColumnMeta("objectKey", "Schlüssel", "o.object_key", "TEXT"),
+            new ColumnMeta("description", "Beschreibung", "o.description", "TEXT"),
+            new ColumnMeta("createdAt", "Erstellt", "o.created_at", "DATE"),
+            new ColumnMeta("updatedAt", "Aktualisiert", "o.updated_at", "DATE")
     );
 
     private static final Set<String> ALLOWED_SQL_COLUMNS = OBJECT_COLUMNS.stream()
