@@ -26,7 +26,8 @@
   background: var(--color-surface-subtle);
 }
 
-.tree-view--light .tree-node--selected {
+.tree-view--light .tree-node--selected,
+.tree-view--light .tree-node--highlighted {
   background: var(--color-primary-hover-bg);
   color: var(--color-primary);
 }

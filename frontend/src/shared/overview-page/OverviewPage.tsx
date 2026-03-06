@@ -7,10 +7,12 @@ import { StatusMessage } from '../StatusMessage';
 import { Card } from '../Card';
 import { VirtualTable, type ColumnOverride } from './VirtualTable';
 import { FilterBuilder } from './FilterBuilder';
+import { useFilterPresets } from './useFilterPresets';
 import { iconRefresh, iconPlus, iconFilter } from './icons';
 import './OverviewPage.css';
 
 interface OverviewPageProps {
+  pageKey: string;
   apiUrl: string;
   onNew?: () => void;
   newLabel?: string;
@@ -19,6 +21,7 @@ interface OverviewPageProps {
 }
 
 export function OverviewPage({
+  pageKey,
   apiUrl,
   onNew,
   newLabel = 'Neu',
@@ -33,6 +36,7 @@ export function OverviewPage({
   const [activeFilter, setActiveFilter] = useState<FilterRequest | null>(null);
   const [columns, setColumns] = useState<ColumnMeta[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
+  const { presets, loading: presetsLoading, defaultPreset, savePreset, updatePreset, deletePreset: removePreset, setDefault, clearDefault } = useFilterPresets(pageKey);
 
   const loadData = useCallback(async (filter?: FilterRequest, signal?: AbortSignal) => {
     setLoading(true);
@@ -52,10 +56,24 @@ export function OverviewPage({
     }
   }, [apiUrl]);
 
+  // Initial load: wait for presets, then load with default filter or unfiltered
   useEffect(() => {
+    if (presetsLoading) return;
     const ac = new AbortController();
-    loadData(undefined, ac.signal);
+    if (defaultPreset) {
+      const filter: FilterRequest = { conditions: defaultPreset.conditions };
+      setActiveFilter(filter);
+      loadData(filter, ac.signal);
+    } else {
+      loadData(undefined, ac.signal);
+    }
     return () => ac.abort();
+  }, [presetsLoading, defaultPreset, loadData]);
+
+  const handleFilterExecute = useCallback((conditions: FilterCondition[]) => {
+    const filter: FilterRequest = { conditions };
+    setActiveFilter(filter);
+    loadData(filter);
   }, [loadData]);
 
   const handleRefresh = useCallback(() => {
@@ -65,12 +83,6 @@ export function OverviewPage({
   const handleFilterClose = useCallback(() => {
     setFilterOpen(false);
   }, []);
-
-  const handleFilterExecute = useCallback((conditions: FilterCondition[]) => {
-    const filter: FilterRequest = { conditions };
-    setActiveFilter(filter);
-    loadData(filter);
-  }, [loadData]);
 
   const handleFilterReset = useCallback(() => {
     setActiveFilter(null);
@@ -147,9 +159,17 @@ export function OverviewPage({
           <FilterBuilder
             columns={columns}
             hasActiveFilter={activeFilter !== null}
+            activeConditions={activeFilter?.conditions}
             onExecute={handleFilterExecute}
             onReset={handleFilterReset}
             onClose={handleFilterClose}
+            presets={presets}
+            onSavePreset={savePreset}
+            onUpdatePreset={updatePreset}
+            onDeletePreset={removePreset}
+            onLoadPreset={handleFilterExecute}
+            onSetDefault={setDefault}
+            onClearDefault={clearDefault}
           />
         )}
       </div>

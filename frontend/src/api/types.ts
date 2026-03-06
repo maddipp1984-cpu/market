@@ -66,6 +66,27 @@ export interface TableResponse {
   data: Record<string, unknown>[];
 }
 
+export type PresetScope = 'GLOBAL' | 'USER';
+
+export interface FilterPreset {
+  presetId: number;
+  pageKey: string;
+  userId: string | null;
+  name: string;
+  conditions: FilterCondition[];
+  scope: PresetScope;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateFilterPresetRequest {
+  pageKey: string;
+  name: string;
+  conditions: FilterCondition[];
+  scope: PresetScope;
+}
+
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData, TValue> {

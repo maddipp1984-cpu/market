@@ -16,6 +16,8 @@ interface TreeViewProps {
   defaultExpanded?: string[];
   paddingBase?: string;
   onSelect?: (node: TreeNode) => void;
+  selectOnClick?: boolean;
+  selectedId?: string | null;
   renderNode?: (node: TreeNode, item: ItemInstance<TreeNode>) => ReactNode;
 }
 
@@ -29,7 +31,7 @@ function flattenNodes(nodes: TreeNode[], map: Map<string, TreeNode>, childrenMap
   }
 }
 
-export function TreeView({ data, variant = 'light', defaultExpanded, paddingBase = '0px', onSelect, renderNode }: TreeViewProps) {
+export function TreeView({ data, variant = 'light', defaultExpanded, paddingBase = '0px', onSelect, selectOnClick, selectedId, renderNode }: TreeViewProps) {
   const { nodeMap, childrenMap, rootChildIds } = useMemo(() => {
     const nodeMap = new Map<string, TreeNode>();
     const childrenMap = new Map<string, string[]>();
@@ -62,8 +64,10 @@ export function TreeView({ data, variant = 'light', defaultExpanded, paddingBase
       } else {
         item.expand();
       }
+    } else if (selectOnClick) {
+      onSelect?.(item.getItemData());
     }
-  }, []);
+  }, [selectOnClick, onSelect]);
 
   const handleItemDblClick = useCallback((item: ItemInstance<TreeNode>) => {
     if (!item.isFolder()) {
@@ -79,7 +83,7 @@ export function TreeView({ data, variant = 'light', defaultExpanded, paddingBase
         return (
           <div
             key={item.getId()}
-            className={`tree-node ${item.isSelected() ? 'tree-node--selected' : ''}`}
+            className={`tree-node ${selectedId != null ? (item.getId() === selectedId ? 'tree-node--highlighted' : '') : (item.isSelected() ? 'tree-node--selected' : '')}`}
             style={{ paddingLeft: `calc(${paddingBase} + ${level} * var(--tree-indent))` }}
             data-level={level}
             {...item.getProps()}

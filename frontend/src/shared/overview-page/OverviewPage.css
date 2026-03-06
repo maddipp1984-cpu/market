@@ -43,13 +43,15 @@
   right: 0;
   top: 0;
   bottom: 0;
-  width: 360px;
+  width: 560px;
   background: var(--color-surface);
   border-left: 1px solid var(--color-border);
   z-index: 11;
   box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
   padding: var(--space-lg);
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   transform: translateX(100%);
   transition: transform 0.25s ease;
 }

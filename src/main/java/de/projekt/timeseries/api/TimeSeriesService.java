@@ -1,9 +1,11 @@
 package de.projekt.timeseries.api;
 
+import de.projekt.timeseries.repository.FilterPresetRepository;
 import de.projekt.timeseries.repository.HeaderRepository;
 import de.projekt.timeseries.repository.ObjectRepository;
 import de.projekt.timeseries.repository.TimeSeriesRepository;
 import de.projekt.timeseries.model.Currency;
+import de.projekt.timeseries.model.FilterPreset;
 import de.projekt.timeseries.model.ObjectType;
 import de.projekt.timeseries.model.TimeDimension;
 import de.projekt.timeseries.model.TimeSeriesHeader;
@@ -25,12 +27,14 @@ public class TimeSeriesService {
     private final HeaderRepository headerRepo;
     private final ObjectRepository objectRepo;
     private final TimeSeriesRepository tsRepo;
+    private final FilterPresetRepository presetRepo;
 
     public TimeSeriesService(HeaderRepository headerRepo, ObjectRepository objectRepo,
-                             TimeSeriesRepository tsRepo) {
+                             TimeSeriesRepository tsRepo, FilterPresetRepository presetRepo) {
         this.headerRepo = headerRepo;
         this.objectRepo = objectRepo;
         this.tsRepo = tsRepo;
+        this.presetRepo = presetRepo;
     }
 
     // ================================================================
@@ -219,6 +223,50 @@ public class TimeSeriesService {
 
     public List<TsObject> findObjectsFiltered(String whereClause, List<Object> params) throws SQLException {
         return objectRepo.findFiltered(whereClause, params);
+    }
+
+    // ================================================================
+    // Filter-Preset-Operationen
+    // ================================================================
+
+    public long createPreset(FilterPreset preset) throws SQLException {
+        if (preset.getName() == null || preset.getName().isBlank()) {
+            throw new IllegalArgumentException("Preset-Name darf nicht leer sein");
+        }
+        if (!"GLOBAL".equals(preset.getScope()) && !"USER".equals(preset.getScope())) {
+            throw new IllegalArgumentException("Scope muss GLOBAL oder USER sein");
+        }
+        return presetRepo.create(preset);
+    }
+
+    public List<FilterPreset> getPresets(String pageKey, String userId) throws SQLException {
+        return presetRepo.findByPageKey(pageKey, userId);
+    }
+
+    public boolean updatePreset(FilterPreset preset) throws SQLException {
+        if (preset.getName() == null || preset.getName().isBlank()) {
+            throw new IllegalArgumentException("Preset-Name darf nicht leer sein");
+        }
+        if (!"GLOBAL".equals(preset.getScope()) && !"USER".equals(preset.getScope())) {
+            throw new IllegalArgumentException("Scope muss GLOBAL oder USER sein");
+        }
+        return presetRepo.update(preset);
+    }
+
+    public boolean deletePreset(long presetId) throws SQLException {
+        return presetRepo.delete(presetId);
+    }
+
+    public void setPresetAsDefault(long presetId, String pageKey, String scope, String userId) throws SQLException {
+        presetRepo.setDefault(presetId, pageKey, scope, userId);
+    }
+
+    public void clearPresetDefault(long presetId) throws SQLException {
+        presetRepo.clearDefault(presetId);
+    }
+
+    public Optional<FilterPreset> getDefaultPreset(String pageKey, String userId) throws SQLException {
+        return presetRepo.findDefault(pageKey, userId);
     }
 
     // ================================================================

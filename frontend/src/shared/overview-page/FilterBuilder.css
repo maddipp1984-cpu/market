@@ -1,39 +1,80 @@
 .filter-builder {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  flex: 1;
+  min-height: 0;
 }
 
-.filter-builder-title {
+/* Toolbar */
+.filter-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  font-size: var(--font-size-lg);
-  font-weight: 600;
-  color: var(--color-text-primary);
+  gap: var(--space-xs);
   padding-bottom: var(--space-sm);
   border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
 }
 
-.filter-builder-close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
+.filter-toolbar-spacer {
+  flex: 1;
+}
+
+.filter-toolbar-danger:hover:not(:disabled) {
+  color: var(--color-error);
+}
+
+/* Body: Tree + Inputs */
+.filter-body {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-sm);
+  flex: 1;
+  min-height: 0;
+  padding-top: var(--space-sm);
+}
+
+/* Preset Tree */
+.filter-preset-tree {
+  width: 140px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  border-right: 1px solid var(--color-border);
+  padding-right: var(--space-sm);
+}
+
+.filter-preset-tree .tree-node {
   height: 28px;
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  font-size: 18px;
-  line-height: 1;
+  font-size: var(--font-size-sm);
+  padding-right: var(--space-sm);
 }
 
-.filter-builder-close:hover {
-  background: var(--color-bg-hover);
+/* Filter Inputs */
+.filter-inputs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  overflow-y: auto;
+  min-width: 0;
+}
+
+/* Shared input styling */
+.filter-input,
+.filter-builder-row select {
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  background: var(--color-surface);
   color: var(--color-text-primary);
+}
+
+.filter-input:focus,
+.filter-builder-row select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-ring);
 }
 
 /* Eingabezeile */
@@ -44,49 +85,36 @@
   flex-wrap: wrap;
 }
 
-.filter-builder-row select,
-.filter-builder-row input {
-  padding: var(--space-xs) var(--space-sm);
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-sm);
-  font-family: var(--font-family);
-  background: var(--color-surface);
-  color: var(--color-text-primary);
+/* Add button */
+.filter-builder-add {
+  display: flex;
 }
 
-.filter-builder-row select:focus,
-.filter-builder-row input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary-ring);
-}
-
-.filter-builder-row input {
-  min-width: 120px;
-  flex: 0 1 200px;
-}
-
-/* Wert-Textarea (fuer IN-Listen) */
+/* Textarea variants */
 .filter-value-textarea {
   width: 100%;
   min-height: 80px;
   max-height: 200px;
-  padding: var(--space-xs) var(--space-sm);
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-sm);
-  font-family: var(--font-family);
-  background: var(--color-surface);
-  color: var(--color-text-primary);
   resize: vertical;
   overflow-y: auto;
 }
 
-.filter-value-textarea:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary-ring);
+/* BETWEEN: Zwei Inputs nebeneinander */
+.filter-between-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.filter-between-row .filter-input {
+  flex: 1;
+  min-width: 80px;
+}
+
+.filter-between-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
 }
 
 /* Chips */
@@ -169,21 +197,10 @@
 
 .filter-sql-textarea {
   width: 100%;
-  min-height: 200px;
-  padding: var(--space-sm);
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-sm);
+  min-height: 100px;
   font-family: 'Consolas', 'Monaco', monospace;
   font-size: var(--font-size-xs);
-  color: var(--color-text-primary);
-  background: var(--color-surface);
   resize: vertical;
-}
-
-.filter-sql-textarea:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary-ring);
 }
 
 .filter-sql-textarea:read-only {
@@ -191,56 +208,28 @@
   color: var(--color-text-secondary);
 }
 
-/* BETWEEN: Zwei Inputs nebeneinander */
-.filter-between-row {
+/* Preset speichern */
+.filter-preset-save {
+  padding: var(--space-sm);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.filter-preset-save-row {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
 }
 
-.filter-between-label {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  flex-shrink: 0;
-}
-
-.filter-between-input {
+.filter-preset-save-row .filter-input {
   flex: 1;
-  padding: var(--space-xs) var(--space-sm);
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-sm);
-  font-family: var(--font-family);
-  background: var(--color-surface);
-  color: var(--color-text-primary);
 }
 
-.filter-between-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary-ring);
-}
-
-/* Date-Input */
-.filter-date-input {
-  flex: 1;
-  padding: var(--space-xs) var(--space-sm);
-  border: 1px solid var(--color-border-input);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-sm);
-  font-family: var(--font-family);
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-}
-
-.filter-date-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary-ring);
-}
-
-/* Aktionsleiste */
-.filter-actions {
-  display: flex;
-  gap: var(--space-xs);
+/* Preset-Fehlermeldung */
+.filter-preset-error {
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
+  padding: var(--space-xs) 0;
 }

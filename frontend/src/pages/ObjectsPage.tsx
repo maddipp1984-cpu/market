@@ -7,6 +7,7 @@ export function ObjectsPage({ tabId: _tabId }: { tabId: string }) {
   const { openTab } = useTabContext();
   return (
     <OverviewPage
+      pageKey="objects"
       apiUrl="/api/objects"
       onNew={() => openTab('objekt-neu')}
       newLabel="Neues Objekt"

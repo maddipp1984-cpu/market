@@ -1,9 +1,5 @@
 package de.projekt.timeseries.rest.dto;
 
-import java.sql.Timestamp;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -25,8 +21,6 @@ public class FilterQueryBuilder {
 
     private static final Set<String> VALID_OPERATORS = Set.of(
             "=", "!=", "<", ">", ">=", "<=", "LIKE", "IN", "BETWEEN", "IS NULL", "IS NOT NULL");
-
-    private static final ZoneId ZONE = ZoneId.of("Europe/Berlin");
 
     public static WhereClause build(List<FilterCondition> conditions, Set<String> allowedColumns) {
         if (conditions == null || conditions.isEmpty()) {
@@ -57,6 +51,10 @@ public class FilterQueryBuilder {
                                 + ". Erlaubt: " + VALID_OPERATORS);
             }
 
+            // Validate value length
+            validateLength(c.getValue());
+            validateLength(c.getValue2());
+
             // Build clause for this condition
             String col = c.getSqlColumn();
 
@@ -70,25 +68,37 @@ public class FilterQueryBuilder {
                     break;
 
                 case "LIKE":
-                    sql.append(col).append("::text ILIKE ?");
-                    params.add("%" + c.getValue() + "%");
+                    sql.append(col).append("::text ILIKE ? ESCAPE '\\'");
+                    String escaped = c.getValue()
+                            .replace("\\", "\\\\")
+                            .replace("%", "\\%")
+                            .replace("_", "\\_");
+                    params.add("%" + escaped + "%");
                     break;
 
                 case "IN":
                     String[] parts = c.getValue().split(",");
-                    List<Object> inValues = new ArrayList<>();
+                    List<String> inValues = new ArrayList<>();
                     boolean hasText = false;
                     for (String part : parts) {
-                        Object val = parseValue(part.trim());
-                        if (val instanceof String) hasText = true;
-                        inValues.add(val);
+                        String trimmed = part.trim();
+                        if (!isNumeric(trimmed)) hasText = true;
+                        inValues.add(trimmed);
                     }
-                    sql.append(hasText ? "UPPER(" + col + "::text)" : col).append(" IN (");
-                    for (int j = 0; j < inValues.size(); j++) {
-                        if (j > 0) sql.append(", ");
-                        sql.append("?");
-                        Object val = inValues.get(j);
-                        params.add(val instanceof String ? ((String) val).toUpperCase() : val);
+                    if (hasText) {
+                        sql.append("UPPER(").append(col).append("::text) IN (");
+                        for (int j = 0; j < inValues.size(); j++) {
+                            if (j > 0) sql.append(", ");
+                            sql.append("?");
+                            params.add(inValues.get(j).toUpperCase());
+                        }
+                    } else {
+                        sql.append(col).append(" IN (");
+                        for (int j = 0; j < inValues.size(); j++) {
+                            if (j > 0) sql.append(", ");
+                            sql.append("?");
+                            params.add(parseNumeric(inValues.get(j)));
+                        }
                     }
                     sql.append(")");
                     break;
@@ -100,18 +110,26 @@ public class FilterQueryBuilder {
                                 "BETWEEN erfordert zwei Werte (value und value2)");
                     }
                     sql.append(col).append(" BETWEEN ? AND ?");
-                    params.add(parseValue(c.getValue()));
-                    params.add(parseValue(c.getValue2()));
+                    params.add(parseNative(c.getValue()));
+                    params.add(parseNative(c.getValue2()));
                     break;
 
                 default: // =, !=, <, >, >=, <=
-                    Object parsed = parseValue(c.getValue());
-                    if (parsed instanceof String) {
+                    String rawValue = c.getValue();
+                    boolean isEq = "=".equals(op) || "!=".equals(op);
+
+                    if (!isNumeric(rawValue) && !isDateLike(rawValue)) {
+                        // Text value → case-insensitive, ::text cast
                         sql.append("UPPER(").append(col).append("::text) ").append(op).append(" ?");
-                        params.add(((String) parsed).toUpperCase());
+                        params.add(rawValue.toUpperCase());
+                    } else if (isEq) {
+                        // Equality with numeric/date → compare as text (safe for ALL column types)
+                        sql.append(col).append("::text ").append(op).append(" ?");
+                        params.add(rawValue);
                     } else {
+                        // Ordering with numeric/date → bind native type
                         sql.append(col).append(" ").append(op).append(" ?");
-                        params.add(parsed);
+                        params.add(parseNative(rawValue));
                     }
                     break;
             }
@@ -135,41 +153,35 @@ public class FilterQueryBuilder {
     }
 
     private static final int MAX_VALUE_LENGTH = 1000;
+    private static final String NUMERIC_PATTERN = "-?\\d+(\\.\\d+)?";
     private static final String DATE_PATTERN = "^\\d{4}-\\d{2}-\\d{2}$";
     private static final String DATETIME_PATTERN = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2})?$";
 
-    private static Object parseValue(String value) {
-        if (value == null || value.isEmpty()) {
-            return "";
-        }
-        if (value.length() > MAX_VALUE_LENGTH) {
-            throw new IllegalArgumentException(
-                    "Filterwert zu lang (max " + MAX_VALUE_LENGTH + " Zeichen)");
-        }
-        // Datum-Parsing vor Zahlen-Parsing
-        if (value.matches(DATE_PATTERN)) {
-            try {
-                return java.sql.Date.valueOf(LocalDate.parse(value));
-            } catch (java.time.DateTimeException e) {
-                throw new IllegalArgumentException("Ungueltiges Datum: " + value);
-            }
-        }
-        if (value.matches(DATETIME_PATTERN)) {
-            try {
-                LocalDateTime ldt = LocalDateTime.parse(value);
-                return Timestamp.from(ldt.atZone(ZONE).toInstant());
-            } catch (java.time.DateTimeException e) {
-                throw new IllegalArgumentException("Ungueltiger Zeitstempel: " + value);
-            }
-        }
+    private static boolean isNumeric(String value) {
+        return value.matches(NUMERIC_PATTERN);
+    }
+
+    private static boolean isDateLike(String value) {
+        return value.matches(DATE_PATTERN) || value.matches(DATETIME_PATTERN);
+    }
+
+    private static Number parseNumeric(String value) {
         try {
             return Long.parseLong(value);
-        } catch (NumberFormatException e1) {
-            try {
-                return Double.parseDouble(value);
-            } catch (NumberFormatException e2) {
-                return value;
-            }
+        } catch (NumberFormatException e) {
+            return Double.parseDouble(value);
+        }
+    }
+
+    private static Object parseNative(String value) {
+        if (isNumeric(value)) return parseNumeric(value);
+        return value;
+    }
+
+    private static void validateLength(String value) {
+        if (value != null && value.length() > MAX_VALUE_LENGTH) {
+            throw new IllegalArgumentException(
+                    "Filterwert zu lang (max " + MAX_VALUE_LENGTH + " Zeichen)");
         }
     }
 }
