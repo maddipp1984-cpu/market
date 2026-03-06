@@ -43,4 +43,13 @@ export const defaultSidebarTree: SidebarNode[] = [
       { id: 'einstellungen', label: 'Einstellungen', tabType: 'einstellungen' },
     ],
   },
+  {
+    id: 'administration',
+    label: 'Administration',
+    children: [
+      { id: 'admin-users', label: 'Benutzer', tabType: 'admin-users' },
+      { id: 'admin-groups', label: 'Gruppen', tabType: 'admin-groups' },
+      { id: 'admin-permissions', label: 'Berechtigungen', tabType: 'admin-permissions' },
+    ],
+  },
 ];

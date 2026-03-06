@@ -15,4 +15,9 @@
   <folder id="system" label="System">
     <item id="einstellungen" tabType="einstellungen" />
   </folder>
+  <folder id="administration" label="Administration">
+    <item id="admin-users" tabType="admin-users" />
+    <item id="admin-groups" tabType="admin-groups" />
+    <item id="admin-permissions" tabType="admin-permissions" />
+  </folder>
 </sidebar>

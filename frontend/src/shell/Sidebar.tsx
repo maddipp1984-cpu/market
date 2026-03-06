@@ -4,6 +4,7 @@ import { defaultSidebarTree, type SidebarNode } from './sidebarTree';
 import { getTabType } from './tabTypes';
 import { fetchSidebarConfig, type SidebarNodeConfig } from '../api/client';
 import { TreeView, type TreeNode } from '../shared/TreeView';
+import { useAuth } from '../auth/AuthContext';
 import type { ItemInstance } from '@headless-tree/core';
 import './Sidebar.css';
 
@@ -61,6 +62,7 @@ function buildNodeMap(nodes: SidebarNode[], map: Map<string, SidebarNode> = new 
 
 export function Sidebar() {
   const { openTab } = useTabContext();
+  const { username, isAdmin, logout } = useAuth();
   const [sidebarTree, setSidebarTree] = useState<SidebarNode[]>(defaultSidebarTree);
 
   useEffect(() => {
@@ -117,6 +119,19 @@ export function Sidebar() {
         onSelect={handleSelect}
         renderNode={renderNode}
       />
+      <div className="sidebar-user">
+        <div className="sidebar-user-info">
+          <span className="sidebar-user-name">{username}</span>
+          {isAdmin && <span className="sidebar-user-role">Admin</span>}
+        </div>
+        <button className="sidebar-logout" onClick={logout} title="Abmelden">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+        </button>
+      </div>
     </nav>
   );
 }

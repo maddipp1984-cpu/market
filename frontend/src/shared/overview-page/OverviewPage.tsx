@@ -8,11 +8,13 @@ import { Card } from '../Card';
 import { VirtualTable, type ColumnOverride } from './VirtualTable';
 import { FilterBuilder } from './FilterBuilder';
 import { useFilterPresets } from './useFilterPresets';
+import { useAuth } from '../../auth/AuthContext';
 import { iconRefresh, iconPlus, iconFilter } from './icons';
 import './OverviewPage.css';
 
 interface OverviewPageProps {
   pageKey: string;
+  resourceKey?: string;
   apiUrl: string;
   onNew?: () => void;
   newLabel?: string;
@@ -22,12 +24,15 @@ interface OverviewPageProps {
 
 export function OverviewPage({
   pageKey,
+  resourceKey,
   apiUrl,
   onNew,
   newLabel = 'Neu',
   columnOverrides = {},
   emptyMessage = 'Keine Daten vorhanden',
 }: OverviewPageProps) {
+  const { canWrite } = useAuth();
+  const effectiveResourceKey = resourceKey ?? pageKey;
   const [tableData, setTableData] = useState<TableResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -131,7 +136,7 @@ export function OverviewPage({
             {iconFilter}
           </Button>
         )}
-        {onNew && (
+        {onNew && canWrite(effectiveResourceKey) && (
           <Button variant="primary" icon onClick={onNew} title={newLabel} aria-label={newLabel}>
             {iconPlus}
           </Button>

@@ -7,6 +7,9 @@ import { ObjekttypenPage } from '../pages/ObjekttypenPage';
 import { EinheitenPage } from '../pages/EinheitenPage';
 import { WaehrungenPage } from '../pages/WaehrungenPage';
 import { SettingsPage } from '../pages/SettingsPage';
+import { AdminUsersPage } from '../admin/AdminUsersPage';
+import { AdminGroupsPage } from '../admin/AdminGroupsPage';
+import { AdminPermissionsPage } from '../admin/AdminPermissionsPage';
 
 export interface TabType {
   type: string;
@@ -49,6 +52,9 @@ export const tabTypes: TabType[] = [
   { type: 'einheiten', label: 'Einheiten', icon: iconObjects, component: EinheitenPage },
   { type: 'waehrungen', label: 'Waehrungen', icon: iconObjects, component: WaehrungenPage },
   { type: 'einstellungen', label: 'Einstellungen', icon: iconSettings, component: SettingsPage },
+  { type: 'admin-users', label: 'Benutzer', icon: iconSettings, singleton: true, component: AdminUsersPage },
+  { type: 'admin-groups', label: 'Gruppen', icon: iconSettings, singleton: true, component: AdminGroupsPage },
+  { type: 'admin-permissions', label: 'Berechtigungen', icon: iconSettings, singleton: true, component: AdminPermissionsPage },
 ];
 
 
