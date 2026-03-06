@@ -167,6 +167,18 @@ public class FilterPresetRepository {
         }
     }
 
+    public Optional<FilterPreset> findById(long presetId) throws SQLException {
+        String sql = "SELECT * FROM ts_filter_preset WHERE preset_id = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, presetId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return Optional.of(mapRow(rs));
+                return Optional.empty();
+            }
+        }
+    }
+
     private FilterPreset mapRow(ResultSet rs) throws SQLException {
         FilterPreset preset = new FilterPreset();
         preset.setPresetId(rs.getLong("preset_id"));

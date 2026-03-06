@@ -80,8 +80,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (objectTypeId != null) {
       return permData.permissions.find(p => p.resourceKey === resourceKey && p.objectTypeId === objectTypeId);
     }
-    // Resource-level or any type match
-    return permData.permissions.find(p => p.resourceKey === resourceKey);
+    // Resource-level: explizit nur null-TypeId matchen (konsistent mit Backend)
+    return permData.permissions.find(p => p.resourceKey === resourceKey && p.objectTypeId == null);
   };
 
   const value: AuthState = {

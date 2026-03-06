@@ -1,5 +1,7 @@
 package de.projekt.timeseries.security;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
@@ -11,6 +13,8 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
+
+    private static final Logger audit = LoggerFactory.getLogger("AUDIT");
 
     private final PermissionService permissionService;
     private final AuthUserRepository userRepo;
@@ -69,20 +73,36 @@ public class AdminController {
         String password = body.get("password");
 
         if (username == null || username.isBlank()) throw new IllegalArgumentException("username ist erforderlich");
-        if (password == null || password.isBlank()) throw new IllegalArgumentException("password ist erforderlich");
+        if (password == null || password.length() < 8) {
+            throw new IllegalArgumentException("Passwort muss mindestens 8 Zeichen lang sein");
+        }
 
         String keycloakId = keycloakClient.createUser(username, email, password);
-        // Also register in local DB
         userRepo.upsert(UUID.fromString(keycloakId), username, email);
+        audit.info("User erstellt: {} ({}), durch Admin {}", username, keycloakId, SecurityUtils.getCurrentUsername());
 
         return ResponseEntity.status(201).body(Map.of("userId", keycloakId));
     }
 
     @PutMapping("/users/{id}/admin")
     public ResponseEntity<Void> setAdmin(@PathVariable String id, @RequestBody Map<String, Boolean> body) throws SQLException {
-        requireAdmin();
-        boolean isAdmin = body.getOrDefault("isAdmin", false);
-        userRepo.setAdmin(UUID.fromString(id), isAdmin);
+        UUID currentUserId = requireAdmin();
+        UUID targetUserId = UUID.fromString(id);
+        boolean newAdminState = body.getOrDefault("isAdmin", false);
+
+        // Lockout-Schutz: letzten Admin nicht degradieren
+        if (!newAdminState) {
+            if (currentUserId.equals(targetUserId)) {
+                throw new IllegalArgumentException("Du kannst dir nicht selbst den Admin-Status entziehen");
+            }
+            long adminCount = userRepo.findAll().stream().filter(AuthUser::isAdmin).count();
+            if (adminCount <= 1) {
+                throw new IllegalArgumentException("Der letzte Admin kann nicht degradiert werden");
+            }
+        }
+
+        userRepo.setAdmin(targetUserId, newAdminState);
+        audit.info("Admin-Status geaendert: {} -> {}, durch Admin {}", targetUserId, newAdminState, SecurityUtils.getCurrentUsername());
         return ResponseEntity.noContent().build();
     }
 
@@ -90,8 +110,10 @@ public class AdminController {
     public ResponseEntity<Void> setEnabled(@PathVariable String id, @RequestBody Map<String, Boolean> body)
             throws SQLException, IOException, InterruptedException {
         requireAdmin();
+        String validId = UUID.fromString(id).toString(); // UUID-Validierung gegen Path Traversal
         boolean enabled = body.getOrDefault("enabled", true);
-        keycloakClient.setEnabled(id, enabled);
+        keycloakClient.setEnabled(validId, enabled);
+        audit.info("User {}: {}, durch Admin {}", validId, enabled ? "aktiviert" : "deaktiviert", SecurityUtils.getCurrentUsername());
         return ResponseEntity.noContent().build();
     }
 
@@ -99,9 +121,13 @@ public class AdminController {
     public ResponseEntity<Void> resetPassword(@PathVariable String id, @RequestBody Map<String, String> body)
             throws SQLException, IOException, InterruptedException {
         requireAdmin();
+        String validId = UUID.fromString(id).toString(); // UUID-Validierung gegen Path Traversal
         String password = body.get("password");
-        if (password == null || password.isBlank()) throw new IllegalArgumentException("password ist erforderlich");
-        keycloakClient.resetPassword(id, password);
+        if (password == null || password.length() < 8) {
+            throw new IllegalArgumentException("Passwort muss mindestens 8 Zeichen lang sein");
+        }
+        keycloakClient.resetPassword(validId, password);
+        audit.info("Passwort zurueckgesetzt: {}, durch Admin {}", validId, SecurityUtils.getCurrentUsername());
         return ResponseEntity.noContent().build();
     }
 
@@ -184,6 +210,7 @@ public class AdminController {
     public ResponseEntity<Void> deleteGroup(@PathVariable int id) throws SQLException {
         requireAdmin();
         groupRepo.delete(id);
+        audit.info("Gruppe geloescht: {}, durch Admin {}", id, SecurityUtils.getCurrentUsername());
         return ResponseEntity.noContent().build();
     }
 

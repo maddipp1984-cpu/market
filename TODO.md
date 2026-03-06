@@ -6,6 +6,22 @@
 - [ ] **P1** — Root aufräumen: Lose Skripte (`insert_*.sh`, Logs) in `scripts/` verschieben oder entfernen, klare Ordnerstruktur definieren
 - [ ] **P2** — Projektstruktur reviewen: Gehoeren `sql/`, `benchmarks/`, `docs/`, `frontend/` so ins Root oder besser gruppiert?
 
+### Berechtigungssystem (3-Ebenen-Modell) — IN ARBEIT
+- [x] **AUTH1** — DB-Migration: 6 Auth-Tabellen (ts_auth_*) + Seed-Daten
+- [x] **AUTH2** — Backend: Models, Repositories, PermissionService, UserRegistrationFilter
+- [x] **AUTH3** — Backend: AdminController + KeycloakAdminClient
+- [x] **AUTH4** — Backend: SecurityConfig umgebaut (nur authenticated, keine Rollen)
+- [x] **AUTH5** — Backend: ConfigController Sidebar-Filterung nach Permissions
+- [x] **AUTH6** — Frontend: AuthContext (Permissions statt Rollen), client.ts Admin-API
+- [x] **AUTH7** — Frontend: 3 Admin-Seiten (Users, Groups, Permission-Matrix)
+- [x] **AUTH8** — Frontend: OverviewPage canWrite-Guard, Sidebar Admin-Badge
+- [ ] **AUTH9** — Keycloak Realm Setup: timeseries-frontend (public) + timeseries-backend (confidential)
+- [ ] **AUTH10** — Permission-Checks in ObjectController (Typ-Filterung, can_write/can_delete)
+- [ ] **AUTH11** — Permission-Checks in TimeSeriesController (via Objekt-Zuordnung)
+- [ ] **AUTH12** — Permission-Checks in Referenzdaten-Controllern (Einheiten, Waehrungen, Objekttypen)
+- [ ] **AUTH13** — Frontend: Field-Restriction-Guards im TimeSeriesEditor
+- [ ] **AUTH14** — E2E-Test: Neuer User, Gruppe, Rechte, Sichtbarkeit, Schreiben, Loeschen
+
 ### Architektur / Infrastruktur
 - [ ] **A1** — Transaktionsmanagement: Zusammenhängende Schreiboperationen in einer Transaktion
 - [ ] **A2** — Fehlerbehandlung: Fachliche Exceptions, Logging, Retry bei Connection-Timeouts

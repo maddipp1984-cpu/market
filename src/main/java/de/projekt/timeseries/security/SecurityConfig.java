@@ -1,5 +1,6 @@
 package de.projekt.timeseries.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -19,6 +20,9 @@ public class SecurityConfig {
 
     private final UserRegistrationFilter userRegistrationFilter;
 
+    @Value("${cors.allowed-origins:http://localhost:5173}")
+    private String allowedOrigins;
+
     public SecurityConfig(UserRegistrationFilter userRegistrationFilter) {
         this.userRegistrationFilter = userRegistrationFilter;
     }
@@ -26,9 +30,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+            // CSRF deaktiviert: Stateless JWT-API, kein Session-Cookie
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .headers(headers -> headers
+                .contentTypeOptions(ct -> {})
+                .frameOptions(fo -> fo.deny())
+            )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().authenticated()
@@ -41,9 +50,9 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
+        config.setAllowedOrigins(List.of(allowedOrigins.split(",")));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
         config.setAllowCredentials(true);
         config.setExposedHeaders(List.of("X-Response-Time"));
 

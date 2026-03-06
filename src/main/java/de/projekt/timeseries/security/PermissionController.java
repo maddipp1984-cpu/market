@@ -13,11 +13,9 @@ import java.util.*;
 public class PermissionController {
 
     private final PermissionService permissionService;
-    private final AuthUserRepository userRepo;
 
-    public PermissionController(PermissionService permissionService, AuthUserRepository userRepo) {
+    public PermissionController(PermissionService permissionService) {
         this.permissionService = permissionService;
-        this.userRepo = userRepo;
     }
 
     @GetMapping("/me")

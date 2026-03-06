@@ -239,6 +239,10 @@ public class TimeSeriesService {
         return presetRepo.create(preset);
     }
 
+    public Optional<FilterPreset> getPreset(long presetId) throws SQLException {
+        return presetRepo.findById(presetId);
+    }
+
     public List<FilterPreset> getPresets(String pageKey, String userId) throws SQLException {
         return presetRepo.findByPageKey(pageKey, userId);
     }

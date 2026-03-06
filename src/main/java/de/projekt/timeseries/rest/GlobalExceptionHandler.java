@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -38,7 +40,34 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleSqlException(SQLException ex) {
         log.error("Datenbankfehler", ex);
         return ResponseEntity.internalServerError().body(Map.of(
-                "error", "Datenbankfehler: " + ex.getMessage()
+                "error", "Interner Datenbankfehler"
         ));
+    }
+
+    @ExceptionHandler(java.io.IOException.class)
+    public ResponseEntity<Map<String, String>> handleIOException(java.io.IOException ex) {
+        log.error("IO-Fehler", ex);
+        return ResponseEntity.internalServerError().body(Map.of(
+                "error", "Externer Service nicht erreichbar"
+        ));
+    }
+
+    @ExceptionHandler(InterruptedException.class)
+    public ResponseEntity<Map<String, String>> handleInterrupted(InterruptedException ex) {
+        Thread.currentThread().interrupt();
+        log.error("Request unterbrochen", ex);
+        return ResponseEntity.internalServerError().body(Map.of(
+                "error", "Request unterbrochen"
+        ));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, String>> handleAccessDenied(AccessDeniedException ex) {
+        return ResponseEntity.status(403).body(Map.of("error", "Zugriff verweigert"));
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<Map<String, String>> handleAuthentication(AuthenticationException ex) {
+        return ResponseEntity.status(401).body(Map.of("error", "Nicht authentifiziert"));
     }
 }

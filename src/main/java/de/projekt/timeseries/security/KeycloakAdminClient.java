@@ -16,6 +16,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
@@ -31,8 +32,8 @@ public class KeycloakAdminClient {
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
-    private String cachedToken;
-    private Instant tokenExpiry = Instant.MIN;
+    private volatile String cachedToken;
+    private volatile Instant tokenExpiry = Instant.MIN;
 
     public KeycloakAdminClient(
             @Value("${keycloak.admin.url}") String baseUrl,
@@ -44,11 +45,11 @@ public class KeycloakAdminClient {
         this.realm = realm;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
-        this.httpClient = HttpClient.newHttpClient();
+        this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
         this.objectMapper = objectMapper;
     }
 
-    private String getToken() throws IOException, InterruptedException {
+    private synchronized String getToken() throws IOException, InterruptedException {
         if (cachedToken != null && Instant.now().isBefore(tokenExpiry)) {
             return cachedToken;
         }
