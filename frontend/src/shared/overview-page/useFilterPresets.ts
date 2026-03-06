@@ -67,9 +67,10 @@ export function useFilterPresets(pageKey: string) {
   }, [pageKey]);
 
   const setDefault = useCallback(async (presetId: number) => {
-    await apiSetDefault(presetId);
+    const preset = presets.find(p => p.presetId === presetId);
+    await apiSetDefault(presetId, pageKey, preset?.scope ?? 'USER');
     await reload();
-  }, [reload]);
+  }, [presets, pageKey, reload]);
 
   const clearDefault = useCallback(async (presetId: number) => {
     await apiClearDefault(presetId);

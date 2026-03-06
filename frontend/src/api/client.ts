@@ -139,8 +139,8 @@ export async function deleteFilterPreset(presetId: number): Promise<void> {
   }
 }
 
-export async function setPresetDefault(presetId: number): Promise<void> {
-  const res = await fetch(`/api/filter-presets/${presetId}/default`, {
+export async function setPresetDefault(presetId: number, pageKey: string, scope: string): Promise<void> {
+  const res = await fetch(`/api/filter-presets/${presetId}/default?pageKey=${encodeURIComponent(pageKey)}&scope=${encodeURIComponent(scope)}`, {
     method: 'PUT',
     headers: { 'X-User-Id': 'default' },
   });

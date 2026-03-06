@@ -50,7 +50,6 @@ interface FilterBuilderProps {
   onSavePreset?: (name: string, conditions: FilterCondition[], scope: PresetScope) => Promise<void>;
   onUpdatePreset?: (presetId: number, name: string, conditions: FilterCondition[], scope: PresetScope) => Promise<void>;
   onDeletePreset?: (presetId: number) => Promise<void>;
-  onLoadPreset?: (conditions: FilterCondition[]) => void;
   onSetDefault?: (presetId: number) => Promise<void>;
   onClearDefault?: (presetId: number) => Promise<void>;
 }
@@ -76,7 +75,7 @@ function buildWherePreview(conds: FilterCondition[]) {
   }).join(' ');
 }
 
-export function FilterBuilder({ columns, hasActiveFilter, activeConditions, onExecute, onReset, onClose, presets, onSavePreset, onUpdatePreset, onDeletePreset, onLoadPreset, onSetDefault, onClearDefault }: FilterBuilderProps) {
+export function FilterBuilder({ columns, hasActiveFilter, activeConditions, onExecute, onReset, onClose, presets, onSavePreset, onUpdatePreset, onDeletePreset, onSetDefault, onClearDefault }: FilterBuilderProps) {
   const sortedColumns = useMemo(() => [...columns].sort((a, b) => a.label.localeCompare(b.label, 'de')), [columns]);
   const [conditions, setConditions] = useState<FilterCondition[]>([]);
   const [presetError, setPresetError] = useState<string | null>(null);
@@ -230,11 +229,10 @@ export function FilterBuilder({ columns, hasActiveFilter, activeConditions, onEx
     if (isNaN(id)) return;
     setSelectedPresetId(id);
     const preset = presets?.find(p => p.presetId === id);
-    if (preset && onLoadPreset) {
-      onLoadPreset(preset.conditions);
+    if (preset) {
       setConditions(preset.conditions);
     }
-  }, [presets, onLoadPreset]);
+  }, [presets]);
 
   const selectedPreset = presets?.find(p => p.presetId === selectedPresetId) ?? null;
 

@@ -167,7 +167,6 @@ export function OverviewPage({
             onSavePreset={savePreset}
             onUpdatePreset={updatePreset}
             onDeletePreset={removePreset}
-            onLoadPreset={handleFilterExecute}
             onSetDefault={setDefault}
             onClearDefault={clearDefault}
           />
