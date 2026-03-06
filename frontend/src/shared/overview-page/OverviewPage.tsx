@@ -1,61 +1,147 @@
-import type { ReactNode } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import type { SortingState } from '@tanstack/react-table';
+import type { ColumnMeta, FilterCondition, FilterRequest, TableResponse } from '../../api/types';
+import { fetchTable, type TimingInfo } from '../../api/client';
 import { Button } from '../Button';
 import { StatusMessage } from '../StatusMessage';
+import { Card } from '../Card';
+import { VirtualTable, type ColumnOverride } from './VirtualTable';
+import { FilterBuilder } from './FilterBuilder';
+import { iconRefresh, iconPlus, iconFilter } from './icons';
 import './OverviewPage.css';
 
-const iconRefresh = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
-    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-  </svg>
-);
-
-const iconPlus = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-);
-
 interface OverviewPageProps {
-  loading: boolean;
-  error: string | null;
-  onRefresh: () => void;
+  apiUrl: string;
   onNew?: () => void;
   newLabel?: string;
-  actions?: ReactNode;
-  children: ReactNode;
-  footer?: ReactNode;
+  columnOverrides?: Record<string, ColumnOverride>;
+  emptyMessage?: string;
 }
 
 export function OverviewPage({
-  loading,
-  error,
-  onRefresh,
+  apiUrl,
   onNew,
   newLabel = 'Neu',
-  actions: extraActions,
-  children,
-  footer,
+  columnOverrides = {},
+  emptyMessage = 'Keine Daten vorhanden',
 }: OverviewPageProps) {
+  const [tableData, setTableData] = useState<TableResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [timing, setTiming] = useState<TimingInfo | null>(null);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [activeFilter, setActiveFilter] = useState<FilterRequest | null>(null);
+  const [columns, setColumns] = useState<ColumnMeta[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  const loadData = useCallback(async (filter?: FilterRequest, signal?: AbortSignal) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await fetchTable(apiUrl, filter, signal);
+      setTableData(result.data);
+      setTiming(result.timing);
+      if (result.data.columns.length > 0) {
+        setColumns(result.data.columns);
+      }
+    } catch (e: unknown) {
+      if (e instanceof DOMException && e.name === 'AbortError') return;
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [apiUrl]);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    loadData(undefined, ac.signal);
+    return () => ac.abort();
+  }, [loadData]);
+
+  const handleRefresh = useCallback(() => {
+    loadData(activeFilter ?? undefined);
+  }, [loadData, activeFilter]);
+
+  const handleFilterClose = useCallback(() => {
+    setFilterOpen(false);
+  }, []);
+
+  const handleFilterExecute = useCallback((conditions: FilterCondition[]) => {
+    const filter: FilterRequest = { conditions };
+    setActiveFilter(filter);
+    loadData(filter);
+  }, [loadData]);
+
+  const handleFilterReset = useCallback(() => {
+    setActiveFilter(null);
+    loadData();
+  }, [loadData]);
+
+  const data = tableData?.data ?? [];
+
+  const footer = useMemo(() => {
+    const parts: string[] = [];
+    parts.push(`${data.length} Eintr${data.length !== 1 ? 'aege' : 'ag'}`);
+    if (activeFilter) parts.push('(gefiltert)');
+    if (timing) {
+      parts.push(`${timing.totalMs} ms`);
+      if (timing.serverMs !== null) parts.push(`(Server: ${timing.serverMs} ms)`);
+    }
+    return <span>{parts.join(' | ')}</span>;
+  }, [data.length, activeFilter, timing]);
+
   return (
     <div className="overview-page">
       <div className="overview-page-toolbar">
-        <Button variant="ghost" icon onClick={onRefresh} disabled={loading} title="Aktualisieren" aria-label="Aktualisieren">
+        <Button variant="ghost" icon onClick={handleRefresh} disabled={loading} title="Aktualisieren" aria-label="Aktualisieren">
           {iconRefresh}
         </Button>
+        {columns.length > 0 && (
+          <Button
+            variant="ghost"
+            icon
+            onClick={() => setFilterOpen(o => !o)}
+            title="Filter"
+            aria-label="Filter"
+            className={activeFilter ? 'filter-icon-active' : undefined}
+          >
+            {iconFilter}
+          </Button>
+        )}
         {onNew && (
           <Button variant="primary" icon onClick={onNew} title={newLabel} aria-label={newLabel}>
             {iconPlus}
           </Button>
         )}
-        {extraActions}
       </div>
       <div className="overview-page-content">
         {loading && <StatusMessage type="info">Lade...</StatusMessage>}
         {error && <StatusMessage type="error">{error}</StatusMessage>}
-        {!loading && !error && children}
+        {!loading && !error && (
+          <Card>
+            <VirtualTable
+              data={data}
+              columnOverrides={columnOverrides}
+              sorting={sorting}
+              onSortingChange={setSorting}
+              emptyMessage={emptyMessage}
+            />
+          </Card>
+        )}
       </div>
-      {footer && <div className="overview-page-footer">{footer}</div>}
+      <div className="overview-page-footer">{footer}</div>
+      {filterOpen && <div className="filter-drawer-backdrop" onClick={handleFilterClose} />}
+      <div className={`filter-drawer ${filterOpen ? 'open' : ''}`}>
+        {columns.length > 0 && (
+          <FilterBuilder
+            columns={columns}
+            hasActiveFilter={activeFilter !== null}
+            onExecute={handleFilterExecute}
+            onReset={handleFilterReset}
+            onClose={handleFilterClose}
+          />
+        )}
+      </div>
     </div>
   );
 }

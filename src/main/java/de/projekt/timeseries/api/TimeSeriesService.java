@@ -217,6 +217,10 @@ public class TimeSeriesService {
         return objectRepo.delete(objectId);
     }
 
+    public List<TsObject> findObjectsFiltered(String whereClause, List<Object> params) throws SQLException {
+        return objectRepo.findFiltered(whereClause, params);
+    }
+
     // ================================================================
     // Hilfsmethoden
     // ================================================================

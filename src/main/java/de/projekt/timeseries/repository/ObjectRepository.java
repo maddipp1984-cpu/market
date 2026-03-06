@@ -141,6 +141,25 @@ public class ObjectRepository {
         }
     }
 
+    public List<TsObject> findFiltered(String whereClause, List<Object> params) throws SQLException {
+        String sql = "SELECT object_id, type_id, object_key, description, created_at, updated_at " +
+                     "FROM ts_object o WHERE " + whereClause + " ORDER BY o.object_key";
+
+        List<TsObject> result = new ArrayList<>();
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    result.add(mapRow(rs));
+                }
+            }
+        }
+        return result;
+    }
+
     private TsObject mapRow(ResultSet rs) throws SQLException {
         TsObject obj = new TsObject();
         obj.setObjectId(rs.getLong("object_id"));

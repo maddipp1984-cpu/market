@@ -37,6 +37,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(SQLException.class)
     public ResponseEntity<Map<String, String>> handleSqlException(SQLException ex) {
         log.error("Datenbankfehler", ex);
-        return ResponseEntity.internalServerError().body(Map.of("error", "Interner Datenbankfehler"));
+        return ResponseEntity.internalServerError().body(Map.of(
+                "error", "Datenbankfehler: " + ex.getMessage()
+        ));
     }
 }

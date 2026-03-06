@@ -40,6 +40,28 @@ export interface WriteValuesRequest {
   values: number[];
 }
 
+export interface ColumnMeta {
+  key: string;
+  label: string;
+  sqlColumn: string;
+}
+
+export interface FilterCondition {
+  sqlColumn: string;
+  operator: string;
+  value: string;
+  conjunction?: string;
+}
+
+export interface FilterRequest {
+  conditions?: FilterCondition[];
+}
+
+export interface TableResponse {
+  columns: ColumnMeta[];
+  data: Record<string, unknown>[];
+}
+
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData, TValue> {

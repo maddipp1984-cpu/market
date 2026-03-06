@@ -1,4 +1,4 @@
-import type { ObjectResponse, TimeSeriesHeaderResponse, TimeSeriesValuesResponse, WriteValuesRequest } from './types';
+import type { ObjectResponse, TimeSeriesHeaderResponse, TimeSeriesValuesResponse, WriteValuesRequest, FilterRequest, TableResponse } from './types';
 
 export interface TimingInfo {
   serverMs: number | null;
@@ -60,6 +60,29 @@ export async function fetchValues(
 export async function fetchObjects(signal?: AbortSignal): Promise<{ data: ObjectResponse[]; timing: TimingInfo }> {
   const t0 = performance.now();
   const res = await fetch('/api/objects', { signal });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return { data, timing: extractTiming(res, t0) };
+}
+
+export async function fetchTable(
+  url: string,
+  filter?: FilterRequest,
+  signal?: AbortSignal,
+): Promise<{ data: TableResponse; timing: TimingInfo }> {
+  const t0 = performance.now();
+  const hasFilter = filter && filter.conditions && filter.conditions.length > 0;
+  const res = hasFilter
+    ? await fetch(`${url}/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(filter),
+        signal,
+      })
+    : await fetch(url, { signal });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(body.error || `HTTP ${res.status}`);
