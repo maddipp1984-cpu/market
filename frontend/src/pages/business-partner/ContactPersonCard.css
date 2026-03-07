@@ -1,0 +1,70 @@
+.contact-card {
+  padding: var(--space-sm);
+}
+
+.contact-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  padding: var(--space-xs) 0;
+}
+
+.contact-card-toggle {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  width: 16px;
+}
+
+.contact-card-name {
+  font-weight: 600;
+  flex: 1;
+}
+
+.contact-card-remove {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0 var(--space-xs);
+  line-height: 1;
+}
+.contact-card-remove:hover {
+  color: var(--color-error);
+}
+
+.contact-card-body {
+  padding: var(--space-md) 0 var(--space-xs) calc(16px + var(--space-sm));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.contact-card-row {
+  display: flex;
+  gap: var(--space-md);
+}
+.contact-card-row > * {
+  flex: 1;
+}
+
+.contact-card-functions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding-top: var(--space-xs);
+}
+
+.contact-card-functions-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.contact-card-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}

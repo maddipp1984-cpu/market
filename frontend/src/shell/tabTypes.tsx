@@ -12,6 +12,7 @@ import { AdminGroupsPage } from '../admin/AdminGroupsPage';
 import { AdminPermissionsPage } from '../admin/AdminPermissionsPage';
 import { AdminUserDetailPage } from '../admin/AdminUserDetailPage';
 import { BusinessPartnerPage } from '../pages/BusinessPartnerPage';
+import { BusinessPartnerDetailPage } from '../pages/business-partner/BusinessPartnerDetailPage';
 
 export interface TabType {
   type: string;
@@ -60,6 +61,7 @@ export const tabTypes: TabType[] = [
   { type: 'einheiten', label: 'Einheiten', icon: iconObjects, component: EinheitenPage },
   { type: 'waehrungen', label: 'Waehrungen', icon: iconObjects, component: WaehrungenPage },
   { type: 'business-partners', label: 'Geschaeftspartner', icon: iconPartner, singleton: true, component: BusinessPartnerPage },
+  { type: 'business-partner-detail', label: 'Geschaeftspartner', icon: iconPartner, component: BusinessPartnerDetailPage },
   { type: 'einstellungen', label: 'Einstellungen', icon: iconSettings, component: SettingsPage },
   { type: 'admin-users', label: 'Benutzer', icon: iconSettings, singleton: true, component: AdminUsersPage },
   { type: 'admin-groups', label: 'Gruppen', icon: iconSettings, singleton: true, component: AdminGroupsPage },
