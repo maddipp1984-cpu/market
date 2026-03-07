@@ -3,17 +3,25 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  padding: var(--space-lg);
-  gap: var(--space-md);
   overflow: auto;
 }
 
 .detail-page-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-md);
   flex-shrink: 0;
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.detail-page-content {
+  padding: var(--space-lg);
 }
 
 .detail-page-title {
@@ -32,12 +40,6 @@
   color: var(--color-error, #ef4444);
 }
 
-.detail-page-content {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-}
 
 .detail-page-modal-backdrop {
   position: fixed;

@@ -3,7 +3,17 @@ import { Button } from '../Button';
 import { useTabContext } from '../../shell/TabContext';
 import { useAuth } from '../../auth/AuthContext';
 import { useMessageBar } from '../../shell/MessageBarContext';
+import { iconPlus, iconSave, iconTrash } from '../overview-page/icons';
 import './DetailPage.css';
+
+const iconSaveClose = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M16 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v6" />
+    <polyline points="14 21 14 13 7 13 7 21" />
+    <polyline points="7 3 7 8 13 8" />
+    <path d="M18 18l4 4m0-4l-4 4" />
+  </svg>
+);
 
 export interface ValidationResult {
   valid: boolean;
@@ -103,34 +113,45 @@ export function DetailPage({
         <h2 className="detail-page-title">{title}</h2>
         <div className="detail-page-actions">
           {onNew && hasWritePermission && (
-            <Button variant="ghost" onClick={onNew} title="Neu">Neu</Button>
+            <Button variant="ghost" icon onClick={onNew} title="Neu" aria-label="Neu">
+              {iconPlus}
+            </Button>
           )}
           {isEditable && hasWritePermission && (
             <>
               <Button
                 variant="primary"
+                icon
                 onClick={() => handleSave(false)}
                 disabled={saving}
+                title="Speichern"
+                aria-label="Speichern"
               >
-                {saving ? 'Speichern...' : 'Speichern'}
+                {iconSave}
               </Button>
               <Button
                 variant="ghost"
+                icon
                 onClick={() => handleSave(true)}
                 disabled={saving}
+                title="Speichern & Schliessen"
+                aria-label="Speichern & Schliessen"
               >
-                Speichern & Schliessen
+                {iconSaveClose}
               </Button>
             </>
           )}
           {mode === 'edit' && hasDeletePermission && onDelete && (
             <Button
               variant="ghost"
+              icon
               onClick={() => setConfirmDelete(true)}
               disabled={deleting}
+              title="Loeschen"
+              aria-label="Loeschen"
               className="detail-page-delete-btn"
             >
-              Loeschen
+              {iconTrash}
             </Button>
           )}
           {extraActions}
