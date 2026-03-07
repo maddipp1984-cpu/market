@@ -6,16 +6,19 @@ export interface Tab {
   type: string;
   label: string;
   icon: ReactNode;
+  params?: Record<string, unknown>;
 }
 
 interface TabContextValue {
   tabs: Tab[];
   activeTabId: string | null;
-  openTab: (type: string) => void;
+  openTab: (type: string, params?: Record<string, unknown>) => void;
   closeTab: (id: string) => void;
   closeAllTabs: () => void;
   setActiveTab: (id: string) => void;
   updateTabLabel: (id: string, label: string) => void;
+  getTabParams: (tabId: string) => Record<string, unknown> | undefined;
+  registerCloseGuard: (tabId: string, guard: () => boolean) => () => void;
 }
 
 const TabContext = createContext<TabContextValue | null>(null);
@@ -27,15 +30,16 @@ function createDashboardTab(counter: React.MutableRefObject<number>): Tab {
 
 export function TabProvider({ children }: { children: ReactNode }) {
   const tabCounterRef = useRef(0);
+  const closeGuardsRef = useRef<Map<string, () => boolean>>(new Map());
   const [tabs, setTabs] = useState<Tab[]>(() => [createDashboardTab(tabCounterRef)]);
   const [activeTabId, setActiveTabId] = useState<string | null>(() => tabs[0]?.id ?? null);
 
-  const openTab = useCallback((type: string) => {
+  const openTab = useCallback((type: string, params?: Record<string, unknown>) => {
     const tabType = getTabType(type);
     if (!tabType) return;
 
     const newId = `tab-${++tabCounterRef.current}`;
-    const newTab: Tab = { id: newId, type, label: tabType.label, icon: tabType.icon };
+    const newTab: Tab = { id: newId, type, label: tabType.label, icon: tabType.icon, params };
 
     setTabs(prev => {
       // Singleton: fokussiere existierenden Tab statt neuen zu oeffnen
@@ -52,6 +56,11 @@ export function TabProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const closeTab = useCallback((id: string) => {
+    const guard = closeGuardsRef.current.get(id);
+    if (guard && !guard()) {
+      return; // Guard hat Schliessen verhindert
+    }
+
     setTabs(prev => {
       if (prev.length <= 1) return prev; // mind. 1 Tab offen
       const idx = prev.findIndex(t => t.id === id);
@@ -62,6 +71,7 @@ export function TabProvider({ children }: { children: ReactNode }) {
         const newIdx = Math.min(idx, next.length - 1);
         return next[newIdx]?.id ?? null;
       });
+      closeGuardsRef.current.delete(id);
       return next;
     });
   }, []);
@@ -80,8 +90,17 @@ export function TabProvider({ children }: { children: ReactNode }) {
     setTabs(prev => prev.map(t => t.id === id ? { ...t, label } : t));
   }, []);
 
+  const getTabParams = useCallback((tabId: string): Record<string, unknown> | undefined => {
+    return tabs.find(t => t.id === tabId)?.params;
+  }, [tabs]);
+
+  const registerCloseGuard = useCallback((tabId: string, guard: () => boolean) => {
+    closeGuardsRef.current.set(tabId, guard);
+    return () => { closeGuardsRef.current.delete(tabId); };
+  }, []);
+
   return (
-    <TabContext.Provider value={{ tabs, activeTabId, openTab, closeTab, closeAllTabs, setActiveTab, updateTabLabel }}>
+    <TabContext.Provider value={{ tabs, activeTabId, openTab, closeTab, closeAllTabs, setActiveTab, updateTabLabel, getTabParams, registerCloseGuard }}>
       {children}
     </TabContext.Provider>
   );
