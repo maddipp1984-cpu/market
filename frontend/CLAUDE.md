@@ -66,8 +66,12 @@ frontend/
       table/
         ValuesTable.tsx               -- Virtualisierte Tabelle mit Inline-Editing
         ValuesTable.css               -- Grid-Table-Styles (Tabelle, Zellen, Editing)
-    pages/                            -- Weitere Seiten (Platzhalter)
+    pages/                            -- Weitere Seiten
       DashboardPage.tsx               -- KPI-Uebersicht
+      BusinessPartnerPage.tsx         -- GP-Uebersicht (OverviewPage-Template)
+      business-partner/
+        BusinessPartnerDetailPage.tsx -- GP-Detail (DetailPage-Template, Ansprechpartner-Cards)
+        ContactPersonCard.tsx + .css  -- Klappbare Ansprechpartner-Karte
       ObjectsPage.tsx                 -- Objekt-Verwaltung (Platzhalter)
       ObjekttypenPage.tsx             -- Objekttypen (Platzhalter)
       EinheitenPage.tsx               -- Einheiten (Platzhalter)

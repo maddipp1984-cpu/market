@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-03-07 — Geschaeftspartner CRUD (erstes JPA-Modul)
+- **JPA neben Raw JDBC**: `spring-boot-starter-data-jpa` hinzugefuegt, `ddl-auto=validate`, `open-in-view=false`
+- **DB-Migration** (`006_business_partner.sql`): 3 Tabellen (business_partner, contact_person, contact_person_function)
+- **JPA Entities**: BusinessPartner (@OneToMany cascade ALL), ContactPerson (@ElementCollection fuer Funktionen), ContactFunction Enum
+- **Single Repository**: BusinessPartnerRepository (JpaRepository) — kein separates ContactPerson-Repo
+- **Service Layer**: BusinessPartnerService mit Validierung, DTO-Mapping, @Transactional
+- **REST-Controller**: `/api/business-partners` (GET Liste als TableResponse, GET/POST/PUT/DELETE Einzel)
+- **Frontend Overview**: BusinessPartnerPage mit OverviewPage-Template, Doppelklick oeffnet Detail
+- **Frontend Detail**: BusinessPartnerDetailPage mit Ansprechpartner als klappbare Cards, Funktions-Checkboxen
+- **DetailPage-Template verbessert**: Icon-Buttons statt Text, sticky Toolbar, kein Titel, links-ausgerichtet
+- **Smart Auto-Refresh**: Stale-Flag-Mechanismus (markOverviewStale/consumeStale) statt Always-Reload bei Tab-Wechsel
+
 ## 2026-03-07 — DetailPage-Template + Tab-Parameter
 - **DetailPage** (`shared/detail-page/`): Shared-Komponente fuer Detailmasken mit Standard-Toolbar (Neu/Speichern/Speichern&Schliessen/Loeschen), Modi (view/edit/new), Validierung vor Speichern, Dirty-Warnung bei Tab-Schliessen, Berechtigungspruefung (canWrite/canDelete)
 - **Tab-System erweitert**: `openTab(type, params)` uebergibt Parameter (mode, entityId), `getTabParams(tabId)` liest sie

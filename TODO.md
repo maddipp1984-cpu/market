@@ -40,9 +40,9 @@
 - [ ] **R2** — TimeSeriesController prüfen: Nicht jede interne API soll exponiert werden → Endpoints reduzieren
 
 ### Stammdaten-Modul (JPA)
-- [ ] **J1** — JPA/Hibernate einrichten: `spring-boot-starter-data-jpa` Dependency, Konfiguration neben Raw JDBC
-- [ ] **J2** — Geschaeftspartner Entity + Repository (JpaRepository), REST-Controller
-- [ ] **J3** — Frontend: Stammdaten-Seite (CRUD-Maske) mit DataPage-Template
+- [x] **J1** — JPA/Hibernate einrichten: `spring-boot-starter-data-jpa` Dependency, Konfiguration neben Raw JDBC
+- [x] **J2** — Geschaeftspartner Entity + Repository (JpaRepository), REST-Controller
+- [x] **J3** — Frontend: Stammdaten-Seite (CRUD-Maske) mit DetailPage-Template
 
 ### Public API (Drittsysteme)
 - [ ] **P1** — Externe REST-API unter `/public-api/...` einrichten: Eigene Controller, eigene DTOs, Basic Auth (HTTPS)

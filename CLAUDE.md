@@ -2,13 +2,14 @@
 
 ## Übersicht
 Performantes Zeitreihensystem für >10 Mio Zeitreihen mit TimescaleDB (PostgreSQL-Extension).
-Spring Boot 3.4.x Anwendung mit Raw JDBC (kein JPA).
+Spring Boot 3.4.x Anwendung mit dualem Persistenz-Ansatz: Raw JDBC für Zeitreihen, JPA/Hibernate für Stammdaten.
 
 ## Tech-Stack
 - **Java 17** (LTS), Gradle mit Spring Boot Plugin
 - **Spring Boot 3.4.1** (starter-web, starter-jdbc)
 - **TimescaleDB** (PostgreSQL-Extension)
-- **Raw JDBC** für Timeseries-Zugriff (kein JPA)
+- **Raw JDBC** für Timeseries-Zugriff (Performance)
+- **JPA/Hibernate** für Stammdaten-CRUD (BusinessPartner etc.), `ddl-auto=validate`, `open-in-view=false`
 - **HikariCP** (via Spring auto-config)
 
 ## Zeitdimensionen
@@ -52,6 +53,11 @@ Spring Boot 3.4.x Anwendung mit Raw JDBC (kein JPA).
 | PUT | `/api/objects/{objectId}/timeseries/{tsId}` | Zuordnung |
 | DELETE | `/api/objects/{objectId}` | Objekt löschen |
 | GET | `/api/config/sidebar` | Sidebar-Baumstruktur (aus XML) |
+| GET | `/api/business-partners` | GP-Liste (TableResponse) |
+| GET | `/api/business-partners/{id}` | GP lesen (mit Ansprechpartnern) |
+| POST | `/api/business-partners` | GP anlegen |
+| PUT | `/api/business-partners/{id}` | GP aktualisieren |
+| DELETE | `/api/business-partners/{id}` | GP löschen |
 
 ### Exception Handling (GlobalExceptionHandler)
 - `IllegalArgumentException` → 400 Bad Request
@@ -99,6 +105,20 @@ src/main/java/de/projekt/
             ObjectController.java          -- @RestController /api/objects
             GlobalExceptionHandler.java    -- @RestControllerAdvice
             dto/                           -- Request/Response DTOs
+    businesspartner/                       -- Stammdaten-Modul (JPA)
+        model/
+            BusinessPartner.java           -- @Entity, @OneToMany cascade ALL
+            ContactPerson.java             -- @Entity, @ElementCollection Funktionen
+            ContactFunction.java           -- Enum: ABRECHNUNG, BK_VERANTWORTLICHER
+        repository/
+            BusinessPartnerRepository.java -- JpaRepository (single repo, cascade)
+        service/
+            BusinessPartnerService.java    -- @Service, Validierung, DTO-Mapping
+        rest/
+            BusinessPartnerController.java -- @RestController /api/business-partners
+            dto/
+                BusinessPartnerDto.java    -- Request/Response DTO
+                ContactPersonDto.java      -- Ansprechpartner DTO
     benchmark/
         Benchmark.java                     -- Standalone Lese-Benchmark
 src/main/resources/
