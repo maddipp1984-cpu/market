@@ -1,10 +1,11 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { DetailPage, type DetailMode, type ValidationResult } from '../../shared/detail-page/DetailPage';
 import { Card } from '../../shared/Card';
 import { FormField } from '../../shared/FormField';
 import { Button } from '../../shared/Button';
 import { ContactPersonCard } from './ContactPersonCard';
 import { useTabContext } from '../../shell/TabContext';
+import { useMessageBar } from '../../shell/MessageBarContext';
 import { fetchBusinessPartner, saveBusinessPartner, deleteBusinessPartner } from '../../api/client';
 import type { BusinessPartnerDto, ContactPersonDto } from '../../api/types';
 
@@ -22,9 +23,11 @@ const emptyContact = (): ContactPersonDto => ({
 
 export function BusinessPartnerDetailPage({ tabId }: { tabId: string }) {
   const { getTabParams, openTab, updateTabLabel } = useTabContext();
+  const { showMessage } = useMessageBar();
   const params = getTabParams(tabId);
   const mode = (params?.mode as DetailMode) ?? 'view';
   const entityId = params?.entityId as number | undefined;
+  const contactKeyCounter = useRef(0);
 
   const [data, setData] = useState<BusinessPartnerDto>({
     id: null,
@@ -33,8 +36,11 @@ export function BusinessPartnerDetailPage({ tabId }: { tabId: string }) {
     notes: null,
     contacts: [],
   });
+  const [contactKeys, setContactKeys] = useState<string[]>([]);
   const [dirty, setDirty] = useState(false);
   const [loading, setLoading] = useState(mode !== 'new');
+
+  const nextKey = () => `ck-${contactKeyCounter.current++}`;
 
   useEffect(() => {
     if (mode === 'new' || !entityId) return;
@@ -43,9 +49,13 @@ export function BusinessPartnerDetailPage({ tabId }: { tabId: string }) {
     fetchBusinessPartner(entityId).then(result => {
       if (cancelled) return;
       setData(result);
+      setContactKeys(result.contacts.map(() => nextKey()));
       updateTabLabel(tabId, `GP: ${result.shortName}`);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch((err) => {
+      showMessage(err instanceof Error ? err.message : 'Laden fehlgeschlagen', 'error');
+      setLoading(false);
+    });
     return () => { cancelled = true; };
   }, [entityId, mode, tabId, updateTabLabel]);
 
@@ -68,6 +78,7 @@ export function BusinessPartnerDetailPage({ tabId }: { tabId: string }) {
       ...prev,
       contacts: prev.contacts.filter((_, i) => i !== index),
     }));
+    setContactKeys(prev => prev.filter((_, i) => i !== index));
     setDirty(true);
   }, []);
 
@@ -76,6 +87,7 @@ export function BusinessPartnerDetailPage({ tabId }: { tabId: string }) {
       ...prev,
       contacts: [...prev.contacts, emptyContact()],
     }));
+    setContactKeys(prev => [...prev, nextKey()]);
     setDirty(true);
   }, []);
 
@@ -93,6 +105,7 @@ export function BusinessPartnerDetailPage({ tabId }: { tabId: string }) {
   const handleSave = useCallback(async () => {
     const saved = await saveBusinessPartner(data);
     setData(saved);
+    setContactKeys(saved.contacts.map(() => nextKey()));
     updateTabLabel(tabId, `GP: ${saved.shortName}`);
   }, [data, tabId, updateTabLabel]);
 
@@ -170,7 +183,7 @@ export function BusinessPartnerDetailPage({ tabId }: { tabId: string }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
           {data.contacts.map((contact, index) => (
             <ContactPersonCard
-              key={contact.id ?? `new-${index}`}
+              key={contactKeys[index] ?? `fallback-${index}`}
               contact={contact}
               disabled={isDisabled}
               onChange={updated => updateContact(index, updated)}

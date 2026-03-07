@@ -9,7 +9,9 @@ import de.projekt.businesspartner.rest.dto.ContactPersonDto;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -24,8 +26,16 @@ public class BusinessPartnerService {
     }
 
     @Transactional(readOnly = true)
-    public List<BusinessPartner> findAll() {
-        return repository.findAll();
+    public List<Map<String, Object>> findAllAsRows() {
+        return repository.findAll().stream()
+                .map(bp -> {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("id", bp.getId());
+                    row.put("shortName", bp.getShortName());
+                    row.put("name", bp.getName());
+                    return row;
+                })
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -36,6 +46,7 @@ public class BusinessPartnerService {
     }
 
     public BusinessPartnerDto create(BusinessPartnerDto dto) {
+        validateRequired(dto);
         if (repository.existsByShortName(dto.getShortName())) {
             throw new IllegalStateException("Kurzbezeichnung bereits vergeben: " + dto.getShortName());
         }
@@ -45,6 +56,7 @@ public class BusinessPartnerService {
     }
 
     public BusinessPartnerDto update(Long id, BusinessPartnerDto dto) {
+        validateRequired(dto);
         BusinessPartner existing = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Geschaeftspartner nicht gefunden: id=" + id));
 
@@ -114,6 +126,15 @@ public class BusinessPartnerService {
         return entity;
     }
 
+    private void validateRequired(BusinessPartnerDto dto) {
+        if (dto.getShortName() == null || dto.getShortName().isBlank()) {
+            throw new IllegalArgumentException("Kurzbezeichnung ist ein Pflichtfeld");
+        }
+        if (dto.getName() == null || dto.getName().isBlank()) {
+            throw new IllegalArgumentException("Name ist ein Pflichtfeld");
+        }
+    }
+
     private ContactPerson toContactEntity(ContactPersonDto dto) {
         ContactPerson entity = new ContactPerson();
         entity.setId(dto.getId());
@@ -126,7 +147,13 @@ public class BusinessPartnerService {
         entity.setCity(dto.getCity());
         if (dto.getFunctions() != null) {
             entity.setFunctions(dto.getFunctions().stream()
-                    .map(ContactFunction::valueOf)
+                    .map(f -> {
+                        try {
+                            return ContactFunction.valueOf(f);
+                        } catch (IllegalArgumentException e) {
+                            throw new IllegalArgumentException("Unbekannte Funktion: " + f);
+                        }
+                    })
                     .collect(Collectors.toSet()));
         }
         return entity;

@@ -44,7 +44,7 @@ export function ContactPersonCard({ contact, disabled, onChange, onRemove }: Con
           <ChipGroup>
             {contact.functions.map(fn => {
               const def = CONTACT_FUNCTIONS.find(f => f.value === fn);
-              return <Chip key={fn} label={def?.label ?? fn} value="" />;
+              return <Chip key={fn} label="" value={def?.label ?? fn} />;
             })}
           </ChipGroup>
           {!disabled && (
