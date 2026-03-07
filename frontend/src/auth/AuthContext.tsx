@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import keycloak, { getUserId, getUsername } from './keycloak';
 import { fetchMyPermissions } from '../api/client';
 
@@ -36,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [permData, setPermData] = useState<PermissionsData>({ isAdmin: false, permissions: [] });
   const [, setTick] = useState(0);
+  const initCalled = useRef(false);
 
   const loadPermissions = useCallback(async () => {
     try {
@@ -47,6 +48,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (initCalled.current) return;
+    initCalled.current = true;
+
     keycloak.init({ onLoad: 'login-required', checkLoginIframe: false })
       .then(async (authenticated) => {
         if (authenticated) {
