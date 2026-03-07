@@ -10,6 +10,7 @@ import { SettingsPage } from '../pages/SettingsPage';
 import { AdminUsersPage } from '../admin/AdminUsersPage';
 import { AdminGroupsPage } from '../admin/AdminGroupsPage';
 import { AdminPermissionsPage } from '../admin/AdminPermissionsPage';
+import { AdminUserDetailPage } from '../admin/AdminUserDetailPage';
 
 export interface TabType {
   type: string;
@@ -55,6 +56,7 @@ export const tabTypes: TabType[] = [
   { type: 'admin-users', label: 'Benutzer', icon: iconSettings, singleton: true, component: AdminUsersPage },
   { type: 'admin-groups', label: 'Gruppen', icon: iconSettings, singleton: true, component: AdminGroupsPage },
   { type: 'admin-permissions', label: 'Berechtigungen', icon: iconSettings, singleton: true, component: AdminPermissionsPage },
+  { type: 'admin-user-detail', label: 'Benutzer', icon: iconSettings, component: AdminUserDetailPage },
 ];
 
 
