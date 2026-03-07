@@ -87,6 +87,27 @@ export interface CreateFilterPresetRequest {
   scope: PresetScope;
 }
 
+// Business Partner
+export interface ContactPersonDto {
+  id: number | null;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  phone: string | null;
+  street: string | null;
+  zipCode: string | null;
+  city: string | null;
+  functions: string[];
+}
+
+export interface BusinessPartnerDto {
+  id: number | null;
+  shortName: string;
+  name: string;
+  notes: string | null;
+  contacts: ContactPersonDto[];
+}
+
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData, TValue> {

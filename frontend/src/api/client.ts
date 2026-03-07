@@ -1,4 +1,4 @@
-import type { ObjectResponse, TimeSeriesHeaderResponse, TimeSeriesValuesResponse, WriteValuesRequest, FilterRequest, TableResponse, FilterPreset, CreateFilterPresetRequest } from './types';
+import type { ObjectResponse, TimeSeriesHeaderResponse, TimeSeriesValuesResponse, WriteValuesRequest, FilterRequest, TableResponse, FilterPreset, CreateFilterPresetRequest, BusinessPartnerDto } from './types';
 import type { EffectivePermission } from '../auth/AuthContext';
 import keycloak from '../auth/keycloak';
 
@@ -283,3 +283,37 @@ export const adminSetFieldRestrictions = (groupId: number, restrictions: { resou
 
 // Resources
 export const adminGetResources = () => adminFetch<AdminResource[]>('/resources');
+
+// ==================== Business Partners ====================
+
+export async function fetchBusinessPartner(id: number, signal?: AbortSignal): Promise<BusinessPartnerDto> {
+  const res = await authFetch(`/api/business-partners/${id}`, { signal });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function saveBusinessPartner(dto: BusinessPartnerDto): Promise<BusinessPartnerDto> {
+  const isNew = dto.id === null;
+  const url = isNew ? '/api/business-partners' : `/api/business-partners/${dto.id}`;
+  const res = await authFetch(url, {
+    method: isNew ? 'POST' : 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dto),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function deleteBusinessPartner(id: number): Promise<void> {
+  const res = await authFetch(`/api/business-partners/${id}`, { method: 'DELETE' });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+}
