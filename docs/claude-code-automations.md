@@ -28,6 +28,12 @@ in `settings.local.json` temporaer auskommentiert werden.
 
 Abgelegt in `.claude/agents/`.
 
+### code-reviewer.md
+- **Zweck**: Allgemeiner Code-Review gegen Projekt-Konventionen
+- **Fokus**: Schichten-Regel, Generik-First bei Shared Components, Performance/Skalierung, Code-Qualitaet
+- **Aufruf**: `@code-reviewer` in Claude Code oder per Agent-Tool
+- **Wann nutzen**: Nach Feature-Implementierungen, vor Merges, bei groesseren Aenderungen
+
 ### security-reviewer.md
 - **Zweck**: Prueft den Code auf Sicherheitsluecken (OWASP Top 10)
 - **Fokus**: SQL Injection (Raw JDBC), Spring Security Config, Input Validation, CORS
