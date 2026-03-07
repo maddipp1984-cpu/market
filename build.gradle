@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.4.1'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'info.solidsoft.pitest' version '1.15.0'
 }
 
 group = 'de.projekt'
@@ -33,6 +34,15 @@ tasks.withType(JavaCompile) {
 
 test {
     useJUnitPlatform()
+}
+
+pitest {
+    targetClasses = ['de.projekt.timeseries.client.*', 'de.projekt.timeseries.model.*', 'de.projekt.timeseries.repository.*']
+    targetTests = ['de.projekt.timeseries.**']
+    junit5PluginVersion = '1.2.1'
+    timestampedReports = false
+    outputFormats = ['HTML']
+    mutators = ['DEFAULTS']
 }
 
 tasks.register('benchmark', JavaExec) {

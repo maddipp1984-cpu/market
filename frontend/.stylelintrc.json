@@ -1,0 +1,28 @@
+{
+  "extends": "stylelint-config-standard",
+  "rules": {
+    "color-named": "never",
+    "declaration-no-important": true,
+    "selector-max-id": 0,
+    "declaration-property-value-disallowed-list": {
+      "font-size": ["/^[0-9]/"],
+      "border-radius": ["/^[0-9]/"],
+      "color": ["/^#/"],
+      "background-color": ["/^#/"],
+      "background": ["/^#/"],
+      "border-color": ["/^#/"]
+    },
+    "custom-property-pattern": null,
+    "selector-class-pattern": null,
+    "no-descending-specificity": null,
+    "alpha-value-notation": null,
+    "color-function-notation": null,
+    "color-function-alias-notation": null,
+    "rule-empty-line-before": null
+  },
+  "ignoreFiles": [
+    "src/styles/**",
+    "src/shared/**",
+    "src/shell/**"
+  ]
+}
