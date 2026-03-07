@@ -3,12 +3,13 @@ import { useTabContext } from '../shell/TabContext';
 
 const columnOverrides = { id: { hidden: true } };
 
-export function BusinessPartnerPage({ tabId: _tabId }: { tabId: string }) {
+export function BusinessPartnerPage({ tabId }: { tabId: string }) {
   const { openTab } = useTabContext();
   return (
     <OverviewPage
       pageKey="business-partners"
       apiUrl="/api/business-partners"
+      tabId={tabId}
       onNew={() => openTab('business-partner-detail', { mode: 'new' })}
       newLabel="Neuer Geschaeftspartner"
       columnOverrides={columnOverrides}

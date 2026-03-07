@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { SortingState } from '@tanstack/react-table';
 import type { ColumnMeta, FilterCondition, FilterRequest, TableResponse } from '../../api/types';
 import { fetchTable, type TimingInfo } from '../../api/client';
@@ -9,6 +9,7 @@ import { VirtualTable, type ColumnOverride } from './VirtualTable';
 import { FilterBuilder } from './FilterBuilder';
 import { useFilterPresets } from './useFilterPresets';
 import { useAuth } from '../../auth/AuthContext';
+import { useTabContext } from '../../shell/TabContext';
 import { iconRefresh, iconPlus, iconFilter } from './icons';
 import './OverviewPage.css';
 
@@ -16,6 +17,7 @@ interface OverviewPageProps {
   pageKey: string;
   resourceKey?: string;
   apiUrl: string;
+  tabId?: string;
   onNew?: () => void;
   newLabel?: string;
   columnOverrides?: Record<string, ColumnOverride>;
@@ -27,6 +29,7 @@ export function OverviewPage({
   pageKey,
   resourceKey,
   apiUrl,
+  tabId,
   onNew,
   newLabel = 'Neu',
   columnOverrides = {},
@@ -76,6 +79,18 @@ export function OverviewPage({
     }
     return () => ac.abort();
   }, [presetsLoading, defaultPreset, loadData]);
+
+  // Auto-refresh when tab becomes active again
+  const { activeTabId } = useTabContext();
+  const initialLoadDone = useRef(false);
+  useEffect(() => {
+    if (!tabId || activeTabId !== tabId) return;
+    if (!initialLoadDone.current) {
+      initialLoadDone.current = true;
+      return;
+    }
+    loadData(activeFilter ?? undefined);
+  }, [activeTabId, tabId, loadData, activeFilter]);
 
   const handleFilterExecute = useCallback((conditions: FilterCondition[]) => {
     const filter: FilterRequest = { conditions };
