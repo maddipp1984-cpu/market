@@ -22,6 +22,7 @@ interface VirtualTableProps<T extends Record<string, any>> {
   sorting: SortingState;
   onSortingChange: (sorting: SortingState) => void;
   emptyMessage?: string;
+  onRowDoubleClick?: (row: T) => void;
 }
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}([T ]|$)/;
@@ -107,6 +108,7 @@ export function VirtualTable<T extends Record<string, any>>({
   sorting,
   onSortingChange,
   emptyMessage = 'Keine Daten vorhanden',
+  onRowDoubleClick,
 }: VirtualTableProps<T>) {
   const columns = useMemo(
     () => buildColumns(data, columnOverrides),
@@ -163,7 +165,12 @@ export function VirtualTable<T extends Record<string, any>>({
             </tr>
           ) : (
             tableRows.map((row, i) => (
-              <tr key={row.id} className={i % 2 !== 0 ? 'odd' : undefined}>
+              <tr
+                key={row.id}
+                className={i % 2 !== 0 ? 'odd' : undefined}
+                onDoubleClick={() => onRowDoubleClick?.(row.original)}
+                style={onRowDoubleClick ? { cursor: 'pointer' } : undefined}
+              >
                 {row.getVisibleCells().map(cell => (
                   <td key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

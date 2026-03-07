@@ -20,6 +20,7 @@ interface OverviewPageProps {
   newLabel?: string;
   columnOverrides?: Record<string, ColumnOverride>;
   emptyMessage?: string;
+  onRowDoubleClick?: (row: Record<string, unknown>) => void;
 }
 
 export function OverviewPage({
@@ -30,6 +31,7 @@ export function OverviewPage({
   newLabel = 'Neu',
   columnOverrides = {},
   emptyMessage = 'Keine Daten vorhanden',
+  onRowDoubleClick,
 }: OverviewPageProps) {
   const { canWrite } = useAuth();
   const effectiveResourceKey = resourceKey ?? pageKey;
@@ -153,6 +155,7 @@ export function OverviewPage({
               sorting={sorting}
               onSortingChange={setSorting}
               emptyMessage={emptyMessage}
+              onRowDoubleClick={onRowDoubleClick}
             />
           </Card>
         )}
