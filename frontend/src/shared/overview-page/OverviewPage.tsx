@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { SortingState } from '@tanstack/react-table';
 import type { ColumnMeta, FilterCondition, FilterRequest, TableResponse } from '../../api/types';
 import { fetchTable, type TimingInfo } from '../../api/client';
@@ -80,17 +80,14 @@ export function OverviewPage({
     return () => ac.abort();
   }, [presetsLoading, defaultPreset, loadData]);
 
-  // Auto-refresh when tab becomes active again
-  const { activeTabId } = useTabContext();
-  const initialLoadDone = useRef(false);
+  // Auto-refresh when tab becomes active and data is stale
+  const { activeTabId, consumeStale } = useTabContext();
   useEffect(() => {
     if (!tabId || activeTabId !== tabId) return;
-    if (!initialLoadDone.current) {
-      initialLoadDone.current = true;
-      return;
+    if (consumeStale(pageKey)) {
+      loadData(activeFilter ?? undefined);
     }
-    loadData(activeFilter ?? undefined);
-  }, [activeTabId, tabId, loadData, activeFilter]);
+  }, [activeTabId, tabId, pageKey, consumeStale, loadData, activeFilter]);
 
   const handleFilterExecute = useCallback((conditions: FilterCondition[]) => {
     const filter: FilterRequest = { conditions };

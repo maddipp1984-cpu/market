@@ -44,6 +44,11 @@
 - [ ] **J2** — Geschaeftspartner Entity + Repository (JpaRepository), REST-Controller
 - [ ] **J3** — Frontend: Stammdaten-Seite (CRUD-Maske) mit DataPage-Template
 
+### Public API (Drittsysteme)
+- [ ] **P1** — Externe REST-API unter `/public-api/...` einrichten: Eigene Controller, eigene DTOs, Basic Auth (HTTPS)
+- [ ] **P2** — SecurityConfig erweitern: `/public-api/**` mit Basic Auth, getrennt von Keycloak-Auth fuer `/api/**`
+- [ ] **P3** — Erster externer Endpoint: `POST /public-api/business-partners` (GP anlegen fuer Drittsysteme)
+
 ### Datenbereinigung
 - [ ] **B1** — Verwaiste Header loeschen: Alle ts_header-Eintraege entfernen, die keine Werte in der zugehoerigen Werte-Tabelle haben
 

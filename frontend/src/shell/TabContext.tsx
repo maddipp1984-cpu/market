@@ -19,6 +19,8 @@ interface TabContextValue {
   updateTabLabel: (id: string, label: string) => void;
   getTabParams: (tabId: string) => Record<string, unknown> | undefined;
   registerCloseGuard: (tabId: string, guard: () => boolean) => () => void;
+  markOverviewStale: (pageKey: string) => void;
+  consumeStale: (pageKey: string) => boolean;
 }
 
 const TabContext = createContext<TabContextValue | null>(null);
@@ -108,8 +110,22 @@ export function TabProvider({ children }: { children: ReactNode }) {
     return () => { closeGuardsRef.current.delete(tabId); };
   }, []);
 
+  const staleKeysRef = useRef<Set<string>>(new Set());
+
+  const markOverviewStale = useCallback((pageKey: string) => {
+    staleKeysRef.current.add(pageKey);
+  }, []);
+
+  const consumeStale = useCallback((pageKey: string): boolean => {
+    if (staleKeysRef.current.has(pageKey)) {
+      staleKeysRef.current.delete(pageKey);
+      return true;
+    }
+    return false;
+  }, []);
+
   return (
-    <TabContext.Provider value={{ tabs, activeTabId, openTab, closeTab, closeAllTabs, setActiveTab, updateTabLabel, getTabParams, registerCloseGuard }}>
+    <TabContext.Provider value={{ tabs, activeTabId, openTab, closeTab, closeAllTabs, setActiveTab, updateTabLabel, getTabParams, registerCloseGuard, markOverviewStale, consumeStale }}>
       {children}
     </TabContext.Provider>
   );

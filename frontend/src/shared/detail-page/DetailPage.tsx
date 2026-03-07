@@ -49,7 +49,7 @@ export function DetailPage({
   extraActions,
   children,
 }: DetailPageProps) {
-  const { closeTab, registerCloseGuard } = useTabContext();
+  const { closeTab, registerCloseGuard, markOverviewStale } = useTabContext();
   const { canWrite, canDelete } = useAuth();
   const { showMessage } = useMessageBar();
   const [saving, setSaving] = useState(false);
@@ -81,6 +81,7 @@ export function DetailPage({
     try {
       await onSave();
       onSaveSuccess?.();
+      markOverviewStale(pageKey);
       showMessage('Gespeichert', 'success');
       if (andClose) closeTab(tabId);
     } catch (e) {
@@ -95,6 +96,7 @@ export function DetailPage({
     setDeleting(true);
     try {
       await onDelete();
+      markOverviewStale(pageKey);
       showMessage('Geloescht', 'success');
       closeTab(tabId);
     } catch (e) {
