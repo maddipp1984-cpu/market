@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-03-07 — DetailPage-Template + Tab-Parameter
+- **DetailPage** (`shared/detail-page/`): Shared-Komponente fuer Detailmasken mit Standard-Toolbar (Neu/Speichern/Speichern&Schliessen/Loeschen), Modi (view/edit/new), Validierung vor Speichern, Dirty-Warnung bei Tab-Schliessen, Berechtigungspruefung (canWrite/canDelete)
+- **Tab-System erweitert**: `openTab(type, params)` uebergibt Parameter (mode, entityId), `getTabParams(tabId)` liest sie
+- **Close-Guard**: `registerCloseGuard()` ermoeglicht Dirty-Warnung beim Tab-Schliessen
+- **OverviewPage**: `onRowDoubleClick` Prop fuer Navigation zu Detailmasken
+- **AdminUserDetailPage**: Proof-of-Concept Detailseite mit DetailPage-Template
+
 ## 2026-03-05 — Frontend: Sidebar Tree-Navigation + Wiederverwendbare Tree-Komponente
 - **TreeView** (`shared/TreeView.tsx`): Wiederverwendbare Baum-Komponente mit Headless Tree (`@headless-tree/core` + `@headless-tree/react`), dark/light Variante, expand/collapse, renderNode-Callback
 - **Sidebar-Baumnavigation**: Hierarchische Navigation mit klappbaren Sections (Daten, Stammdaten, System) und verschachtelten Eintraegen (z.B. Objekte > Objekttypen/Einheiten/Waehrungen)

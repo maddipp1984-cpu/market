@@ -35,7 +35,7 @@ frontend/
       AppShell.tsx + AppShell.css     -- Sidebar + TabBar + Tab-Content-Area + MessageBar
       Sidebar.tsx + Sidebar.css       -- Baumnavigation (Headless Tree, dark-Variante)
       sidebarTree.ts                  -- Statische Sidebar-Baumdaten (SidebarNode[])
-      TabContext.tsx                   -- Tab-State (Provider + useTabContext Hook)
+      TabContext.tsx                   -- Tab-State (Provider + useTabContext Hook, params, Close-Guard)
       TabBar.tsx + TabBar.css         -- Horizontale Tab-Leiste mit Close-Buttons
       tabTypes.tsx                    -- Tab-Typ-Registry (Typ, Label, Icon, Komponente)
       MessageBarContext.tsx            -- MessageBar-State (Provider + useMessageBar Hook)
@@ -46,6 +46,8 @@ frontend/
       Card.tsx + Card.css             -- Card-Wrapper (Surface, Border, Shadow)
       Chip.tsx + Chip.css             -- Info-Badges (Chip + ChipGroup)
       DataPage.tsx + DataPage.css     -- Standard-Template fuer Daten-Masken
+      detail-page/
+        DetailPage.tsx + DetailPage.css  -- Template fuer Detailmasken (Toolbar, Modi, Validierung, Dirty-Guard)
       FilterBar.tsx + FilterBar.css   -- Horizontale Filterzeile mit Actions
       FormField.tsx + FormField.css   -- Label + Input/Select (compact-Variante)
       PageLayout.tsx + PageLayout.css -- Seiten-Layout (optionaler maxWidth, Titel)
@@ -82,6 +84,8 @@ frontend/
 - Sidebar-Klick oeffnet immer neuen Tab (ausser Singletons wie Dashboard)
 - Inaktive Tabs bleiben gemountet (`display: none`) — State bleibt erhalten
 - Tab-Labels koennen per `updateTabLabel(tabId, label)` aktualisiert werden
+- **Tab-Parameter**: `openTab(type, params)` uebergibt optionale Parameter (z.B. `{ mode: 'edit', entityId: 42 }`), `getTabParams(tabId)` liest sie
+- **Close-Guard**: `registerCloseGuard(tabId, guard)` registriert eine Funktion die vor dem Tab-Schliessen geprueft wird (z.B. Dirty-Warnung)
 
 ### Konvention: Sidebar-Baumnavigation
 - **Sidebar-Struktur** wird per XML konfiguriert (`src/main/resources/sidebar.xml` im Backend)
@@ -97,7 +101,8 @@ frontend/
 
 ### Konvention: Templates
 - **Uebersichtsseiten** (Tabellen mit Toolbar) nutzen `<OverviewPage>` (`shared/overview-page/`) — baut intern auf `<DataPage>` auf, liefert Aktualisieren/Neu-Buttons, Loading/Error-States und Footer automatisch. Jede neue Entitaets-Uebersicht (Objekte, Zeitreihen, Einheiten etc.) MUSS dieses Template verwenden.
-- **Daten-Masken** (Editoren, Detail-Ansichten) nutzen `<DataPage>` als Template
+- **Detailmasken** (Einzelobjekt anzeigen/bearbeiten/neu) nutzen `<DetailPage>` (`shared/detail-page/`) — Standard-Toolbar (Neu/Speichern/Speichern&Schliessen/Loeschen), Modi (view/edit/new), Validierung vor Speichern (`validate()` Pflicht-Prop), Dirty-Warnung bei Tab-Schliessen, Berechtigungspruefung. Modus wird beim Tab-Oeffnen ueber params festgelegt. Jede Detailseite implementiert `validate()` und steuert `dirty` selbst.
+- **Daten-Masken** (Editoren, sonstige Detail-Ansichten) nutzen `<DataPage>` als Template
 - **Sonstige Seiten** (Einstellungen, Info) nutzen `<PageLayout>`
 - **Formularfelder** nutzen `<FormField>` (mit `compact` fuer Filter-Bars)
 - **Filter-Zeilen** nutzen `<FilterBar>` (mit `actions`-Prop fuer Buttons rechts)
