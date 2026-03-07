@@ -1,16 +1,17 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { SortingState } from '@tanstack/react-table';
 import type { ColumnMeta, FilterCondition, FilterRequest, TableResponse } from '../../api/types';
 import { fetchTable, type TimingInfo } from '../../api/client';
 import { Button } from '../Button';
 import { StatusMessage } from '../StatusMessage';
 import { Card } from '../Card';
-import { VirtualTable, type ColumnOverride } from './VirtualTable';
+import { VirtualTable, type ColumnOverride, type ContextAction } from './VirtualTable';
 import { FilterBuilder } from './FilterBuilder';
 import { useFilterPresets } from './useFilterPresets';
 import { useAuth } from '../../auth/AuthContext';
 import { useTabContext } from '../../shell/TabContext';
-import { iconRefresh, iconPlus, iconFilter } from './icons';
+import { useMessageBar } from '../../shell/MessageBarContext';
+import { iconRefresh, iconPlus, iconFilter, iconOverwrite, iconTrash } from './icons';
 import './OverviewPage.css';
 
 interface OverviewPageProps {
@@ -23,6 +24,8 @@ interface OverviewPageProps {
   columnOverrides?: Record<string, ColumnOverride>;
   emptyMessage?: string;
   onRowDoubleClick?: (row: Record<string, unknown>) => void;
+  onDelete?: (rows: Record<string, unknown>[]) => Promise<void>;
+  extraContextActions?: ContextAction[];
 }
 
 export function OverviewPage({
@@ -35,8 +38,11 @@ export function OverviewPage({
   columnOverrides = {},
   emptyMessage = 'Keine Daten vorhanden',
   onRowDoubleClick,
+  onDelete,
+  extraContextActions,
 }: OverviewPageProps) {
-  const { canWrite } = useAuth();
+  const { canWrite, canDelete: canDeletePerm } = useAuth();
+  const { showMessage } = useMessageBar();
   const effectiveResourceKey = resourceKey ?? pageKey;
   const [tableData, setTableData] = useState<TableResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,7 +52,14 @@ export function OverviewPage({
   const [activeFilter, setActiveFilter] = useState<FilterRequest | null>(null);
   const [columns, setColumns] = useState<ColumnMeta[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const pendingDeleteRef = useRef<Record<string, unknown>[]>([]);
   const { presets, loading: presetsLoading, defaultPreset, savePreset, updatePreset, deletePreset: removePreset, setDefault, clearDefault } = useFilterPresets(pageKey);
+
+  const hasDeletePerm = canDeletePerm(effectiveResourceKey);
+  const selectable = !!(onDelete || onRowDoubleClick || extraContextActions);
 
   const loadData = useCallback(async (filter?: FilterRequest, signal?: AbortSignal) => {
     setLoading(true);
@@ -89,6 +102,11 @@ export function OverviewPage({
     }
   }, [activeTabId, tabId, pageKey, consumeStale, loadData, activeFilter]);
 
+  // Clear selection when data changes
+  useEffect(() => {
+    setSelectedRows(new Set());
+  }, [tableData]);
+
   const handleFilterExecute = useCallback((conditions: FilterCondition[]) => {
     const filter: FilterRequest = { conditions };
     setActiveFilter(filter);
@@ -108,6 +126,22 @@ export function OverviewPage({
     loadData();
   }, [loadData]);
 
+  const handleDeleteConfirmed = useCallback(async (rows: Record<string, unknown>[]) => {
+    if (!onDelete) return;
+    setDeleting(true);
+    try {
+      await onDelete(rows);
+      setConfirmDelete(false);
+      setSelectedRows(new Set());
+      showMessage('Geloescht', 'success');
+      loadData(activeFilter ?? undefined);
+    } catch (e) {
+      showMessage(e instanceof Error ? e.message : String(e), 'error');
+    } finally {
+      setDeleting(false);
+    }
+  }, [onDelete, loadData, activeFilter, showMessage]);
+
   const data = tableData?.data ?? [];
 
   const mergedOverrides = useMemo(() => {
@@ -121,16 +155,58 @@ export function OverviewPage({
     return merged;
   }, [columns, columnOverrides]);
 
+  // Build context actions from props
+  const contextActions = useMemo((): ContextAction[] => {
+    const actions: ContextAction[] = [];
+
+    if (onRowDoubleClick) {
+      actions.push({
+        label: 'Bearbeiten',
+        icon: iconOverwrite,
+        onClick: (rows) => onRowDoubleClick(rows[0]),
+      });
+    }
+
+    if (onNew && canWrite(effectiveResourceKey)) {
+      actions.push({
+        label: newLabel,
+        icon: iconPlus,
+        onClick: () => onNew(),
+        multi: true,
+      });
+    }
+
+    if (onDelete && hasDeletePerm) {
+      actions.push({
+        label: 'Loeschen',
+        icon: iconTrash,
+        danger: true,
+        multi: true,
+        onClick: (rows) => {
+          pendingDeleteRef.current = rows;
+          setConfirmDelete(true);
+        },
+      });
+    }
+
+    if (extraContextActions && extraContextActions.length > 0) {
+      actions.push(...extraContextActions);
+    }
+
+    return actions;
+  }, [onRowDoubleClick, onNew, onDelete, canWrite, hasDeletePerm, effectiveResourceKey, newLabel, extraContextActions]);
+
   const footer = useMemo(() => {
     const parts: string[] = [];
     parts.push(`${data.length} Eintr${data.length !== 1 ? 'aege' : 'ag'}`);
     if (activeFilter) parts.push('(gefiltert)');
+    if (selectedRows.size > 0) parts.push(`${selectedRows.size} ausgewaehlt`);
     if (timing) {
       parts.push(`${timing.totalMs} ms`);
       if (timing.serverMs !== null) parts.push(`(Server: ${timing.serverMs} ms)`);
     }
     return <span>{parts.join(' | ')}</span>;
-  }, [data.length, activeFilter, timing]);
+  }, [data.length, activeFilter, timing, selectedRows.size]);
 
   return (
     <div className="overview-page">
@@ -155,6 +231,22 @@ export function OverviewPage({
             {iconPlus}
           </Button>
         )}
+        {selectedRows.size > 0 && hasDeletePerm && onDelete && (
+          <Button
+            variant="ghost"
+            icon
+            onClick={() => {
+              const rows = [...selectedRows].map(i => data[i]).filter(Boolean);
+              pendingDeleteRef.current = rows;
+              setConfirmDelete(true);
+            }}
+            title={`${selectedRows.size} Eintraege loeschen`}
+            aria-label="Ausgewaehlte loeschen"
+            className="overview-delete-btn"
+          >
+            {iconTrash}
+          </Button>
+        )}
       </div>
       <div className="overview-page-content">
         {loading && <StatusMessage type="info">Lade...</StatusMessage>}
@@ -168,6 +260,10 @@ export function OverviewPage({
               onSortingChange={setSorting}
               emptyMessage={emptyMessage}
               onRowDoubleClick={onRowDoubleClick}
+              selectable={selectable}
+              selectedRows={selectedRows}
+              onSelectionChange={setSelectedRows}
+              contextActions={contextActions}
             />
           </Card>
         )}
@@ -192,6 +288,30 @@ export function OverviewPage({
           />
         )}
       </div>
+
+      {confirmDelete && (
+        <div className="detail-page-modal-backdrop" onClick={() => setConfirmDelete(false)}>
+          <div className="detail-page-modal" onClick={e => e.stopPropagation()}>
+            <h3>Wirklich loeschen?</h3>
+            <p>
+              {pendingDeleteRef.current.length === 1
+                ? 'Dieser Eintrag wird unwiderruflich geloescht.'
+                : `${pendingDeleteRef.current.length} Eintraege werden unwiderruflich geloescht.`}
+            </p>
+            <div className="detail-page-modal-actions">
+              <Button
+                variant="ghost"
+                onClick={() => handleDeleteConfirmed(pendingDeleteRef.current)}
+                disabled={deleting}
+                className="overview-delete-btn"
+              >
+                {deleting ? 'Loeschen...' : 'Ja, loeschen'}
+              </Button>
+              <Button variant="ghost" onClick={() => setConfirmDelete(false)}>Abbrechen</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

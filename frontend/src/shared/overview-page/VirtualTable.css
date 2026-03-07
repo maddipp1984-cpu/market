@@ -90,3 +90,25 @@
   padding: var(--space-2xl) var(--space-md) !important;
   color: var(--color-text-secondary);
 }
+
+/* Checkbox column */
+.vtable-checkbox-col {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  text-align: center;
+  padding: var(--space-sm) var(--space-xs) !important;
+}
+
+.vtable-checkbox-col input[type="checkbox"] {
+  cursor: pointer;
+}
+
+/* Selected row */
+.vtable-table tbody tr.selected {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+.vtable-table tbody tr.selected:hover {
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
