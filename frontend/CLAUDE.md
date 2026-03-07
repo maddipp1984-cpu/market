@@ -124,6 +124,14 @@ Jedes Feature bekommt einen eigenen Ordner mit Unterstruktur (`data/`, `table/`,
 1. **Strukturell**: App-Shell umschliesst alles — Sidebar + Content-Area sind immer da
 2. **Templates**: DataPage/PageLayout — einfacher zu nutzen als eigenes Layout
 3. **Konventionen**: Tab-Typen via tabTypes.tsx, Design-Tokens statt Hardcoding
+4. **Stylelint + Pre-Commit-Hook**: Blockiert Commits mit hardcodierten Farben, Font-Sizes, Border-Radii in Feature-CSS. Ausgenommen: `src/styles/`, `src/shared/`, `src/shell/`
+
+### Shared-Component-Pflicht (WICHTIG)
+Bevor eine UI-Komponente in einer Page gebaut wird, IMMER zuerst in `src/shared/` pruefen ob es sie schon gibt.
+- **Gibt es sie** → verwenden, nicht neu bauen
+- **Gibt es sie nicht** → STOPP: Dem User melden: "Diese Komponente (z.B. editierbare Inline-Tabelle, Readonly-Feld, Datumspicker) existiert noch nicht als Shared Component. Wir sollten sie zuerst als wiederverwendbare Komponente in `shared/` abstimmen und bauen, bevor sie in einer Page verwendet wird."
+- **Niemals** eine UI-Komponente page-spezifisch bauen, die auch andere Pages brauchen koennten
+- Typische Kandidaten: Tabellen in Detailmasken, Baumansichten, spezielle Eingabefelder, Dialoge
 
 ## Architektur-Entscheidungen
 
