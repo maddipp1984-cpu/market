@@ -41,7 +41,6 @@ export function AdminUserDetailPage({ tabId }: { tabId: string }) {
       pageKey="admin-users"
       mode={mode}
       tabId={tabId}
-      title={mode === 'new' ? 'Neuer Benutzer' : `Benutzer: ${username || '...'}`}
       dirty={dirty}
       validate={validate}
       onSave={handleSave}

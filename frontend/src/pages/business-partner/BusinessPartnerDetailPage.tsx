@@ -132,7 +132,6 @@ export function BusinessPartnerDetailPage({ tabId }: { tabId: string }) {
       pageKey="business-partners"
       mode={mode}
       tabId={tabId}
-      title={mode === 'new' ? 'Neuer Geschaeftspartner' : `Geschaeftspartner: ${data.shortName || '...'}`}
       dirty={dirty}
       validate={validate}
       onSave={handleSave}

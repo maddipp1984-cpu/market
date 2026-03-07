@@ -26,7 +26,6 @@ interface DetailPageProps {
   pageKey: string;
   mode: DetailMode;
   tabId: string;
-  title: string;
   dirty: boolean;
   validate: () => ValidationResult;
   onSave: () => Promise<void>;
@@ -41,7 +40,6 @@ export function DetailPage({
   pageKey,
   mode,
   tabId,
-  title,
   dirty,
   validate,
   onSave,
@@ -110,8 +108,6 @@ export function DetailPage({
   return (
     <div className="detail-page">
       <div className="detail-page-toolbar">
-        <h2 className="detail-page-title">{title}</h2>
-        <div className="detail-page-actions">
           {onNew && hasWritePermission && (
             <Button variant="ghost" icon onClick={onNew} title="Neu" aria-label="Neu">
               {iconPlus}
@@ -155,7 +151,6 @@ export function DetailPage({
             </Button>
           )}
           {extraActions}
-        </div>
       </div>
 
       <div className="detail-page-content">

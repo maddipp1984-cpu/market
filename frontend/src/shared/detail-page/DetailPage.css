@@ -12,7 +12,7 @@
   z-index: 10;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: var(--space-md);
   flex-shrink: 0;
   padding: var(--space-sm) var(--space-lg);
@@ -24,17 +24,6 @@
   padding: var(--space-lg);
 }
 
-.detail-page-title {
-  margin: 0;
-  font-size: var(--font-size-lg);
-  font-weight: 600;
-}
-
-.detail-page-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
 
 .detail-page-delete-btn {
   color: var(--color-error, #ef4444);
