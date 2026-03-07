@@ -20,6 +20,7 @@ interface DetailPageProps {
   dirty: boolean;
   validate: () => ValidationResult;
   onSave: () => Promise<void>;
+  onSaveSuccess?: () => void;
   onDelete?: () => Promise<void>;
   onNew?: () => void;
   extraActions?: ReactNode;
@@ -34,6 +35,7 @@ export function DetailPage({
   dirty,
   validate,
   onSave,
+  onSaveSuccess,
   onDelete,
   onNew,
   extraActions,
@@ -70,6 +72,7 @@ export function DetailPage({
     setSaving(true);
     try {
       await onSave();
+      onSaveSuccess?.();
       showMessage('Gespeichert', 'success');
       if (andClose) closeTab(tabId);
     } catch (e) {
@@ -77,7 +80,7 @@ export function DetailPage({
     } finally {
       setSaving(false);
     }
-  }, [validate, onSave, showMessage, closeTab, tabId]);
+  }, [validate, onSave, onSaveSuccess, showMessage, closeTab, tabId]);
 
   const handleDelete = useCallback(async () => {
     if (!onDelete) return;
@@ -102,7 +105,7 @@ export function DetailPage({
           {onNew && hasWritePermission && (
             <Button variant="ghost" onClick={onNew} title="Neu">Neu</Button>
           )}
-          {isEditable && (
+          {isEditable && hasWritePermission && (
             <>
               <Button
                 variant="primary"
@@ -144,7 +147,7 @@ export function DetailPage({
             <h3>Wirklich loeschen?</h3>
             <p>Dieser Vorgang kann nicht rueckgaengig gemacht werden.</p>
             <div className="detail-page-modal-actions">
-              <Button variant="primary" onClick={handleDelete} disabled={deleting}>
+              <Button variant="ghost" onClick={handleDelete} disabled={deleting} className="detail-page-delete-btn">
                 {deleting ? 'Loeschen...' : 'Ja, loeschen'}
               </Button>
               <Button variant="ghost" onClick={() => setConfirmDelete(false)}>Abbrechen</Button>

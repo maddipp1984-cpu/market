@@ -40,6 +40,7 @@ export function TabProvider({ children }: { children: ReactNode }) {
 
     const newId = `tab-${++tabCounterRef.current}`;
     const newTab: Tab = { id: newId, type, label: tabType.label, icon: tabType.icon, params };
+    if (params) tabParamsRef.current.set(newId, params);
 
     setTabs(prev => {
       // Singleton: fokussiere existierenden Tab statt neuen zu oeffnen
@@ -72,11 +73,17 @@ export function TabProvider({ children }: { children: ReactNode }) {
         return next[newIdx]?.id ?? null;
       });
       closeGuardsRef.current.delete(id);
+      tabParamsRef.current.delete(id);
       return next;
     });
   }, []);
 
   const closeAllTabs = useCallback(() => {
+    // Alle Guards pruefen — bei Ablehnung abbrechen
+    for (const [, guard] of closeGuardsRef.current) {
+      if (!guard()) return;
+    }
+    closeGuardsRef.current.clear();
     const tab = createDashboardTab(tabCounterRef);
     setTabs([tab]);
     setActiveTabId(tab.id);
@@ -90,9 +97,11 @@ export function TabProvider({ children }: { children: ReactNode }) {
     setTabs(prev => prev.map(t => t.id === id ? { ...t, label } : t));
   }, []);
 
+  const tabParamsRef = useRef<Map<string, Record<string, unknown>>>(new Map());
+
   const getTabParams = useCallback((tabId: string): Record<string, unknown> | undefined => {
-    return tabs.find(t => t.id === tabId)?.params;
-  }, [tabs]);
+    return tabParamsRef.current.get(tabId);
+  }, []);
 
   const registerCloseGuard = useCallback((tabId: string, guard: () => boolean) => {
     closeGuardsRef.current.set(tabId, guard);

@@ -5,7 +5,7 @@ import { FormField } from '../shared/FormField';
 import { useTabContext } from '../shell/TabContext';
 
 export function AdminUserDetailPage({ tabId }: { tabId: string }) {
-  const { getTabParams, openTab } = useTabContext();
+  const { getTabParams, openTab, updateTabLabel } = useTabContext();
   const params = getTabParams(tabId);
   const mode = (params?.mode as DetailMode) ?? 'view';
   const userId = params?.entityId as string | undefined;
@@ -25,7 +25,12 @@ export function AdminUserDetailPage({ tabId }: { tabId: string }) {
   const handleSave = useCallback(async () => {
     // TODO: API-Call
     console.log('Save:', { username, email, userId });
-  }, [username, email, userId]);
+    updateTabLabel(tabId, `Benutzer: ${username}`);
+  }, [username, email, userId, updateTabLabel, tabId]);
+
+  const handleSaveSuccess = useCallback(() => {
+    setDirty(false);
+  }, []);
 
   const handleNew = useCallback(() => {
     openTab('admin-user-detail', { mode: 'new' });
@@ -40,6 +45,7 @@ export function AdminUserDetailPage({ tabId }: { tabId: string }) {
       dirty={dirty}
       validate={validate}
       onSave={handleSave}
+      onSaveSuccess={handleSaveSuccess}
       onNew={handleNew}
     >
       <Card>
