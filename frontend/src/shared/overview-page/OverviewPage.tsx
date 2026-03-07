@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { SortingState } from '@tanstack/react-table';
 import type { ColumnMeta, FilterCondition, FilterRequest, TableResponse } from '../../api/types';
 import { fetchTable, type TimingInfo } from '../../api/client';
@@ -52,14 +52,13 @@ export function OverviewPage({
   const [activeFilter, setActiveFilter] = useState<FilterRequest | null>(null);
   const [columns, setColumns] = useState<ColumnMeta[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
+  const [pendingDelete, setPendingDelete] = useState<Record<string, unknown>[] | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const pendingDeleteRef = useRef<Record<string, unknown>[]>([]);
   const { presets, loading: presetsLoading, defaultPreset, savePreset, updatePreset, deletePreset: removePreset, setDefault, clearDefault } = useFilterPresets(pageKey);
 
   const hasDeletePerm = canDeletePerm(effectiveResourceKey);
-  const selectable = !!(onDelete || onRowDoubleClick || extraContextActions);
+  const selectable = !!(onDelete || extraContextActions);
 
   const loadData = useCallback(async (filter?: FilterRequest, signal?: AbortSignal) => {
     setLoading(true);
@@ -104,7 +103,7 @@ export function OverviewPage({
 
   // Clear selection when data changes
   useEffect(() => {
-    setSelectedRows(new Set());
+    setSelectedRowIds(new Set());
   }, [tableData]);
 
   const handleFilterExecute = useCallback((conditions: FilterCondition[]) => {
@@ -131,8 +130,8 @@ export function OverviewPage({
     setDeleting(true);
     try {
       await onDelete(rows);
-      setConfirmDelete(false);
-      setSelectedRows(new Set());
+      setPendingDelete(null);
+      setSelectedRowIds(new Set());
       showMessage('Geloescht', 'success');
       loadData(activeFilter ?? undefined);
     } catch (e) {
@@ -182,10 +181,7 @@ export function OverviewPage({
         icon: iconTrash,
         danger: true,
         multi: true,
-        onClick: (rows) => {
-          pendingDeleteRef.current = rows;
-          setConfirmDelete(true);
-        },
+        onClick: (rows) => setPendingDelete(rows),
       });
     }
 
@@ -196,17 +192,22 @@ export function OverviewPage({
     return actions;
   }, [onRowDoubleClick, onNew, onDelete, canWrite, hasDeletePerm, effectiveResourceKey, newLabel, extraContextActions]);
 
+  // Resolve selected IDs to row data for toolbar delete
+  const getSelectedData = useCallback((): Record<string, unknown>[] => {
+    return data.filter(row => selectedRowIds.has(String(row.id ?? '')));
+  }, [data, selectedRowIds]);
+
   const footer = useMemo(() => {
     const parts: string[] = [];
     parts.push(`${data.length} Eintr${data.length !== 1 ? 'aege' : 'ag'}`);
     if (activeFilter) parts.push('(gefiltert)');
-    if (selectedRows.size > 0) parts.push(`${selectedRows.size} ausgewaehlt`);
+    if (selectedRowIds.size > 0) parts.push(`${selectedRowIds.size} ausgewaehlt`);
     if (timing) {
       parts.push(`${timing.totalMs} ms`);
       if (timing.serverMs !== null) parts.push(`(Server: ${timing.serverMs} ms)`);
     }
     return <span>{parts.join(' | ')}</span>;
-  }, [data.length, activeFilter, timing, selectedRows.size]);
+  }, [data.length, activeFilter, timing, selectedRowIds.size]);
 
   return (
     <div className="overview-page">
@@ -231,16 +232,12 @@ export function OverviewPage({
             {iconPlus}
           </Button>
         )}
-        {selectedRows.size > 0 && hasDeletePerm && onDelete && (
+        {selectedRowIds.size > 0 && hasDeletePerm && onDelete && (
           <Button
             variant="ghost"
             icon
-            onClick={() => {
-              const rows = [...selectedRows].map(i => data[i]).filter(Boolean);
-              pendingDeleteRef.current = rows;
-              setConfirmDelete(true);
-            }}
-            title={`${selectedRows.size} Eintraege loeschen`}
+            onClick={() => setPendingDelete(getSelectedData())}
+            title={`${selectedRowIds.size} Eintraege loeschen`}
             aria-label="Ausgewaehlte loeschen"
             className="overview-delete-btn"
           >
@@ -261,8 +258,8 @@ export function OverviewPage({
               emptyMessage={emptyMessage}
               onRowDoubleClick={onRowDoubleClick}
               selectable={selectable}
-              selectedRows={selectedRows}
-              onSelectionChange={setSelectedRows}
+              selectedRowIds={selectedRowIds}
+              onSelectionChange={setSelectedRowIds}
               contextActions={contextActions}
             />
           </Card>
@@ -289,25 +286,25 @@ export function OverviewPage({
         )}
       </div>
 
-      {confirmDelete && (
-        <div className="detail-page-modal-backdrop" onClick={() => setConfirmDelete(false)}>
-          <div className="detail-page-modal" onClick={e => e.stopPropagation()}>
+      {pendingDelete && (
+        <div className="overview-confirm-backdrop" onClick={() => setPendingDelete(null)}>
+          <div className="overview-confirm-modal" onClick={e => e.stopPropagation()}>
             <h3>Wirklich loeschen?</h3>
             <p>
-              {pendingDeleteRef.current.length === 1
+              {pendingDelete.length === 1
                 ? 'Dieser Eintrag wird unwiderruflich geloescht.'
-                : `${pendingDeleteRef.current.length} Eintraege werden unwiderruflich geloescht.`}
+                : `${pendingDelete.length} Eintraege werden unwiderruflich geloescht.`}
             </p>
-            <div className="detail-page-modal-actions">
+            <div className="overview-confirm-actions">
               <Button
                 variant="ghost"
-                onClick={() => handleDeleteConfirmed(pendingDeleteRef.current)}
+                onClick={() => handleDeleteConfirmed(pendingDelete)}
                 disabled={deleting}
                 className="overview-delete-btn"
               >
                 {deleting ? 'Loeschen...' : 'Ja, loeschen'}
               </Button>
-              <Button variant="ghost" onClick={() => setConfirmDelete(false)}>Abbrechen</Button>
+              <Button variant="ghost" onClick={() => setPendingDelete(null)}>Abbrechen</Button>
             </div>
           </div>
         </div>

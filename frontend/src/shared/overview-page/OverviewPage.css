@@ -78,8 +78,8 @@
   color: var(--color-error, #ef4444);
 }
 
-/* Confirm Delete Modal (shared with DetailPage) */
-.overview-page .detail-page-modal-backdrop {
+/* Confirm Delete Modal */
+.overview-confirm-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
@@ -89,7 +89,7 @@
   z-index: 1000;
 }
 
-.overview-page .detail-page-modal {
+.overview-confirm-modal {
   background: var(--color-surface);
   border-radius: var(--radius-md);
   padding: var(--space-lg);
@@ -100,17 +100,17 @@
   gap: var(--space-sm);
 }
 
-.overview-page .detail-page-modal h3 {
+.overview-confirm-modal h3 {
   margin: 0;
 }
 
-.overview-page .detail-page-modal p {
+.overview-confirm-modal p {
   margin: 0;
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
 }
 
-.overview-page .detail-page-modal-actions {
+.overview-confirm-actions {
   display: flex;
   gap: var(--space-sm);
   margin-top: var(--space-sm);

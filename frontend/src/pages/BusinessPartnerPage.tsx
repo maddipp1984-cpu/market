@@ -9,8 +9,13 @@ export function BusinessPartnerPage({ tabId }: { tabId: string }) {
   const { openTab } = useTabContext();
 
   const handleDelete = useCallback(async (rows: Record<string, unknown>[]) => {
-    for (const row of rows) {
-      await deleteBusinessPartner(row.id as number);
+    const results = await Promise.allSettled(
+      rows.map(row => deleteBusinessPartner(row.id as number))
+    );
+    const failed = results.filter(r => r.status === 'rejected').length;
+    if (failed > 0) {
+      const ok = results.length - failed;
+      throw new Error(`${ok} von ${results.length} geloescht, ${failed} fehlgeschlagen`);
     }
   }, []);
 

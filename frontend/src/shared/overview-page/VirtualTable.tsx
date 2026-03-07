@@ -33,8 +33,9 @@ interface VirtualTableProps<T extends Record<string, any>> {
   emptyMessage?: string;
   onRowDoubleClick?: (row: T) => void;
   selectable?: boolean;
-  selectedRows?: Set<number>;
-  onSelectionChange?: (selected: Set<number>) => void;
+  selectedRowIds?: Set<string>;
+  onSelectionChange?: (selected: Set<string>) => void;
+  rowIdKey?: string;
   contextActions?: ContextAction[];
 }
 
@@ -114,6 +115,12 @@ function buildColumns<T extends Record<string, any>>(
   return columns;
 }
 
+const EMPTY_SET = new Set<string>();
+
+function getRowId(row: Record<string, unknown>, key: string): string {
+  return String(row[key] ?? '');
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function VirtualTable<T extends Record<string, any>>({
   data,
@@ -123,8 +130,9 @@ export function VirtualTable<T extends Record<string, any>>({
   emptyMessage = 'Keine Daten vorhanden',
   onRowDoubleClick,
   selectable = false,
-  selectedRows,
+  selectedRowIds,
   onSelectionChange,
+  rowIdKey = 'id',
   contextActions,
 }: VirtualTableProps<T>) {
   const columns = useMemo(
@@ -146,79 +154,87 @@ export function VirtualTable<T extends Record<string, any>>({
 
   const { rows: tableRows } = table.getRowModel();
 
-  // Selection
-  const selected = selectedRows ?? new Set<number>();
+  // Selection — uses stable row IDs, not visual indices
+  const selected = selectedRowIds ?? EMPTY_SET;
   const lastClickedRef = useRef<number | null>(null);
 
-  const handleRowClick = useCallback((e: React.MouseEvent, rowIndex: number) => {
+  const handleRowClick = useCallback((e: React.MouseEvent, visualIndex: number) => {
     if (!selectable || !onSelectionChange) return;
 
     const next = new Set(selected);
 
     if (e.shiftKey && lastClickedRef.current !== null) {
-      const from = Math.min(lastClickedRef.current, rowIndex);
-      const to = Math.max(lastClickedRef.current, rowIndex);
-      for (let i = from; i <= to; i++) next.add(i);
+      const from = Math.min(lastClickedRef.current, visualIndex);
+      const to = Math.max(lastClickedRef.current, visualIndex);
+      for (let i = from; i <= to; i++) {
+        const id = getRowId(tableRows[i].original as Record<string, unknown>, rowIdKey);
+        next.add(id);
+      }
     } else if (e.ctrlKey || e.metaKey) {
-      if (next.has(rowIndex)) next.delete(rowIndex);
-      else next.add(rowIndex);
+      const id = getRowId(tableRows[visualIndex].original as Record<string, unknown>, rowIdKey);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
     } else {
-      // Single click without modifier — don't change selection
-      return;
+      return; // Single click without modifier — don't change selection
     }
 
-    lastClickedRef.current = rowIndex;
+    lastClickedRef.current = visualIndex;
     onSelectionChange(next);
-  }, [selectable, selected, onSelectionChange]);
+  }, [selectable, selected, onSelectionChange, tableRows, rowIdKey]);
 
-  const handleCheckbox = useCallback((rowIndex: number, checked: boolean) => {
+  const handleCheckbox = useCallback((row: Record<string, unknown>, checked: boolean, visualIndex: number) => {
     if (!onSelectionChange) return;
     const next = new Set(selected);
-    if (checked) next.add(rowIndex);
-    else next.delete(rowIndex);
-    lastClickedRef.current = rowIndex;
+    const id = getRowId(row, rowIdKey);
+    if (checked) next.add(id);
+    else next.delete(id);
+    lastClickedRef.current = visualIndex;
     onSelectionChange(next);
-  }, [selected, onSelectionChange]);
+  }, [selected, onSelectionChange, rowIdKey]);
 
   const handleSelectAll = useCallback((checked: boolean) => {
     if (!onSelectionChange) return;
     if (checked) {
-      onSelectionChange(new Set(tableRows.map((_, i) => i)));
+      const all = new Set(tableRows.map(r => getRowId(r.original as Record<string, unknown>, rowIdKey)));
+      onSelectionChange(all);
     } else {
       onSelectionChange(new Set());
     }
-  }, [tableRows, onSelectionChange]);
+  }, [tableRows, onSelectionChange, rowIdKey]);
 
   const allSelected = selectable && tableRows.length > 0 && selected.size === tableRows.length;
   const someSelected = selectable && selected.size > 0 && selected.size < tableRows.length;
 
   // Context menu
-  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; rowIndex: number } | null>(null);
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; rowId: string } | null>(null);
 
-  const handleContextMenu = useCallback((e: React.MouseEvent, rowIndex: number) => {
+  const handleContextMenu = useCallback((e: React.MouseEvent, row: Record<string, unknown>) => {
     if (!contextActions || contextActions.length === 0) return;
     e.preventDefault();
 
+    const id = getRowId(row, rowIdKey);
+
     // If right-clicked row is not in selection, select only that row
-    if (selectable && onSelectionChange && !selected.has(rowIndex)) {
-      onSelectionChange(new Set([rowIndex]));
+    if (selectable && onSelectionChange && !selected.has(id)) {
+      onSelectionChange(new Set([id]));
     }
 
-    setCtxMenu({ x: e.clientX, y: e.clientY, rowIndex });
-  }, [contextActions, selectable, selected, onSelectionChange]);
+    setCtxMenu({ x: e.clientX, y: e.clientY, rowId: id });
+  }, [contextActions, selectable, selected, onSelectionChange, rowIdKey]);
 
   const ctxMenuItems = useMemo((): ContextMenuEntry[] => {
     if (!ctxMenu || !contextActions) return [];
 
-    const effectiveSelected = selected.size > 0 ? selected : new Set([ctxMenu.rowIndex]);
+    const effectiveSelected = selected.size > 0 ? selected : new Set([ctxMenu.rowId]);
     const isSingle = effectiveSelected.size === 1;
-    const selectedData = [...effectiveSelected].map(i => tableRows[i]?.original as Record<string, unknown>).filter(Boolean);
+    const selectedData = tableRows
+      .map(r => r.original as Record<string, unknown>)
+      .filter(row => effectiveSelected.has(getRowId(row, rowIdKey)));
 
     const items: ContextMenuEntry[] = [];
     let lastWasDanger = false;
     for (const action of contextActions) {
       if (!isSingle && !action.multi) continue;
-      // Add separator before danger items
       if (action.danger && !lastWasDanger && items.length > 0) {
         items.push({ separator: true });
       }
@@ -231,7 +247,7 @@ export function VirtualTable<T extends Record<string, any>>({
       lastWasDanger = !!action.danger;
     }
     return items;
-  }, [ctxMenu, contextActions, selected, tableRows]);
+  }, [ctxMenu, contextActions, selected, tableRows, rowIdKey]);
 
   const colSpan = columns.length + (selectable ? 1 : 0);
 
@@ -248,6 +264,7 @@ export function VirtualTable<T extends Record<string, any>>({
                     checked={allSelected}
                     ref={el => { if (el) el.indeterminate = someSelected; }}
                     onChange={e => handleSelectAll(e.target.checked)}
+                    aria-label="Alle auswaehlen"
                   />
                 </th>
               )}
@@ -281,14 +298,16 @@ export function VirtualTable<T extends Record<string, any>>({
             </tr>
           ) : (
             tableRows.map((row, i) => {
-              const isSelected = selectable && selected.has(i);
+              const rowData = row.original as Record<string, unknown>;
+              const id = getRowId(rowData, rowIdKey);
+              const isSelected = selectable && selected.has(id);
               return (
                 <tr
                   key={row.id}
                   className={`${i % 2 !== 0 ? 'odd' : ''}${isSelected ? ' selected' : ''}`}
                   onClick={e => handleRowClick(e, i)}
                   onDoubleClick={() => onRowDoubleClick?.(row.original)}
-                  onContextMenu={e => handleContextMenu(e, i)}
+                  onContextMenu={e => handleContextMenu(e, rowData)}
                   style={onRowDoubleClick || contextActions ? { cursor: 'pointer' } : undefined}
                 >
                   {selectable && (
@@ -296,8 +315,9 @@ export function VirtualTable<T extends Record<string, any>>({
                       <input
                         type="checkbox"
                         checked={isSelected}
-                        onChange={e => handleCheckbox(i, e.target.checked)}
+                        onChange={e => handleCheckbox(rowData, e.target.checked, i)}
                         onClick={e => e.stopPropagation()}
+                        aria-label="Zeile auswaehlen"
                       />
                     </td>
                   )}
