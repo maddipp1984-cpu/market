@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +29,7 @@ public class BusinessPartnerController {
     }
 
     @GetMapping
-    public ResponseEntity<TableResponse> getAll() {
+    public ResponseEntity<TableResponse> getAll() throws SQLException {
         List<Map<String, Object>> data = service.findAllAsRows();
         return ResponseEntity.ok(new TableResponse(COLUMNS, data));
     }

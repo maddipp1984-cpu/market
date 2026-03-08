@@ -8,8 +8,9 @@ Spring Boot 3.4.x Anwendung mit dualem Persistenz-Ansatz: Raw JDBC für Zeitreih
 - **Java 17** (LTS), Gradle mit Spring Boot Plugin
 - **Spring Boot 3.4.1** (starter-web, starter-jdbc)
 - **TimescaleDB** (PostgreSQL-Extension)
-- **Raw JDBC** für Timeseries-Zugriff (Performance)
-- **JPA/Hibernate** für Stammdaten-CRUD (BusinessPartner etc.), `ddl-auto=validate`, `open-in-view=false`
+- **Raw JDBC** für Timeseries-Zugriff (Performance) und **alle Übersichts-Abfragen** (auch Stammdaten)
+- **JPA/Hibernate** für Stammdaten-CRUD-Einzeloperationen (findById, create, update, delete), `ddl-auto=validate`, `open-in-view=false`
+- **Regel**: Übersichtsseiten (Tabellen mit vielen Zeilen) nutzen IMMER Raw JDBC via `DataSource`, niemals JPA `findAll()`
 - **HikariCP** (via Spring auto-config)
 
 ## Zeitdimensionen

@@ -3,13 +3,14 @@ package de.projekt.businesspartner.service;
 import de.projekt.businesspartner.model.BusinessPartner;
 import de.projekt.businesspartner.model.ContactFunction;
 import de.projekt.businesspartner.model.ContactPerson;
+import de.projekt.businesspartner.repository.BusinessPartnerOverviewRepository;
 import de.projekt.businesspartner.repository.BusinessPartnerRepository;
 import de.projekt.businesspartner.rest.dto.BusinessPartnerDto;
 import de.projekt.businesspartner.rest.dto.ContactPersonDto;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.LinkedHashMap;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -20,22 +21,15 @@ import java.util.stream.Collectors;
 public class BusinessPartnerService {
 
     private final BusinessPartnerRepository repository;
+    private final BusinessPartnerOverviewRepository overviewRepository;
 
-    public BusinessPartnerService(BusinessPartnerRepository repository) {
+    public BusinessPartnerService(BusinessPartnerRepository repository, BusinessPartnerOverviewRepository overviewRepository) {
         this.repository = repository;
+        this.overviewRepository = overviewRepository;
     }
 
-    @Transactional(readOnly = true)
-    public List<Map<String, Object>> findAllAsRows() {
-        return repository.findAll().stream()
-                .map(bp -> {
-                    Map<String, Object> row = new LinkedHashMap<>();
-                    row.put("id", bp.getId());
-                    row.put("shortName", bp.getShortName());
-                    row.put("name", bp.getName());
-                    return row;
-                })
-                .toList();
+    public List<Map<String, Object>> findAllAsRows() throws SQLException {
+        return overviewRepository.findAllAsRows();
     }
 
     @Transactional(readOnly = true)
