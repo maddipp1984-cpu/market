@@ -33,12 +33,15 @@ Spring Boot 3.4.x Anwendung mit dualem Persistenz-Ansatz: Raw JDBC für Zeitreih
 
 ### Spring Boot Architektur & Schichten
 - **`de.market`** als Basis-Package — `@SpringBootApplication` in `MarketApplication`
+- **`shared.dto`** — Gemeinsame DTOs (TableResponse, ColumnMeta, Filter*)
+- **`shared.query`** — QueryRegistry, QueryLoader, QueryController
 - **`timeseries.rest`** — REST-Controller + DTOs + GlobalExceptionHandler
 - **`timeseries.api`** — `@Service` TimeSeriesService (Fassade)
 - **`timeseries.repository`** — `@Repository` mit Raw JDBC über `DataSource`
 - **`timeseries.client`** — `@Component` TimeSeriesClient (Entwickler-API mit Konvertierung)
 - **`timeseries.model`** — POJOs + Enums (keine Spring-Annotationen)
-- **Schichten-Regel**: `REST-Controller → TimeSeriesService → Repository`
+- **`currency`** — Währungs-CRUD (JPA Entity auf `ts_currency`, REST `/api/currencies`)
+- **Schichten-Regel**: `REST-Controller → Service → Repository`
 
 ### REST-API
 | Methode | Pfad | Beschreibung |
@@ -59,6 +62,12 @@ Spring Boot 3.4.x Anwendung mit dualem Persistenz-Ansatz: Raw JDBC für Zeitreih
 | POST | `/api/business-partners` | GP anlegen |
 | PUT | `/api/business-partners/{id}` | GP aktualisieren |
 | DELETE | `/api/business-partners/{id}` | GP löschen |
+| GET | `/api/currencies` | Währungsliste (TableResponse) |
+| GET | `/api/currencies/{id}` | Währung lesen |
+| POST | `/api/currencies` | Währung anlegen |
+| PUT | `/api/currencies/{id}` | Währung aktualisieren |
+| DELETE | `/api/currencies/{id}` | Währung löschen |
+| POST | `/api/currencies/query` | Währungen filtern |
 
 ### Exception Handling (GlobalExceptionHandler)
 - `IllegalArgumentException` → 400 Bad Request
@@ -81,6 +90,29 @@ Spring Boot 3.4.x Anwendung mit dualem Persistenz-Ansatz: Raw JDBC für Zeitreih
 ```
 src/main/java/de/market/
     MarketApplication.java                 -- @SpringBootApplication
+    shared/
+        dto/
+            TableResponse.java             -- Generische Tabellenantwort
+            ColumnMeta.java                -- Spalten-Metadaten
+            FilterCondition.java           -- Filter-Bedingung
+            FilterRequest.java             -- Filter-Request
+            FilterQueryBuilder.java        -- WHERE-Clause-Builder
+        query/
+            QueryRegistry.java             -- @Component, SQL aus DB laden
+            QueryLoader.java               -- @Component, XML→DB Sync
+            QueryController.java           -- @RestController /api/admin/queries
+    currency/                              -- Stammdaten-Modul (JPA)
+        model/
+            CurrencyEntity.java            -- @Entity auf ts_currency
+        repository/
+            CurrencyJpaRepository.java     -- JpaRepository
+            CurrencyOverviewRepository.java -- Raw JDBC für Übersicht
+        service/
+            CurrencyService.java           -- @Service, Validierung, DTO-Mapping
+        rest/
+            CurrencyController.java        -- @RestController /api/currencies
+            dto/
+                CurrencyDto.java           -- Request/Response DTO
     timeseries/
         api/
             TimeSeriesService.java         -- @Service, öffentliche Fassade
@@ -96,7 +128,7 @@ src/main/java/de/market/
             ObjectType.java                -- Enum: Objekttypen
             TsObject.java                  -- Übergeordnetes Objekt
             Unit.java                      -- Enum: physikalische Einheiten
-            Currency.java                  -- Enum: Währungen
+            Currency.java                  -- Enum: Währungen (Legacy, wird durch CurrencyEntity ersetzt)
         repository/
             HeaderRepository.java          -- @Repository, CRUD ts_header
             ObjectRepository.java          -- @Repository, CRUD ts_object

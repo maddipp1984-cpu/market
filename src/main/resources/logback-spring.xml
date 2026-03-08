@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- ======================== -->
+    <!-- Konsolen-Appender (alles) -->
+    <!-- ======================== -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{username:-system}] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ================================== -->
+    <!-- Server-Log (alles in eine Datei)   -->
+    <!-- ================================== -->
+    <appender name="SERVER_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/server.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/server.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{username:-system}] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ============================================ -->
+    <!-- User-Session-Logs (ein File pro User+Session) -->
+    <!-- ============================================ -->
+    <appender name="USER_SIFT" class="ch.qos.logback.classic.sift.SiftingAppender">
+        <!-- Nur authentifizierte Requests (kein Startup/Scheduler-Noise) -->
+        <filter class="de.market.timeseries.security.UserSessionLogFilter" />
+        <discriminator>
+            <key>userSession</key>
+            <defaultValue>_unknown</defaultValue>
+        </discriminator>
+        <sift>
+            <appender name="USER_FILE_${userSession}" class="ch.qos.logback.core.FileAppender">
+                <file>logs/users/${userSession}.log</file>
+                <append>true</append>
+                <encoder>
+                    <pattern>%d{HH:mm:ss.SSS} %X{method} %X{uri} %-5level %logger{36} - %msg%n</pattern>
+                </encoder>
+            </appender>
+        </sift>
+    </appender>
+
+    <!-- Root: Konsole + Server-Log + User-Sift -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="SERVER_FILE" />
+        <appender-ref ref="USER_SIFT" />
+    </root>
+
+    <!-- Weniger Noise von Frameworks -->
+    <logger name="org.hibernate" level="WARN" />
+    <logger name="org.springframework.security" level="WARN" />
+    <logger name="org.apache" level="WARN" />
+
+</configuration>
