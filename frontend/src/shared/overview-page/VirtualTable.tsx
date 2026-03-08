@@ -249,14 +249,15 @@ export function VirtualTable<T extends Record<string, any>>({
     return items;
   }, [ctxMenu, contextActions, selected, tableRows, rowIdKey]);
 
-  const colSpan = columns.length + (selectable ? 1 : 0);
+  const colSpan = columns.length + 1 + (selectable ? 1 : 0);
 
   return (
     <div className="vtable">
-      <table className="vtable-table" style={{ width: table.getTotalSize() + (selectable ? 40 : 0) }}>
+      <table className="vtable-table" style={{ width: table.getTotalSize() + 40 + (selectable ? 40 : 0) }}>
         <thead>
           {table.getHeaderGroups().map(hg => (
             <tr key={hg.id}>
+              <th className="vtable-rownum-col">#</th>
               {selectable && (
                 <th className="vtable-checkbox-col">
                   <input
@@ -310,6 +311,7 @@ export function VirtualTable<T extends Record<string, any>>({
                   onContextMenu={e => handleContextMenu(e, rowData)}
                   style={onRowDoubleClick || contextActions ? { cursor: 'pointer' } : undefined}
                 >
+                  <td className="vtable-rownum-col">{i + 1}</td>
                   {selectable && (
                     <td className="vtable-checkbox-col">
                       <input

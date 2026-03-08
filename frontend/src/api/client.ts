@@ -1,4 +1,4 @@
-import type { ObjectResponse, TimeSeriesHeaderResponse, TimeSeriesValuesResponse, WriteValuesRequest, FilterRequest, TableResponse, FilterPreset, CreateFilterPresetRequest, BusinessPartnerDto, CurrencyDto, BatchJobDto, JobExecutionDto } from './types';
+import type { ObjectResponse, TimeSeriesHeaderResponse, TimeSeriesValuesResponse, WriteValuesRequest, FilterRequest, TableResponse, FilterPreset, CreateFilterPresetRequest, BusinessPartnerDto, CurrencyDto, BatchScheduleDto, JobCatalogEntry } from './types';
 import type { EffectivePermission } from '../auth/AuthContext';
 import keycloak from '../auth/keycloak';
 
@@ -352,10 +352,10 @@ export async function deleteBusinessPartner(id: number): Promise<void> {
   }
 }
 
-// ==================== Batch Jobs ====================
+// ==================== Batch Scheduling ====================
 
-export async function fetchBatchJob(id: number, signal?: AbortSignal): Promise<BatchJobDto> {
-  const res = await authFetch(`/api/batch-jobs/${id}`, { signal });
+export async function fetchJobCatalog(signal?: AbortSignal): Promise<JobCatalogEntry[]> {
+  const res = await authFetch('/api/batch-jobs/catalog', { signal });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(body.error || `HTTP ${res.status}`);
@@ -363,9 +363,20 @@ export async function fetchBatchJob(id: number, signal?: AbortSignal): Promise<B
   return res.json();
 }
 
-export async function updateBatchJob(id: number, dto: BatchJobDto): Promise<BatchJobDto> {
-  const res = await authFetch(`/api/batch-jobs/${id}`, {
-    method: 'PUT',
+export async function fetchSchedule(id: number, signal?: AbortSignal): Promise<BatchScheduleDto> {
+  const res = await authFetch(`/api/batch-schedules/${id}`, { signal });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function saveSchedule(dto: BatchScheduleDto): Promise<BatchScheduleDto> {
+  const isNew = dto.id === null;
+  const url = isNew ? '/api/batch-schedules' : `/api/batch-schedules/${dto.id}`;
+  const res = await authFetch(url, {
+    method: isNew ? 'POST' : 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(dto),
   });
@@ -376,25 +387,28 @@ export async function updateBatchJob(id: number, dto: BatchJobDto): Promise<Batc
   return res.json();
 }
 
-export async function triggerBatchJob(id: number): Promise<void> {
-  const res = await authFetch(`/api/batch-jobs/${id}/trigger`, { method: 'POST' });
+export async function deleteSchedule(id: number): Promise<void> {
+  const res = await authFetch(`/api/batch-schedules/${id}`, { method: 'DELETE' });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(body.error || `HTTP ${res.status}`);
   }
 }
 
-export async function fetchBatchJobHistory(id: number, signal?: AbortSignal): Promise<JobExecutionDto[]> {
-  const res = await authFetch(`/api/batch-jobs/${id}/history`, { signal });
+export async function triggerSchedule(id: number, parameters?: Record<string, unknown>): Promise<void> {
+  const res = await authFetch(`/api/batch-schedules/${id}/trigger`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ parameters: parameters || {} }),
+  });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(body.error || `HTTP ${res.status}`);
   }
-  return res.json();
 }
 
-export async function fetchBatchJobLog(jobId: number, execId: number, signal?: AbortSignal): Promise<string> {
-  const res = await authFetch(`/api/batch-jobs/${jobId}/history/${execId}/log`, { signal });
+export async function fetchExecutionLog(execId: number, signal?: AbortSignal): Promise<string> {
+  const res = await authFetch(`/api/batch-history/${execId}/log`, { signal });
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}`);
   }

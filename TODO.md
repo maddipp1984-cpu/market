@@ -56,8 +56,15 @@
 - [ ] **P2** — SecurityConfig erweitern: `/public-api/**` mit Basic Auth, getrennt von Keycloak-Auth fuer `/api/**`
 - [ ] **P3** — Erster externer Endpoint: `POST /public-api/business-partners` (GP anlegen fuer Drittsysteme)
 
+### Scheduling / Batchplanung
+- [x] **SCH1** — Backend: Quartz Scheduler, JobRegistry, AbstractBatchJob, REST-API, Demo-Job
+- [x] **SCH2** — Umbau auf Template→Instanz: Job-Katalog (Code), batch_schedule (DB), Planungen + Historie als eigene Seiten, dynamisches Parameterformular, Trigger-Modus
+- [ ] **SCH3** — Intervall-Schedule verbessern: Wochentage/Tage auswaehlbar (nicht nur Sekunden), Uhrzeit-Auswahl, menschenlesbare Konfiguration statt reiner Sekundenwert
+- [ ] **SCH4** — Gueltigkeitszeitraum fuer Planungen: Erstes Startdatum (ab wann aktiv), Letztes Startdatum (bis wann aktiv, danach automatisch deaktivieren)
+- [ ] **SCH5** — Parameter-Labels: Mapping-Tabelle fuer sprechende Feldnamen (excludePattern → "Ausschlussmuster", retentionDays → "Aufbewahrung in Tagen")
+
 ### Datenbereinigung
-- [ ] **B1** — Verwaiste Header loeschen: Alle ts_header-Eintraege entfernen, die keine Werte in der zugehoerigen Werte-Tabelle haben
+- [x] **B1** — Verwaiste Header loeschen: Jetzt als Batch-Job (CleanupOrphanedHeadersJob) im Scheduling-System
 
 ### Sonstiges
 - [x] **S1** — TimescaleDB per Docker aufsetzen und Schema testen

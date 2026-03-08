@@ -92,6 +92,17 @@
 }
 
 /* Checkbox column */
+.vtable-rownum-col {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  text-align: right;
+  padding: var(--space-sm) var(--space-sm) !important;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
 .vtable-checkbox-col {
   width: 40px;
   min-width: 40px;

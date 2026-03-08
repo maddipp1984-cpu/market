@@ -69,12 +69,15 @@ Spring Boot 3.4.x Anwendung mit dualem Persistenz-Ansatz: Raw JDBC für Zeitreih
 | PUT | `/api/currencies/{id}` | Währung aktualisieren |
 | DELETE | `/api/currencies/{id}` | Währung löschen |
 | POST | `/api/currencies/query` | Währungen filtern |
-| GET | `/api/batch-jobs` | Job-Übersicht (TableResponse) |
-| GET | `/api/batch-jobs/{id}` | Job-Definition lesen |
-| PUT | `/api/batch-jobs/{id}` | Schedule + enabled ändern |
-| POST | `/api/batch-jobs/{id}/trigger` | Manuell auslösen |
-| GET | `/api/batch-jobs/{id}/history` | Letzte N Ausführungen |
-| GET | `/api/batch-jobs/{id}/history/{execId}/log` | Logfile-Inhalt |
+| GET | `/api/batch-jobs/catalog` | Job-Katalog (verfügbare Job-Typen) |
+| GET | `/api/batch-schedules` | Schedule-Übersicht (TableResponse) |
+| GET | `/api/batch-schedules/{id}` | Schedule lesen |
+| POST | `/api/batch-schedules` | Schedule anlegen |
+| PUT | `/api/batch-schedules/{id}` | Schedule aktualisieren |
+| DELETE | `/api/batch-schedules/{id}` | Schedule löschen |
+| POST | `/api/batch-schedules/{id}/trigger` | Manuell auslösen (opt. Parameter) |
+| GET | `/api/batch-history` | Alle Ausführungen (TableResponse) |
+| GET | `/api/batch-history/{execId}/log` | Logfile-Inhalt |
 
 ### Exception Handling (GlobalExceptionHandler)
 - `IllegalArgumentException` → 400 Bad Request
@@ -159,7 +162,7 @@ src/main/java/de/market/
             dto/
                 BusinessPartnerDto.java    -- Request/Response DTO
                 ContactPersonDto.java      -- Ansprechpartner DTO
-    scheduling/                           -- Batch-Job-System (Quartz)
+    scheduling/                           -- Batch-Job-System (Quartz, Template→Instanz)
         config/
             QuartzConfig.java              -- @Configuration, SchedulerFactoryBean
             AutowiringSpringBeanJobFactory.java -- Autowiring in Quartz-Jobs
@@ -167,22 +170,25 @@ src/main/java/de/market/
             ScheduleType.java              -- Enum: NONE, CRON, INTERVAL
             JobStatus.java                 -- Enum: RUNNING, COMPLETED, FAILED
             JobResult.java                 -- Record: recordsAffected + message
-            JobDefinitionEntity.java       -- @Entity auf batch_job_definition
+            JobParameterType.java          -- Enum: STRING, INTEGER, BOOLEAN, DATE, ENUM, PATTERN
+            JobParameter.java              -- Parameter-Definition für Job-Typen
+            BatchScheduleEntity.java       -- @Entity auf batch_schedule (n Planungen pro Job-Typ)
         repository/
-            JobDefinitionRepository.java   -- JpaRepository (Einzel-CRUD)
-            JobOverviewRepository.java     -- Raw JDBC für Übersicht
+            BatchScheduleJpaRepository.java -- JpaRepository (Einzel-CRUD)
+            ScheduleOverviewRepository.java -- Raw JDBC für Übersicht
             JobExecutionLogRepository.java -- Raw JDBC für Historie
         service/
-            SchedulingService.java         -- @Service, CRUD + Quartz-Trigger
-            JobRegistry.java               -- @Component, Auto-Discovery + DB-Sync
+            SchedulingService.java         -- @Service, Katalog + Schedule-CRUD + Quartz
+            JobRegistry.java               -- @Component, Startup-Sync (nur Validierung)
         rest/
-            SchedulingController.java      -- @RestController /api/batch-jobs
+            SchedulingController.java      -- @RestController /api/batch-schedules + /api/batch-history
             dto/
-                BatchJobDto.java           -- Request/Response DTO
+                BatchScheduleDto.java      -- Schedule Request/Response DTO
+                JobCatalogDto.java         -- Job-Katalog DTO (mit Parameter-Definitionen)
         jobs/
-            AbstractBatchJob.java          -- Abstrakte Basisklasse
-            QuartzJobAdapter.java          -- Quartz→AbstractBatchJob Bridge
-            CleanupOrphanedHeadersJob.java -- Demo-Job
+            AbstractBatchJob.java          -- Abstrakte Basisklasse (mit Parameter-System)
+            QuartzJobAdapter.java          -- Quartz→AbstractBatchJob Bridge (mit Parameter-Übergabe)
+            CleanupOrphanedHeadersJob.java -- Demo-Job (mit excludePattern + retentionDays)
     benchmark/
         Benchmark.java                     -- Standalone Lese-Benchmark
 src/main/resources/

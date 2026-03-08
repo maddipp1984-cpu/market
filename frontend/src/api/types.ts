@@ -116,27 +116,31 @@ export interface BusinessPartnerDto {
 }
 
 // Scheduling
-export interface BatchJobDto {
-  id: number | null;
+export interface JobCatalogEntry {
   jobKey: string;
   name: string;
   description: string | null;
-  jobClass: string;
+  parameters: JobParameterDef[];
+}
+
+export interface JobParameterDef {
+  name: string;
+  type: 'STRING' | 'INTEGER' | 'BOOLEAN' | 'DATE' | 'ENUM' | 'PATTERN';
+  description: string;
+  required: boolean;
+  defaultValue: unknown;
+  enumValues: string[] | null;
+}
+
+export interface BatchScheduleDto {
+  id: number | null;
+  jobKey: string;
+  name: string;
   scheduleType: 'NONE' | 'CRON' | 'INTERVAL';
   cronExpression: string | null;
   intervalSeconds: number | null;
   enabled: boolean;
-}
-
-export interface JobExecutionDto {
-  id: number;
-  startTime: string;
-  endTime: string | null;
-  status: 'RUNNING' | 'COMPLETED' | 'FAILED';
-  errorMessage: string | null;
-  recordsAffected: number | null;
-  logFile: string | null;
-  triggeredBy: string;
+  parameters: Record<string, unknown>;
 }
 
 declare module '@tanstack/react-table' {

@@ -1,9 +1,9 @@
 package de.market.scheduling.service;
 
 import de.market.scheduling.jobs.AbstractBatchJob;
-import de.market.scheduling.model.JobDefinitionEntity;
+import de.market.scheduling.model.BatchScheduleEntity;
 import de.market.scheduling.model.ScheduleType;
-import de.market.scheduling.repository.JobDefinitionRepository;
+import de.market.scheduling.repository.BatchScheduleJpaRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -20,78 +20,44 @@ public class JobRegistry {
     private static final Logger log = LoggerFactory.getLogger(JobRegistry.class);
 
     private final List<AbstractBatchJob> jobs;
-    private final JobDefinitionRepository definitionRepository;
+    private final BatchScheduleJpaRepository scheduleRepository;
     private final SchedulingService schedulingService;
 
     public JobRegistry(List<AbstractBatchJob> jobs,
-                       JobDefinitionRepository definitionRepository,
+                       BatchScheduleJpaRepository scheduleRepository,
                        SchedulingService schedulingService) {
         this.jobs = jobs;
-        this.definitionRepository = definitionRepository;
+        this.scheduleRepository = scheduleRepository;
         this.schedulingService = schedulingService;
     }
 
     @EventListener(ApplicationReadyEvent.class)
-    public void syncJobsOnStartup() {
-        log.info("JobRegistry: Synchronisiere {} registrierte Jobs mit DB", jobs.size());
+    public void syncOnStartup() {
+        log.info("JobRegistry: {} Job-Typen im Code registriert", jobs.size());
 
         Set<String> codeJobKeys = jobs.stream()
                 .map(AbstractBatchJob::getJobKey)
                 .collect(Collectors.toSet());
 
-        // Sync code -> DB
-        for (AbstractBatchJob job : jobs) {
-            var existing = definitionRepository.findByJobKey(job.getJobKey());
-            if (existing.isEmpty()) {
-                // New job -> INSERT
-                JobDefinitionEntity entity = new JobDefinitionEntity();
-                entity.setJobKey(job.getJobKey());
-                entity.setName(job.getName());
-                entity.setDescription(job.getDescription());
-                entity.setJobClass(job.getClass().getName());
-                entity.setScheduleType(ScheduleType.NONE);
-                entity.setEnabled(false);
-                definitionRepository.save(entity);
-                log.info("  Neuer Job registriert: {} ({})", job.getJobKey(), job.getName());
-            } else {
-                // Update name/description/class if changed
-                JobDefinitionEntity entity = existing.get();
-                boolean changed = false;
-                if (!entity.getName().equals(job.getName())) {
-                    entity.setName(job.getName());
-                    changed = true;
-                }
-                if (!java.util.Objects.equals(entity.getDescription(), job.getDescription())) {
-                    entity.setDescription(job.getDescription());
-                    changed = true;
-                }
-                if (!entity.getJobClass().equals(job.getClass().getName())) {
-                    entity.setJobClass(job.getClass().getName());
-                    changed = true;
-                }
-                if (changed) {
-                    definitionRepository.save(entity);
-                    log.info("  Job aktualisiert: {}", job.getJobKey());
+        // Deactivate schedules for removed jobs
+        List<BatchScheduleEntity> allSchedules = scheduleRepository.findAll();
+        for (BatchScheduleEntity entity : allSchedules) {
+            if (!codeJobKeys.contains(entity.getJobKey())) {
+                if (entity.isEnabled()) {
+                    entity.setEnabled(false);
+                    entity.setScheduleType(ScheduleType.NONE);
+                    scheduleRepository.save(entity);
+                    log.warn("  Schedule deaktiviert (Job nicht mehr im Code): id={}, jobKey={}, name={}",
+                            entity.getId(), entity.getJobKey(), entity.getName());
                 }
             }
         }
 
-        // Deactivate removed jobs
-        List<JobDefinitionEntity> allDefinitions = definitionRepository.findAll();
-        for (JobDefinitionEntity entity : allDefinitions) {
-            if (!codeJobKeys.contains(entity.getJobKey()) && entity.isEnabled()) {
-                entity.setEnabled(false);
-                entity.setScheduleType(ScheduleType.NONE);
-                definitionRepository.save(entity);
-                log.warn("  Job deaktiviert (nicht mehr im Code): {}", entity.getJobKey());
-            }
-        }
-
-        // Create Quartz triggers for enabled jobs
-        for (JobDefinitionEntity entity : definitionRepository.findAll()) {
+        // Create Quartz triggers for all enabled schedules
+        for (BatchScheduleEntity entity : scheduleRepository.findAll()) {
             schedulingService.updateQuartzTrigger(entity);
         }
 
-        log.info("JobRegistry: Synchronisierung abgeschlossen");
+        log.info("JobRegistry: Startup-Sync abgeschlossen ({} Schedules in DB)", allSchedules.size());
     }
 }

@@ -172,7 +172,7 @@ export function BusinessPartnerDetailPage({ tabId }: { tabId: string }) {
         </div>
       </Card>
 
-      <div style={{ marginTop: 'var(--space-md)' }}>
+      <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-sm)' }}>
           <h3 style={{ margin: 0, fontSize: 'var(--font-size-md)' }}>Ansprechpartner</h3>
           {!isDisabled && (

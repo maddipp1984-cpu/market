@@ -40,7 +40,14 @@ export const defaultSidebarTree: SidebarNode[] = [
     id: 'system',
     label: 'System',
     children: [
-      { id: 'batch-jobs', label: 'Batchplanung', tabType: 'batch-jobs' },
+      {
+        id: 'batchplanung',
+        label: 'Batchplanung',
+        children: [
+          { id: 'batch-schedules', label: 'Planungen', tabType: 'batch-schedules' },
+          { id: 'batch-history', label: 'Historie', tabType: 'batch-history' },
+        ],
+      },
       { id: 'einstellungen', label: 'Einstellungen', tabType: 'einstellungen' },
     ],
   },
