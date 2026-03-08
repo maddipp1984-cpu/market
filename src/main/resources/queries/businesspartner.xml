@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<queries module="businesspartner">
+
+    <query key="businesspartner/overview" name="Geschaeftspartner Uebersicht">
+        <![CDATA[
+        SELECT id, short_name, name
+        FROM business_partner
+        ORDER BY short_name
+        ]]>
+    </query>
+
+</queries>

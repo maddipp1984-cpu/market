@@ -1,5 +1,6 @@
 package de.projekt.businesspartner.repository;
 
+import de.projekt.timeseries.query.QueryRegistry;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
@@ -16,13 +17,15 @@ import java.util.Map;
 public class BusinessPartnerOverviewRepository {
 
     private final DataSource dataSource;
+    private final QueryRegistry queryRegistry;
 
-    public BusinessPartnerOverviewRepository(DataSource dataSource) {
+    public BusinessPartnerOverviewRepository(DataSource dataSource, QueryRegistry queryRegistry) {
         this.dataSource = dataSource;
+        this.queryRegistry = queryRegistry;
     }
 
     public List<Map<String, Object>> findAllAsRows() throws SQLException {
-        String sql = "SELECT id, short_name, name FROM business_partner ORDER BY short_name";
+        String sql = queryRegistry.get("businesspartner/overview");
         List<Map<String, Object>> rows = new ArrayList<>();
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
