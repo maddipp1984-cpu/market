@@ -46,11 +46,32 @@
         </sift>
     </appender>
 
-    <!-- Root: Konsole + Server-Log + User-Sift -->
+    <!-- ============================================ -->
+    <!-- Job-Execution-Logs (ein File pro Ausfuehrung) -->
+    <!-- ============================================ -->
+    <appender name="JOB_SIFT" class="ch.qos.logback.classic.sift.SiftingAppender">
+        <!-- Nur wenn jobExecution MDC gesetzt ist (kein _none.log bei normalem Betrieb) -->
+        <filter class="de.market.scheduling.config.JobExecutionLogFilter" />
+        <discriminator>
+            <key>jobExecution</key>
+            <defaultValue>_none</defaultValue>
+        </discriminator>
+        <sift>
+            <appender name="JOB_FILE_${jobExecution}" class="ch.qos.logback.core.FileAppender">
+                <file>logs/jobs/${jobExecution}.log</file>
+                <encoder>
+                    <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+                </encoder>
+            </appender>
+        </sift>
+    </appender>
+
+    <!-- Root: Konsole + Server-Log + User-Sift + Job-Sift -->
     <root level="INFO">
         <appender-ref ref="CONSOLE" />
         <appender-ref ref="SERVER_FILE" />
         <appender-ref ref="USER_SIFT" />
+        <appender-ref ref="JOB_SIFT" />
     </root>
 
     <!-- Weniger Noise von Frameworks -->

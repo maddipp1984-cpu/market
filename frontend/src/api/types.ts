@@ -115,6 +115,30 @@ export interface BusinessPartnerDto {
   contacts: ContactPersonDto[];
 }
 
+// Scheduling
+export interface BatchJobDto {
+  id: number | null;
+  jobKey: string;
+  name: string;
+  description: string | null;
+  jobClass: string;
+  scheduleType: 'NONE' | 'CRON' | 'INTERVAL';
+  cronExpression: string | null;
+  intervalSeconds: number | null;
+  enabled: boolean;
+}
+
+export interface JobExecutionDto {
+  id: number;
+  startTime: string;
+  endTime: string | null;
+  status: 'RUNNING' | 'COMPLETED' | 'FAILED';
+  errorMessage: string | null;
+  recordsAffected: number | null;
+  logFile: string | null;
+  triggeredBy: string;
+}
+
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData, TValue> {

@@ -1,4 +1,4 @@
-import type { ObjectResponse, TimeSeriesHeaderResponse, TimeSeriesValuesResponse, WriteValuesRequest, FilterRequest, TableResponse, FilterPreset, CreateFilterPresetRequest, BusinessPartnerDto, CurrencyDto } from './types';
+import type { ObjectResponse, TimeSeriesHeaderResponse, TimeSeriesValuesResponse, WriteValuesRequest, FilterRequest, TableResponse, FilterPreset, CreateFilterPresetRequest, BusinessPartnerDto, CurrencyDto, BatchJobDto, JobExecutionDto } from './types';
 import type { EffectivePermission } from '../auth/AuthContext';
 import keycloak from '../auth/keycloak';
 
@@ -350,4 +350,53 @@ export async function deleteBusinessPartner(id: number): Promise<void> {
     const body = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(body.error || `HTTP ${res.status}`);
   }
+}
+
+// ==================== Batch Jobs ====================
+
+export async function fetchBatchJob(id: number, signal?: AbortSignal): Promise<BatchJobDto> {
+  const res = await authFetch(`/api/batch-jobs/${id}`, { signal });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function updateBatchJob(id: number, dto: BatchJobDto): Promise<BatchJobDto> {
+  const res = await authFetch(`/api/batch-jobs/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dto),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function triggerBatchJob(id: number): Promise<void> {
+  const res = await authFetch(`/api/batch-jobs/${id}/trigger`, { method: 'POST' });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+}
+
+export async function fetchBatchJobHistory(id: number, signal?: AbortSignal): Promise<JobExecutionDto[]> {
+  const res = await authFetch(`/api/batch-jobs/${id}/history`, { signal });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchBatchJobLog(jobId: number, execId: number, signal?: AbortSignal): Promise<string> {
+  const res = await authFetch(`/api/batch-jobs/${jobId}/history/${execId}/log`, { signal });
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+  return res.text();
 }

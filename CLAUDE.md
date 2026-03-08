@@ -6,7 +6,7 @@ Spring Boot 3.4.x Anwendung mit dualem Persistenz-Ansatz: Raw JDBC für Zeitreih
 
 ## Tech-Stack
 - **Java 17** (LTS), Gradle mit Spring Boot Plugin
-- **Spring Boot 3.4.1** (starter-web, starter-jdbc)
+- **Spring Boot 3.4.1** (starter-web, starter-jdbc, starter-quartz)
 - **TimescaleDB** (PostgreSQL-Extension)
 - **Raw JDBC** für Timeseries-Zugriff (Performance) und **alle Übersichts-Abfragen** (auch Stammdaten)
 - **JPA/Hibernate** für Stammdaten-CRUD-Einzeloperationen (findById, create, update, delete), `ddl-auto=validate`, `open-in-view=false`
@@ -41,6 +41,7 @@ Spring Boot 3.4.x Anwendung mit dualem Persistenz-Ansatz: Raw JDBC für Zeitreih
 - **`timeseries.client`** — `@Component` TimeSeriesClient (Entwickler-API mit Konvertierung)
 - **`timeseries.model`** — POJOs + Enums (keine Spring-Annotationen)
 - **`currency`** — Währungs-CRUD (JPA Entity auf `ts_currency`, REST `/api/currencies`)
+- **`scheduling`** — Batch-Job-System (Quartz Scheduler, REST `/api/batch-jobs`)
 - **Schichten-Regel**: `REST-Controller → Service → Repository`
 
 ### REST-API
@@ -68,6 +69,12 @@ Spring Boot 3.4.x Anwendung mit dualem Persistenz-Ansatz: Raw JDBC für Zeitreih
 | PUT | `/api/currencies/{id}` | Währung aktualisieren |
 | DELETE | `/api/currencies/{id}` | Währung löschen |
 | POST | `/api/currencies/query` | Währungen filtern |
+| GET | `/api/batch-jobs` | Job-Übersicht (TableResponse) |
+| GET | `/api/batch-jobs/{id}` | Job-Definition lesen |
+| PUT | `/api/batch-jobs/{id}` | Schedule + enabled ändern |
+| POST | `/api/batch-jobs/{id}/trigger` | Manuell auslösen |
+| GET | `/api/batch-jobs/{id}/history` | Letzte N Ausführungen |
+| GET | `/api/batch-jobs/{id}/history/{execId}/log` | Logfile-Inhalt |
 
 ### Exception Handling (GlobalExceptionHandler)
 - `IllegalArgumentException` → 400 Bad Request
@@ -152,6 +159,30 @@ src/main/java/de/market/
             dto/
                 BusinessPartnerDto.java    -- Request/Response DTO
                 ContactPersonDto.java      -- Ansprechpartner DTO
+    scheduling/                           -- Batch-Job-System (Quartz)
+        config/
+            QuartzConfig.java              -- @Configuration, SchedulerFactoryBean
+            AutowiringSpringBeanJobFactory.java -- Autowiring in Quartz-Jobs
+        model/
+            ScheduleType.java              -- Enum: NONE, CRON, INTERVAL
+            JobStatus.java                 -- Enum: RUNNING, COMPLETED, FAILED
+            JobResult.java                 -- Record: recordsAffected + message
+            JobDefinitionEntity.java       -- @Entity auf batch_job_definition
+        repository/
+            JobDefinitionRepository.java   -- JpaRepository (Einzel-CRUD)
+            JobOverviewRepository.java     -- Raw JDBC für Übersicht
+            JobExecutionLogRepository.java -- Raw JDBC für Historie
+        service/
+            SchedulingService.java         -- @Service, CRUD + Quartz-Trigger
+            JobRegistry.java               -- @Component, Auto-Discovery + DB-Sync
+        rest/
+            SchedulingController.java      -- @RestController /api/batch-jobs
+            dto/
+                BatchJobDto.java           -- Request/Response DTO
+        jobs/
+            AbstractBatchJob.java          -- Abstrakte Basisklasse
+            QuartzJobAdapter.java          -- Quartz→AbstractBatchJob Bridge
+            CleanupOrphanedHeadersJob.java -- Demo-Job
     benchmark/
         Benchmark.java                     -- Standalone Lese-Benchmark
 src/main/resources/
@@ -195,7 +226,7 @@ TS_DB_PASSWORD=postgres
 - Nur Lese-Benchmarks gegen existierende PERF_TEST-Daten (kein Schreiben/Cleanup)
 
 ## Dependencies (via Spring Boot BOM)
-- Spring Boot 3.4.1 (Web, JDBC)
+- Spring Boot 3.4.1 (Web, JDBC, Quartz)
 - PostgreSQL JDBC (Version via BOM)
 - HikariCP (Version via BOM)
 - SLF4J + Logback (via Spring Boot)
