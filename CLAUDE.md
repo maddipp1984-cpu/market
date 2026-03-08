@@ -32,7 +32,7 @@ Spring Boot 3.4.x Anwendung mit dualem Persistenz-Ansatz: Raw JDBC für Zeitreih
 - **Hash-Partitionierung** auf `ts_id` für schnellen Einzelreihen-Zugriff
 
 ### Spring Boot Architektur & Schichten
-- **`de.projekt`** als Basis-Package — `@SpringBootApplication` in `TimeSeriesApplication`
+- **`de.market`** als Basis-Package — `@SpringBootApplication` in `MarketApplication`
 - **`timeseries.rest`** — REST-Controller + DTOs + GlobalExceptionHandler
 - **`timeseries.api`** — `@Service` TimeSeriesService (Fassade)
 - **`timeseries.repository`** — `@Repository` mit Raw JDBC über `DataSource`
@@ -79,8 +79,8 @@ Spring Boot 3.4.x Anwendung mit dualem Persistenz-Ansatz: Raw JDBC für Zeitreih
 
 ## Projektstruktur
 ```
-src/main/java/de/projekt/
-    TimeSeriesApplication.java             -- @SpringBootApplication
+src/main/java/de/market/
+    MarketApplication.java                 -- @SpringBootApplication
     timeseries/
         api/
             TimeSeriesService.java         -- @Service, öffentliche Fassade
@@ -155,7 +155,7 @@ TS_DB_PASSWORD=postgres
 ```
 
 ## Benchmark
-- **Code:** `src/main/java/de/projekt/benchmark/Benchmark.java`
+- **Code:** `src/main/java/de/market/benchmark/Benchmark.java`
 - **Aufruf:** `./gradlew benchmark`
 - **Standalone** — erstellt eigenen HikariDataSource, kein Spring-Kontext
 - **Testdaten:** 120.000 PERF_TEST-Zeitreihen (PERF_TEST_00001–300000) in der DB, nicht löschen!

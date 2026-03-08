@@ -3,11 +3,11 @@
 ## Offen
 
 ### QueryRegistry
-- [ ] **Q1** — Migration `007_query_registry.sql` ausfuehren (Docker starten, dann Migration)
+- [x] **Q1** — Migration `007_query_registry.sql` ausfuehren (Docker starten, dann Migration)
 - [ ] **Q2** — Bestehende SQL-Statements schrittweise in XML migrieren (Objects, Timeseries etc.)
 
 ### Umbenennung
-- [ ] **U1** — Projekt von "timeseries" auf "market" umbenennen (Package, Verzeichnis, Gradle, Docker, Git-Remote etc.)
+- [x] **U1** — Projekt von "timeseries" auf "market" umbenennen (Package, Verzeichnis, Gradle, Docker, Git-Remote etc.)
 
 ### Projekt aufräumen
 - [ ] **P1** — Root aufräumen: Lose Skripte (`insert_*.sh`, Logs) in `scripts/` verschieben oder entfernen, klare Ordnerstruktur definieren
@@ -22,7 +22,7 @@
 - [x] **AUTH6** — Frontend: AuthContext (Permissions statt Rollen), client.ts Admin-API
 - [x] **AUTH7** — Frontend: 3 Admin-Seiten (Users, Groups, Permission-Matrix)
 - [x] **AUTH8** — Frontend: OverviewPage canWrite-Guard, Sidebar Admin-Badge
-- [ ] **AUTH9** — Keycloak Realm Setup: timeseries-frontend (public) + timeseries-backend (confidential)
+- [x] **AUTH9** — Keycloak Realm Setup: timeseries-frontend (public) + timeseries-backend (confidential)
 - [ ] **AUTH10** — Permission-Checks in ObjectController (Typ-Filterung, can_write/can_delete)
 - [ ] **AUTH11** — Permission-Checks in TimeSeriesController (via Objekt-Zuordnung)
 - [ ] **AUTH12** — Permission-Checks in Referenzdaten-Controllern (Einheiten, Waehrungen, Objekttypen)

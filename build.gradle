@@ -5,7 +5,7 @@ plugins {
     id 'info.solidsoft.pitest' version '1.15.0'
 }
 
-group = 'de.projekt'
+group = 'de.market'
 version = '1.0.0'
 
 sourceCompatibility = '17'
@@ -37,8 +37,8 @@ test {
 }
 
 pitest {
-    targetClasses = ['de.projekt.timeseries.client.*', 'de.projekt.timeseries.model.*', 'de.projekt.timeseries.repository.*']
-    targetTests = ['de.projekt.timeseries.**']
+    targetClasses = ['de.market.timeseries.client.*', 'de.market.timeseries.model.*', 'de.market.timeseries.repository.*']
+    targetTests = ['de.market.timeseries.**']
     junit5PluginVersion = '1.2.1'
     timestampedReports = false
     outputFormats = ['HTML']
@@ -47,7 +47,7 @@ pitest {
 
 tasks.register('benchmark', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
-    mainClass = 'de.projekt.benchmark.Benchmark'
+    mainClass = 'de.market.benchmark.Benchmark'
     args = project.hasProperty('benchArgs') ? project.benchArgs.split(',') : ['100', '2024']
     jvmArgs = ['-Xmx2g']
 }
