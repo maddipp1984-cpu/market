@@ -4,12 +4,12 @@ import de.market.timeseries.api.TimeSeriesService;
 import de.market.timeseries.model.ObjectType;
 import de.market.timeseries.model.TimeSeriesHeader;
 import de.market.timeseries.model.TsObject;
-import de.market.timeseries.rest.dto.ColumnMeta;
+import de.market.shared.dto.ColumnMeta;
+import de.market.shared.dto.FilterQueryBuilder;
+import de.market.shared.dto.FilterRequest;
+import de.market.shared.dto.TableResponse;
 import de.market.timeseries.rest.dto.CreateObjectRequest;
-import de.market.timeseries.rest.dto.FilterQueryBuilder;
-import de.market.timeseries.rest.dto.FilterRequest;
 import de.market.timeseries.rest.dto.ObjectResponse;
-import de.market.timeseries.rest.dto.TableResponse;
 import de.market.timeseries.rest.dto.TimeSeriesHeaderResponse;
 
 import jakarta.validation.Valid;

@@ -2,8 +2,8 @@ package de.market.businesspartner.rest;
 
 import de.market.businesspartner.rest.dto.BusinessPartnerDto;
 import de.market.businesspartner.service.BusinessPartnerService;
-import de.market.timeseries.rest.dto.ColumnMeta;
-import de.market.timeseries.rest.dto.TableResponse;
+import de.market.shared.dto.ColumnMeta;
+import de.market.shared.dto.TableResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

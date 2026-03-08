@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, type ReactNode } from 'react';
+import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { Button } from '../Button';
 import { useTabContext } from '../../shell/TabContext';
 import { useAuth } from '../../auth/AuthContext';
@@ -55,19 +55,21 @@ export function DetailPage({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
 
   const isEditable = mode === 'edit' || mode === 'new';
   const hasWritePermission = canWrite(pageKey);
   const hasDeletePermission = canDelete(pageKey);
 
-  // Close-Guard: warn on unsaved changes
+  // Close-Guard: warn on unsaved changes (uses ref to always see current dirty state)
   useEffect(() => {
     const unregister = registerCloseGuard(tabId, () => {
-      if (!dirty) return true;
+      if (!dirtyRef.current) return true;
       return window.confirm('Ungespeicherte Aenderungen verwerfen?');
     });
     return unregister;
-  }, [tabId, dirty, registerCloseGuard]);
+  }, [tabId, registerCloseGuard]);
 
   const handleSave = useCallback(async (andClose: boolean) => {
     const result = validate();
@@ -83,7 +85,10 @@ export function DetailPage({
       onSaveSuccess?.();
       markOverviewStale(pageKey);
       showMessage('Gespeichert', 'success');
-      if (andClose) closeTab(tabId);
+      if (andClose) {
+        dirtyRef.current = false;
+        closeTab(tabId);
+      }
     } catch (e) {
       showMessage(e instanceof Error ? e.message : String(e), 'error');
     } finally {

@@ -1,14 +1,35 @@
-import { DataPage } from '../shared/DataPage';
-import { Card } from '../shared/Card';
+import { useCallback } from 'react';
+import { OverviewPage } from '../shared/overview-page/OverviewPage';
+import { useTabContext } from '../shell/TabContext';
+import { deleteCurrency } from '../api/client';
 
-export function WaehrungenPage({ tabId: _tabId }: { tabId: string }) {
+const columnOverrides = { id: { hidden: true } };
+
+export function WaehrungenPage({ tabId }: { tabId: string }) {
+  const { openTab } = useTabContext();
+
+  const handleDelete = useCallback(async (rows: Record<string, unknown>[]) => {
+    const results = await Promise.allSettled(
+      rows.map(row => deleteCurrency(row.id as number))
+    );
+    const failed = results.filter(r => r.status === 'rejected').length;
+    if (failed > 0) {
+      const ok = results.length - failed;
+      throw new Error(`${ok} von ${results.length} geloescht, ${failed} fehlgeschlagen`);
+    }
+  }, []);
+
   return (
-    <DataPage title="Waehrungen" subtitle="Stammdatenverwaltung">
-      <Card>
-        <div style={{ padding: 'var(--space-xl)', color: 'var(--color-text-secondary)', textAlign: 'center' }}>
-          Waehrungen-Verwaltung wird in einer zukuenftigen Version verfuegbar sein.
-        </div>
-      </Card>
-    </DataPage>
+    <OverviewPage
+      pageKey="currencies"
+      apiUrl="/api/currencies"
+      tabId={tabId}
+      onNew={() => openTab('currency-detail', { mode: 'new' })}
+      newLabel="Neue Waehrung"
+      columnOverrides={columnOverrides}
+      emptyMessage="Keine Waehrungen vorhanden"
+      onRowDoubleClick={(row) => openTab('currency-detail', { mode: 'edit', entityId: row.id })}
+      onDelete={handleDelete}
+    />
   );
 }

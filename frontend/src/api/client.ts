@@ -1,4 +1,4 @@
-import type { ObjectResponse, TimeSeriesHeaderResponse, TimeSeriesValuesResponse, WriteValuesRequest, FilterRequest, TableResponse, FilterPreset, CreateFilterPresetRequest, BusinessPartnerDto } from './types';
+import type { ObjectResponse, TimeSeriesHeaderResponse, TimeSeriesValuesResponse, WriteValuesRequest, FilterRequest, TableResponse, FilterPreset, CreateFilterPresetRequest, BusinessPartnerDto, CurrencyDto } from './types';
 import type { EffectivePermission } from '../auth/AuthContext';
 import keycloak from '../auth/keycloak';
 
@@ -283,6 +283,40 @@ export const adminSetFieldRestrictions = (groupId: number, restrictions: { resou
 
 // Resources
 export const adminGetResources = () => adminFetch<AdminResource[]>('/resources');
+
+// ==================== Currencies ====================
+
+export async function fetchCurrency(id: number, signal?: AbortSignal): Promise<CurrencyDto> {
+  const res = await authFetch(`/api/currencies/${id}`, { signal });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function saveCurrency(dto: CurrencyDto): Promise<CurrencyDto> {
+  const isNew = dto.id === null;
+  const url = isNew ? '/api/currencies' : `/api/currencies/${dto.id}`;
+  const res = await authFetch(url, {
+    method: isNew ? 'POST' : 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dto),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function deleteCurrency(id: number): Promise<void> {
+  const res = await authFetch(`/api/currencies/${id}`, { method: 'DELETE' });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+}
 
 // ==================== Business Partners ====================
 

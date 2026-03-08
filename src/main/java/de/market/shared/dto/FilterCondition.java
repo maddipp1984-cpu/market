@@ -1,4 +1,4 @@
-package de.market.timeseries.rest.dto;
+package de.market.shared.dto;
 
 public class FilterCondition {
     private String sqlColumn;

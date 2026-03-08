@@ -1,6 +1,6 @@
 package de.market.businesspartner.repository;
 
-import de.market.timeseries.query.QueryRegistry;
+import de.market.shared.query.QueryRegistry;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;

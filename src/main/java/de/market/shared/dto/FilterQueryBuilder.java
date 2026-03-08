@@ -1,4 +1,4 @@
-package de.market.timeseries.rest.dto;
+package de.market.shared.dto;
 
 import java.util.ArrayList;
 import java.util.List;

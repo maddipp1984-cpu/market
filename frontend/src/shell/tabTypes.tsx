@@ -6,6 +6,7 @@ import { ObjektNeuPage } from '../pages/ObjektNeuPage';
 import { ObjekttypenPage } from '../pages/ObjekttypenPage';
 import { EinheitenPage } from '../pages/EinheitenPage';
 import { WaehrungenPage } from '../pages/WaehrungenPage';
+import { CurrencyDetailPage } from '../pages/currency/CurrencyDetailPage';
 import { SettingsPage } from '../pages/SettingsPage';
 import { AdminUsersPage } from '../admin/AdminUsersPage';
 import { AdminGroupsPage } from '../admin/AdminGroupsPage';
@@ -59,7 +60,8 @@ export const tabTypes: TabType[] = [
   { type: 'objekt-neu', label: 'Neues Objekt', icon: iconObjects, component: ObjektNeuPage },
   { type: 'objekttypen', label: 'Objekttypen', icon: iconObjects, component: ObjekttypenPage },
   { type: 'einheiten', label: 'Einheiten', icon: iconObjects, component: EinheitenPage },
-  { type: 'waehrungen', label: 'Waehrungen', icon: iconObjects, component: WaehrungenPage },
+  { type: 'waehrungen', label: 'Waehrungen', icon: iconObjects, singleton: true, component: WaehrungenPage },
+  { type: 'currency-detail', label: 'Waehrung', icon: iconObjects, component: CurrencyDetailPage },
   { type: 'business-partners', label: 'Geschaeftspartner', icon: iconPartner, singleton: true, component: BusinessPartnerPage },
   { type: 'business-partner-detail', label: 'Geschaeftspartner', icon: iconPartner, component: BusinessPartnerDetailPage },
   { type: 'einstellungen', label: 'Einstellungen', icon: iconSettings, component: SettingsPage },

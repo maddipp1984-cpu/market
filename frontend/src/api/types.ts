@@ -87,6 +87,13 @@ export interface CreateFilterPresetRequest {
   scope: PresetScope;
 }
 
+// Currency
+export interface CurrencyDto {
+  id: number | null;
+  isoCode: string;
+  description: string;
+}
+
 // Business Partner
 export interface ContactPersonDto {
   id: number | null;

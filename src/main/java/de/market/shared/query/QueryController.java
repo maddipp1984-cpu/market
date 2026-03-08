@@ -1,4 +1,4 @@
-package de.market.timeseries.query;
+package de.market.shared.query;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

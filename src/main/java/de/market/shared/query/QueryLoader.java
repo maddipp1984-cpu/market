@@ -1,4 +1,4 @@
-package de.market.timeseries.query;
+package de.market.shared.query;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,4 +1,4 @@
-package de.market.timeseries.query;
+package de.market.shared.query;
 
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
