@@ -2,6 +2,13 @@
 
 ## Offen
 
+### QueryRegistry
+- [ ] **Q1** — Migration `007_query_registry.sql` ausfuehren (Docker starten, dann Migration)
+- [ ] **Q2** — Bestehende SQL-Statements schrittweise in XML migrieren (Objects, Timeseries etc.)
+
+### Umbenennung
+- [ ] **U1** — Projekt von "timeseries" auf "market" umbenennen (Package, Verzeichnis, Gradle, Docker, Git-Remote etc.)
+
 ### Projekt aufräumen
 - [ ] **P1** — Root aufräumen: Lose Skripte (`insert_*.sh`, Logs) in `scripts/` verschieben oder entfernen, klare Ordnerstruktur definieren
 - [ ] **P2** — Projektstruktur reviewen: Gehoeren `sql/`, `benchmarks/`, `docs/`, `frontend/` so ins Root oder besser gruppiert?

@@ -84,9 +84,9 @@ function buildColumns<T extends Record<string, any>>(
   data: T[],
   overrides: Record<string, ColumnOverride>,
 ): ColumnDef<T, unknown>[] {
-  if (data.length === 0) return [];
-
-  const keys = Object.keys(data[0]);
+  const keys = data.length > 0
+    ? Object.keys(data[0])
+    : Object.keys(overrides);
   const columns: ColumnDef<T, unknown>[] = [];
 
   for (const key of keys) {

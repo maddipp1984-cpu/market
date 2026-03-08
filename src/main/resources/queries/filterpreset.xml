@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<queries module="filterpreset">
+
+    <query key="filterpreset/create" name="Filter-Preset anlegen">
+        <![CDATA[
+        INSERT INTO ts_filter_preset (page_key, user_id, name, conditions, scope, is_default)
+        VALUES (?, ?, ?, ?::jsonb, ?, ?) RETURNING preset_id
+        ]]>
+    </query>
+
+    <query key="filterpreset/findByPageKey" name="Presets per Page und User laden">
+        <![CDATA[
+        SELECT preset_id, page_key, user_id, name, conditions, scope, is_default, created_at, updated_at
+        FROM ts_filter_preset WHERE page_key = ? AND (scope = 'GLOBAL' OR user_id = ?)
+        ORDER BY scope, name
+        ]]>
+    </query>
+
+    <query key="filterpreset/update" name="Preset aktualisieren">
+        <![CDATA[
+        UPDATE ts_filter_preset SET name = ?, conditions = ?::jsonb, scope = ?, is_default = ?,
+        updated_at = NOW() WHERE preset_id = ?
+        ]]>
+    </query>
+
+    <query key="filterpreset/delete" name="Preset loeschen">
+        <![CDATA[
+        DELETE FROM ts_filter_preset WHERE preset_id = ?
+        ]]>
+    </query>
+
+    <query key="filterpreset/resetDefault" name="Default-Flag zuruecksetzen (global)">
+        <![CDATA[
+        UPDATE ts_filter_preset SET is_default = FALSE
+        WHERE page_key = ? AND scope = ? AND is_default = TRUE
+        ]]>
+    </query>
+
+    <query key="filterpreset/resetDefaultUser" name="Default-Flag zuruecksetzen (User)">
+        <![CDATA[
+        UPDATE ts_filter_preset SET is_default = FALSE
+        WHERE page_key = ? AND scope = ? AND is_default = TRUE AND user_id = ?
+        ]]>
+    </query>
+
+    <query key="filterpreset/setDefault" name="Preset als Default setzen">
+        <![CDATA[
+        UPDATE ts_filter_preset SET is_default = TRUE WHERE preset_id = ?
+        ]]>
+    </query>
+
+    <query key="filterpreset/clearDefault" name="Default-Flag entfernen">
+        <![CDATA[
+        UPDATE ts_filter_preset SET is_default = FALSE WHERE preset_id = ?
+        ]]>
+    </query>
+
+    <query key="filterpreset/findDefault" name="Default-Preset fuer Page laden">
+        <![CDATA[
+        SELECT preset_id, page_key, user_id, name, conditions, scope, is_default, created_at, updated_at
+        FROM ts_filter_preset
+        WHERE page_key = ? AND is_default = TRUE AND (user_id = ? OR scope = 'GLOBAL')
+        ORDER BY CASE WHEN user_id = ? THEN 0 ELSE 1 END LIMIT 1
+        ]]>
+    </query>
+
+    <query key="filterpreset/findById" name="Preset per ID laden">
+        <![CDATA[
+        SELECT preset_id, page_key, user_id, name, conditions, scope, is_default, created_at, updated_at
+        FROM ts_filter_preset WHERE preset_id = ?
+        ]]>
+    </query>
+
+</queries>

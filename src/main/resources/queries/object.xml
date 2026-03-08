@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<queries module="object">
+
+    <query key="object/create" name="Objekt anlegen">
+        <![CDATA[
+        INSERT INTO ts_object (type_id, object_key, description)
+        VALUES (?, ?, ?) RETURNING object_id
+        ]]>
+    </query>
+
+    <query key="object/findById" name="Objekt per ID laden">
+        <![CDATA[
+        SELECT object_id, type_id, object_key, description, created_at, updated_at
+        FROM ts_object WHERE object_id = ?
+        ]]>
+    </query>
+
+    <query key="object/findByKey" name="Objekt per Key laden">
+        <![CDATA[
+        SELECT object_id, type_id, object_key, description, created_at, updated_at
+        FROM ts_object WHERE object_key = ?
+        ]]>
+    </query>
+
+    <query key="object/findAll" name="Alle Objekte laden">
+        <![CDATA[
+        SELECT object_id, type_id, object_key, description, created_at, updated_at
+        FROM ts_object ORDER BY object_key
+        ]]>
+    </query>
+
+    <query key="object/findByType" name="Objekte per Typ laden">
+        <![CDATA[
+        SELECT object_id, type_id, object_key, description, created_at, updated_at
+        FROM ts_object WHERE type_id = ?
+        ]]>
+    </query>
+
+    <query key="object/update" name="Objekt aktualisieren">
+        <![CDATA[
+        UPDATE ts_object SET type_id = ?, object_key = ?, description = ?,
+        updated_at = NOW() WHERE object_id = ?
+        ]]>
+    </query>
+
+    <query key="object/delete" name="Objekt loeschen">
+        <![CDATA[
+        DELETE FROM ts_object WHERE object_id = ?
+        ]]>
+    </query>
+
+    <query key="object/findFiltered" name="Objekte gefiltert laden (Basis-Query)">
+        <![CDATA[
+        SELECT object_id, type_id, object_key, description, created_at, updated_at
+        FROM ts_object o
+        ]]>
+    </query>
+
+</queries>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<queries module="header">
+
+    <query key="header/create" name="Zeitreihen-Header anlegen">
+        <![CDATA[
+        INSERT INTO ts_header (ts_key, time_dim, unit_id, currency_id, object_id, description)
+        VALUES (?, ?, ?, ?, ?, ?) RETURNING ts_id
+        ]]>
+    </query>
+
+    <query key="header/findById" name="Header per ID laden">
+        <![CDATA[
+        SELECT ts_id, ts_key, time_dim, unit_id, currency_id, object_id, description, created_at, updated_at
+        FROM ts_header WHERE ts_id = ?
+        ]]>
+    </query>
+
+    <query key="header/findByKey" name="Header per Key laden">
+        <![CDATA[
+        SELECT ts_id, ts_key, time_dim, unit_id, currency_id, object_id, description, created_at, updated_at
+        FROM ts_header WHERE ts_key = ?
+        ]]>
+    </query>
+
+    <query key="header/findByDimension" name="Header per Dimension laden">
+        <![CDATA[
+        SELECT ts_id, ts_key, time_dim, unit_id, currency_id, object_id, description, created_at, updated_at
+        FROM ts_header WHERE time_dim = ?
+        ]]>
+    </query>
+
+    <query key="header/update" name="Header aktualisieren">
+        <![CDATA[
+        UPDATE ts_header SET ts_key = ?, unit_id = ?, currency_id = ?, object_id = ?,
+        description = ?, updated_at = NOW() WHERE ts_id = ?
+        ]]>
+    </query>
+
+    <query key="header/updateObjectId" name="Object-ID am Header setzen">
+        <![CDATA[
+        UPDATE ts_header SET object_id = ? WHERE ts_id = ?
+        ]]>
+    </query>
+
+    <query key="header/findByObjectId" name="Header per Object-ID laden">
+        <![CDATA[
+        SELECT ts_id, ts_key, time_dim, unit_id, currency_id, object_id, description, created_at, updated_at
+        FROM ts_header WHERE object_id = ?
+        ]]>
+    </query>
+
+    <query key="header/delete" name="Header loeschen">
+        <![CDATA[
+        DELETE FROM ts_header WHERE ts_id = ?
+        ]]>
+    </query>
+
+</queries>
