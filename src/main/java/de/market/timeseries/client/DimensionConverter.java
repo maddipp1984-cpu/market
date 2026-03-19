@@ -14,7 +14,7 @@ import java.util.List;
  * Konvertiert TimeSeriesSlice zwischen Dimensionen.
  * Reine Mathematik, keine DB-Abhängigkeit, vollständig unit-testbar.
  */
-class DimensionConverter {
+public class DimensionConverter {
 
     // ================================================================
     // Aggregation (hoch: fein → grob)
@@ -241,8 +241,8 @@ class DimensionConverter {
     // Disaggregation (runter: grob → fein)
     // ================================================================
 
-    static TimeSeriesSlice disaggregate(TimeSeriesSlice source, TimeDimension target,
-                                        AggregationFunction func) {
+    public static TimeSeriesSlice disaggregate(TimeSeriesSlice source, TimeDimension target,
+                                               AggregationFunction func) {
         TimeDimension src = source.getDimension();
 
         // Tag → H oder QH

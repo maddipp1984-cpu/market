@@ -13,11 +13,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import de.market.timeseries.client.DimensionConverter;
+
 import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -120,33 +120,48 @@ public class AggregationService {
             return new AggregationResult(headers, targetDim, targetUnit, sumSlice);
         }
 
-        // 6. Parallele Reads mit dediziertem Executor
-        List<CompletableFuture<TimeSeriesSlice>> futures = new ArrayList<>();
-        for (int i = 0; i < tsIds.size(); i++) {
-            final TimeSeriesHeader h = headers.get(i);
-            final long id = tsIds.get(i);
-            futures.add(CompletableFuture.supplyAsync(() -> {
+        // 6. Gruppiert: Pro Dimension per SQL summieren, dann disaggregieren + zusammenfuehren
+        //    Statt N parallele Reads nur max 5 SQL-Queries (eine pro Dimension)
+        Map<TimeDimension, List<Long>> idsByDim = new LinkedHashMap<>();
+        for (TimeSeriesHeader h : headers) {
+            idsByDim.computeIfAbsent(h.getTimeDimension(), k -> new ArrayList<>()).add(h.getTsId());
+        }
+
+        long t2 = System.currentTimeMillis();
+        log.info("Aggregation gruppiert: {} Dimensionen, {} Zeitreihen",
+                idsByDim.size(), headers.size());
+
+        // Pro Dimension parallel per SQL summieren
+        List<CompletableFuture<TimeSeriesSlice>> groupFutures = new ArrayList<>();
+        for (Map.Entry<TimeDimension, List<Long>> entry : idsByDim.entrySet()) {
+            TimeDimension dim = entry.getKey();
+            List<Long> ids = entry.getValue();
+            groupFutures.add(CompletableFuture.supplyAsync(() -> {
                 try {
-                    Unit sourceUnit = h.getUnit();
-                    boolean needsDimConvert = h.getTimeDimension() != targetDim;
-                    boolean needsUnitConvert = sourceUnit != targetUnit;
-                    if (needsDimConvert || needsUnitConvert) {
-                        return client.read(id, start, end,
-                                targetDim, AggregationFunction.SUM,
-                                needsUnitConvert ? targetUnit : null);
+                    TimeSeriesSlice groupSum;
+                    if (dim.useTimestamptz()) {
+                        groupSum = tsRepo.readSumSubdaily(ids, dim, start, end);
                     } else {
-                        return client.read(id, start, end);
+                        groupSum = tsRepo.readSumSimple(ids, dim, start, end);
                     }
+                    log.info("  Gruppe {}: {} ZR summiert, {} Werte",
+                            dim, ids.size(), groupSum.size());
+
+                    // Disaggregieren auf Zieldimension falls noetig
+                    if (dim != targetDim) {
+                        groupSum = DimensionConverter.disaggregate(groupSum, targetDim, AggregationFunction.SUM);
+                    }
+                    return groupSum;
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }
             }, aggregationExecutor));
         }
 
-        // Auf alle Ergebnisse warten
-        List<TimeSeriesSlice> slices;
+        // Auf alle Gruppen-Ergebnisse warten
+        List<TimeSeriesSlice> groupSlices;
         try {
-            slices = futures.stream()
+            groupSlices = groupFutures.stream()
                     .map(CompletableFuture::join)
                     .collect(Collectors.toList());
         } catch (Exception e) {
@@ -155,12 +170,11 @@ public class AggregationService {
             throw new RuntimeException(e);
         }
 
-        // 7. Summieren mit korrekter Array-Erweiterung
-        int maxLen = slices.stream().mapToInt(s -> s.getValues().length).max().orElse(0);
+        // 7. Gruppen-Ergebnisse elementweise summieren
+        int maxLen = groupSlices.stream().mapToInt(s -> s.getValues().length).max().orElse(0);
         double[] sumValues = new double[maxLen];
-        Arrays.fill(sumValues, 0);
 
-        for (TimeSeriesSlice slice : slices) {
+        for (TimeSeriesSlice slice : groupSlices) {
             double[] vals = slice.getValues();
             for (int j = 0; j < vals.length; j++) {
                 if (!Double.isNaN(vals[j])) {
@@ -169,7 +183,11 @@ public class AggregationService {
             }
         }
 
-        TimeSeriesSlice resultSlice = slices.get(0);
+        long t3 = System.currentTimeMillis();
+        log.info("Aggregation gruppiert fertig: {} Werte in {} ms (gesamt: {} ms)",
+                maxLen, t3 - t2, t3 - t0);
+
+        TimeSeriesSlice resultSlice = groupSlices.get(0);
         TimeSeriesSlice finalSlice = new TimeSeriesSlice(
                 resultSlice.getStart(), resultSlice.getEnd(), targetDim, sumValues);
 
