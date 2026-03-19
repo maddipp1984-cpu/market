@@ -283,9 +283,10 @@ public class TimeSeriesRepository {
     // ================================================================
 
     /**
-     * Summiert mehrere subdaily-Zeitreihen (QH/H) per Stored Procedure.
-     * Die Summierung erfolgt komplett in PostgreSQL (elementweise Array-Summe),
-     * nur das Ergebnis wird uebertragen.
+     * Summiert mehrere subdaily-Zeitreihen (QH/H).
+     * ≤1000 IDs: Stored Procedure (unnest + SUM komplett in DB).
+     * >1000 IDs: Rohdaten in einer Query lesen, in Java summieren
+     *            (skaliert besser, da kein LATERAL unnest auf Millionen Zeilen).
      */
     public TimeSeriesSlice readSumSubdaily(List<Long> tsIds, TimeDimension dim,
                                             LocalDateTime start, LocalDateTime end) throws SQLException {
@@ -300,6 +301,20 @@ public class TimeSeriesRepository {
             lastDayExcl = lastDayExcl.plusDays(1);
         }
 
+        Map<LocalDate, double[]> dayValues;
+        if (tsIds.size() <= 1000) {
+            dayValues = readSumViaStoredProc(tsIds, dim, firstDay, lastDayExcl);
+        } else {
+            dayValues = readSumViaJava(tsIds, dim, firstDay, lastDayExcl);
+        }
+
+        double[] values = assembleValues(dayValues, dim, start, end, lastDayExcl);
+        return new TimeSeriesSlice(start, end, dim, values);
+    }
+
+    /** Stored Procedure: DB summiert Arrays elementweise (schnell bei ≤1000 IDs) */
+    private Map<LocalDate, double[]> readSumViaStoredProc(List<Long> tsIds, TimeDimension dim,
+                                                          LocalDate firstDay, LocalDate lastDayExcl) throws SQLException {
         Long[] idArray = tsIds.toArray(new Long[0]);
         String func = dim == TimeDimension.QUARTER_HOUR ? "ts_sum_15min" : "ts_sum_1h";
         String sql = "SELECT ts_date, vals FROM " + func + "(?, ?, ?)";
@@ -328,9 +343,54 @@ public class TimeSeriesRepository {
                         dayValues.put(date, vals);
                     }
                 }
+                return dayValues;
+            } finally {
+                sqlIds.free();
+            }
+        }
+    }
 
-                double[] values = assembleValues(dayValues, dim, start, end, lastDayExcl);
-                return new TimeSeriesSlice(start, end, dim, values);
+    /** Rohdaten in einer Query, Java summiert (skaliert besser bei >1000 IDs) */
+    private Map<LocalDate, double[]> readSumViaJava(List<Long> tsIds, TimeDimension dim,
+                                                     LocalDate firstDay, LocalDate lastDayExcl) throws SQLException {
+        Long[] idArray = tsIds.toArray(new Long[0]);
+        String sql = "SELECT ts_date, vals FROM " + dim.getTableName() +
+                " WHERE ts_id = ANY(?) AND ts_date >= ? AND ts_date < ?" +
+                " ORDER BY ts_date";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            java.sql.Array sqlIds = conn.createArrayOf("bigint", idArray);
+            try {
+                ps.setArray(1, sqlIds);
+                ps.setObject(2, firstDay);
+                ps.setObject(3, lastDayExcl);
+                ps.setFetchSize(10_000);
+
+                Map<LocalDate, double[]> sumByDate = new HashMap<>();
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        LocalDate date = rs.getObject(1, LocalDate.class);
+                        java.sql.Array sqlArray = rs.getArray(2);
+                        Double[] boxed = (Double[]) sqlArray.getArray();
+                        sqlArray.free();
+
+                        double[] existing = sumByDate.get(date);
+                        if (existing == null) {
+                            double[] vals = new double[boxed.length];
+                            for (int i = 0; i < boxed.length; i++) {
+                                vals[i] = boxed[i] != null ? boxed[i] : 0;
+                            }
+                            sumByDate.put(date, vals);
+                        } else {
+                            for (int i = 0; i < Math.min(existing.length, boxed.length); i++) {
+                                if (boxed[i] != null) existing[i] += boxed[i];
+                            }
+                        }
+                    }
+                }
+                return sumByDate;
             } finally {
                 sqlIds.free();
             }
