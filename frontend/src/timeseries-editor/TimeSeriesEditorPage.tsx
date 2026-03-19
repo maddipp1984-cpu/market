@@ -12,7 +12,7 @@ export function TimeSeriesEditorPage({ tabId }: { tabId: string }) {
   const initialTsIds = params?.tsIds as number[] | undefined;
   const aggregateMode = params?.aggregateMode as string | undefined;
 
-  const [tsIds, setTsIds] = useState(initialTsIds ? initialTsIds.join(', ') : '');
+  const [tsIds] = useState(initialTsIds ? initialTsIds.join(', ') : '');
   const [start, setStart] = useState('2022-01-01T00:00');
   const [end, setEnd] = useState('2025-01-01T00:00');
   const [activeTs, setActiveTs] = useState({ tsIds: [] as number[], start: '', end: '', seq: 0 });
@@ -43,14 +43,6 @@ export function TimeSeriesEditorPage({ tabId }: { tabId: string }) {
       <Card>
         <form onSubmit={handleSubmit}>
           <div style={{ display: 'flex', gap: 'var(--space-lg)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <FormField label="TS-IDs">
-              <input
-                type="text"
-                value={tsIds}
-                onChange={(e) => setTsIds(e.target.value)}
-                placeholder="z.B. 15201, 15202"
-              />
-            </FormField>
             <FormField label="Start">
               <input
                 type="datetime-local"
