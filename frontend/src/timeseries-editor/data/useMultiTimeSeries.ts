@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useRef } from 'react';
-import { fetchHeader, fetchValues, writeDay, aggregateTimeSeries } from '../../api/client';
+import { fetchHeader, fetchValues, writeDay, writeSimpleValue, aggregateTimeSeries } from '../../api/client';
 import type { TimingInfo } from '../../api/client';
 import { calculateTimestampMs } from './timestampCalculator';
 import { toDateStringBerlin } from './aggregation';
@@ -213,19 +213,34 @@ export function useMultiTimeSeries(): UseMultiTimeSeriesResult {
       // Pro Serie: geänderte Tage finden und parallel speichern
       const writePromises: Promise<void>[] = [];
       for (const [seriesIdx, seriesEdits] of editsBySeries) {
-        const changedDates = new Set<string>();
-        for (const rowIndex of seriesEdits.keys()) {
-          const row = rows[rowIndex - 1];
-          if (row) changedDates.add(toDateStringBerlin(row.timestampMs));
-        }
+        const dim = headers[seriesIdx].dimension;
+        const isSubdaily = dim === 'QUARTER_HOUR' || dim === 'HOUR';
 
-        for (const dateStr of changedDates) {
-          const dayRows = rowsByDate.get(dateStr) ?? [];
-          const values = dayRows.map(r => {
-            const editKey = `${seriesIdx}:${r.index}`;
-            return savedEdits.has(editKey) ? savedEdits.get(editKey)! : r.values[seriesIdx];
-          });
-          writePromises.push(writeDay(headers[seriesIdx].tsId, { date: dateStr, values }));
+        if (isSubdaily) {
+          // QH/H: Array pro Tag schreiben
+          const changedDates = new Set<string>();
+          for (const rowIndex of seriesEdits.keys()) {
+            const row = rows[rowIndex - 1];
+            if (row) changedDates.add(toDateStringBerlin(row.timestampMs));
+          }
+
+          for (const dateStr of changedDates) {
+            const dayRows = rowsByDate.get(dateStr) ?? [];
+            const values = dayRows.map(r => {
+              const editKey = `${seriesIdx}:${r.index}`;
+              return savedEdits.has(editKey) ? savedEdits.get(editKey)! : r.values[seriesIdx];
+            });
+            writePromises.push(writeDay(headers[seriesIdx].tsId, { date: dateStr, values }));
+          }
+        } else {
+          // Tag/Monat/Jahr: Einzelwert pro Datum schreiben
+          for (const [rowIndex, value] of seriesEdits) {
+            const row = rows[rowIndex - 1];
+            if (row) {
+              const dateStr = toDateStringBerlin(row.timestampMs);
+              writePromises.push(writeSimpleValue(headers[seriesIdx].tsId, dateStr, value));
+            }
+          }
         }
       }
       await Promise.all(writePromises);

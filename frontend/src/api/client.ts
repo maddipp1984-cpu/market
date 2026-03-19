@@ -218,6 +218,18 @@ export async function writeDay(tsId: number, req: WriteValuesRequest): Promise<v
   }
 }
 
+export async function writeSimpleValue(tsId: number, date: string, value: number): Promise<void> {
+  const res = await authFetch(`/api/timeseries/${tsId}/value`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ date, value }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+}
+
 // ==================== Permissions ====================
 
 export async function fetchMyPermissions(): Promise<{ userId: string; isAdmin: boolean; permissions: EffectivePermission[] }> {

@@ -12,6 +12,7 @@ import de.market.timeseries.rest.dto.AggregateResponse;
 import de.market.timeseries.rest.dto.CreateTimeSeriesRequest;
 import de.market.timeseries.rest.dto.TimeSeriesHeaderResponse;
 import de.market.timeseries.rest.dto.TimeSeriesValuesResponse;
+import de.market.timeseries.rest.dto.WriteSimpleValueRequest;
 import de.market.timeseries.rest.dto.WriteValuesRequest;
 
 import jakarta.validation.Valid;
@@ -79,6 +80,13 @@ public class TimeSeriesController {
                                                           @RequestParam LocalDateTime end) throws SQLException {
         TimeSeriesSlice slice = service.read(tsId, start, end);
         return ResponseEntity.ok(TimeSeriesValuesResponse.from(slice));
+    }
+
+    @PostMapping("/{tsId}/value")
+    public ResponseEntity<Void> writeSimple(@PathVariable long tsId,
+                                             @Valid @RequestBody WriteSimpleValueRequest req) throws SQLException {
+        service.writeSimple(tsId, req.getDate(), req.getValue());
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{tsId}")
