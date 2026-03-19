@@ -129,17 +129,13 @@ public class TimeSeriesController {
             }
         }
 
-        // 5. SQL-Shortcut: Wenn alle gleiche Dimension + gleiche Einheit → eine einzige Query
+        // 5. SQL-Shortcut: Gleiche Dimension + Einheit + einfache Werte (Tag/Monat/Jahr)
+        //    Fuer QH/H ist der parallele Java-Pfad schneller (Hypertable Hash-Partitionierung)
         boolean allSameDim = headers.stream().allMatch(h -> h.getTimeDimension() == targetDim);
         boolean allSameUnit = headers.stream().allMatch(h -> h.getUnit() == targetUnit);
 
-        if (allSameDim && allSameUnit) {
-            TimeSeriesSlice sumSlice;
-            if (targetDim.useTimestamptz()) {
-                sumSlice = tsRepo.readSumSubdaily(tsIds, targetDim, req.getStart(), req.getEnd());
-            } else {
-                sumSlice = tsRepo.readSumSimple(tsIds, targetDim, req.getStart(), req.getEnd());
-            }
+        if (allSameDim && allSameUnit && !targetDim.useTimestamptz()) {
+            TimeSeriesSlice sumSlice = tsRepo.readSumSimple(tsIds, targetDim, req.getStart(), req.getEnd());
 
             String keys = headers.stream().map(TimeSeriesHeader::getTsKey).collect(Collectors.joining(", "));
             TimeSeriesHeaderResponse headerResp = new TimeSeriesHeaderResponse();
