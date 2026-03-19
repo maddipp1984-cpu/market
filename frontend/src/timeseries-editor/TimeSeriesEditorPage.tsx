@@ -12,7 +12,6 @@ export function TimeSeriesEditorPage({ tabId }: { tabId: string }) {
   const initialTsIds = params?.tsIds as number[] | undefined;
   const aggregateMode = params?.aggregateMode as string | undefined;
 
-  const [tsIds] = useState(initialTsIds ? initialTsIds.join(', ') : '');
   const [start, setStart] = useState('2022-01-01T00:00');
   const [end, setEnd] = useState('2025-01-01T00:00');
   const [activeTs, setActiveTs] = useState({ tsIds: [] as number[], start: '', end: '', seq: 0 });
@@ -28,20 +27,16 @@ export function TimeSeriesEditorPage({ tabId }: { tabId: string }) {
     }
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleReload = (e: React.FormEvent) => {
     e.preventDefault();
-    const ids = tsIds.split(',')
-      .map(s => parseInt(s.trim(), 10))
-      .filter(n => !isNaN(n) && n > 0);
-    if (ids.length === 0) return;
-    setActiveTs(prev => ({ tsIds: ids, start, end, seq: prev.seq + 1 }));
-    updateTabLabel(tabId, 'ZR ' + ids.join(', '));
+    if (!initialTsIds || initialTsIds.length === 0) return;
+    setActiveTs(prev => ({ tsIds: initialTsIds, start, end, seq: prev.seq + 1 }));
   };
 
   return (
     <DataPage title="Zeitreihen">
       <Card>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleReload}>
           <div style={{ display: 'flex', gap: 'var(--space-lg)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
             <FormField label="Start">
               <input

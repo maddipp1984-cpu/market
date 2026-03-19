@@ -8,6 +8,7 @@ import de.market.timeseries.model.TimeSeriesSlice;
 import de.market.timeseries.model.Unit;
 import de.market.timeseries.repository.TimeSeriesRepository;
 
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -20,26 +21,38 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
 public class AggregationService {
 
     private static final Logger log = LoggerFactory.getLogger(AggregationService.class);
-    private final ExecutorService aggregationExecutor = Executors.newFixedThreadPool(15);
+    private final ExecutorService aggregationExecutor = Executors.newFixedThreadPool(10);
 
-    private final TimeSeriesService service;
     private final TimeSeriesClient client;
     private final TimeSeriesRepository tsRepo;
     private final de.market.timeseries.repository.HeaderRepository headerRepo;
 
-    public AggregationService(TimeSeriesService service, TimeSeriesClient client,
+    public AggregationService(TimeSeriesClient client,
                               TimeSeriesRepository tsRepo,
                               de.market.timeseries.repository.HeaderRepository headerRepo) {
-        this.service = service;
         this.client = client;
         this.tsRepo = tsRepo;
         this.headerRepo = headerRepo;
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        aggregationExecutor.shutdown();
+        try {
+            if (!aggregationExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                aggregationExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            aggregationExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     public record AggregationResult(

@@ -2,23 +2,23 @@ import { useEffect, useRef, useMemo } from 'react';
 import { createChart, type IChartApi, type ISeriesApi, LineSeries, type UTCTimestamp } from 'lightweight-charts';
 import type { ChartProps } from './chartTypes';
 import { SERIES_COLORS } from './chartTypes';
+import { downsampleForChart } from './chartUtils';
 
 export function LightweightChart({ rows, headers, dimension: _dimension }: ChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Line'>[]>([]);
 
-  // Prepare data once
   const seriesData = useMemo(() => {
+    const points = downsampleForChart(rows, headers);
     return headers.map((_, s) => {
-      const points: { time: UTCTimestamp; value: number }[] = [];
-      for (const r of rows) {
-        const v = r.values[s];
-        if (!isNaN(v)) {
-          points.push({ time: (r.timestampMs / 1000) as UTCTimestamp, value: v });
+      const result: { time: UTCTimestamp; value: number }[] = [];
+      for (const p of points) {
+        if (p.values[s] != null) {
+          result.push({ time: (p.timestampMs / 1000) as UTCTimestamp, value: p.values[s]! });
         }
       }
-      return points;
+      return result;
     });
   }, [rows, headers]);
 
@@ -60,7 +60,6 @@ export function LightweightChart({ rows, headers, dimension: _dimension }: Chart
 
     chart.timeScale().fitContent();
 
-    // Resize observer
     const ro = new ResizeObserver(entries => {
       const { width } = entries[0].contentRect;
       chart.applyOptions({ width });

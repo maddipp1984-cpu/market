@@ -6,26 +6,21 @@ import {
 import { formatTimestamp } from '../data/timestampCalculator';
 import type { ChartProps } from './chartTypes';
 import { SERIES_COLORS } from './chartTypes';
+import { downsampleForChart } from './chartUtils';
 
 export function RechartsChart({ rows, headers, dimension }: ChartProps) {
   const data = useMemo(() => {
-    // Downsample if too many points
-    const maxPoints = 5000;
-    const step = rows.length > maxPoints ? Math.ceil(rows.length / maxPoints) : 1;
-    const result: Record<string, unknown>[] = [];
-    for (let i = 0; i < rows.length; i += step) {
-      const r = rows[i];
+    const points = downsampleForChart(rows, headers);
+    return points.map(p => {
       const entry: Record<string, unknown> = {
-        ts: r.timestampMs,
-        label: formatTimestamp(r.timestampMs, dimension),
+        ts: p.timestampMs,
+        label: formatTimestamp(p.timestampMs, dimension),
       };
       for (let s = 0; s < headers.length; s++) {
-        const v = r.values[s];
-        entry[`s${s}`] = isNaN(v) ? null : v;
+        entry[`s${s}`] = p.values[s];
       }
-      result.push(entry);
-    }
-    return result;
+      return entry;
+    });
   }, [rows, headers, dimension]);
 
   return (

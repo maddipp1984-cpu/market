@@ -10,6 +10,7 @@ import { Line } from 'react-chartjs-2';
 import { formatTimestamp } from '../data/timestampCalculator';
 import type { ChartProps } from './chartTypes';
 import { SERIES_COLORS } from './chartTypes';
+import { downsampleForChart } from './chartUtils';
 
 ChartJS.register(
   LineElement, PointElement, LinearScale, CategoryScale,
@@ -25,13 +26,12 @@ export function ChartJsChart({ rows, headers, dimension }: ChartProps) {
   }, [rows]);
 
   const { data, options } = useMemo(() => {
-    const maxPoints = 5000;
-    const step = rows.length > maxPoints ? Math.ceil(rows.length / maxPoints) : 1;
+    const points = downsampleForChart(rows, headers);
 
-    const labels: string[] = [];
+    const labels = points.map(p => formatTimestamp(p.timestampMs, dimension));
     const datasets = headers.map((h, i) => ({
       label: h.tsKey,
-      data: [] as (number | null)[],
+      data: points.map(p => p.values[i]),
       borderColor: SERIES_COLORS[i % SERIES_COLORS.length],
       backgroundColor: SERIES_COLORS[i % SERIES_COLORS.length],
       borderWidth: 1.5,
@@ -39,15 +39,6 @@ export function ChartJsChart({ rows, headers, dimension }: ChartProps) {
       tension: 0,
       spanGaps: false,
     }));
-
-    for (let i = 0; i < rows.length; i += step) {
-      const r = rows[i];
-      labels.push(formatTimestamp(r.timestampMs, dimension));
-      for (let s = 0; s < headers.length; s++) {
-        const v = r.values[s];
-        datasets[s].data.push(isNaN(v) ? null : v);
-      }
-    }
 
     const opts: ChartOptions<'line'> = {
       responsive: true,

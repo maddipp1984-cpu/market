@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { OverviewPage } from '../shared/overview-page/OverviewPage';
 import { useTabContext } from '../shell/TabContext';
 import type { ContextAction } from '../shared/overview-page/VirtualTable';
@@ -30,7 +30,7 @@ export function ZeitreihenPage({ tabId }: { tabId: string }) {
     openTab('timeseries-editor', { tsIds, aggregateMode: 'sum' });
   }, [openTab]);
 
-  const extraActions: ContextAction[] = [
+  const extraActions = useMemo((): ContextAction[] => [
     {
       label: 'Im Editor oeffnen',
       icon: iconEditor,
@@ -43,7 +43,7 @@ export function ZeitreihenPage({ tabId }: { tabId: string }) {
       onClick: openSumView,
       multi: true,
     },
-  ];
+  ], [openInEditor, openSumView]);
 
   return (
     <OverviewPage

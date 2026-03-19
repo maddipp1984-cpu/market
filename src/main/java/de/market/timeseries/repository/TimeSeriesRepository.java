@@ -359,27 +359,27 @@ public class TimeSeriesRepository {
 
             java.sql.Array sqlIds = conn.createArrayOf("bigint", idArray);
             try {
-            ps.setArray(1, sqlIds);
-            if (dim == TimeDimension.YEAR) {
-                ps.setShort(2, (short) start.getYear());
-                ps.setShort(3, (short) end.getYear());
-            } else {
-                ps.setObject(2, start.toLocalDate());
-                ps.setObject(3, end.toLocalDate());
-            }
-
-            List<Double> valueList = new ArrayList<>();
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    valueList.add(rs.getDouble(2));
+                ps.setArray(1, sqlIds);
+                if (dim == TimeDimension.YEAR) {
+                    ps.setShort(2, (short) start.getYear());
+                    ps.setShort(3, (short) end.getYear());
+                } else {
+                    ps.setObject(2, start.toLocalDate());
+                    ps.setObject(3, end.toLocalDate());
                 }
-            }
 
-            double[] values = new double[valueList.size()];
-            for (int i = 0; i < valueList.size(); i++) {
-                values[i] = valueList.get(i);
-            }
-            return new TimeSeriesSlice(start, end, dim, values);
+                List<Double> valueList = new ArrayList<>();
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        valueList.add(rs.getDouble(2));
+                    }
+                }
+
+                double[] values = new double[valueList.size()];
+                for (int i = 0; i < valueList.size(); i++) {
+                    values[i] = valueList.get(i);
+                }
+                return new TimeSeriesSlice(start, end, dim, values);
             } finally {
                 sqlIds.free();
             }
