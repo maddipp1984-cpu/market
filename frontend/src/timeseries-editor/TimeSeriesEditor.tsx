@@ -8,8 +8,12 @@ import { FilterBar } from '../shared/FilterBar';
 import { FormField } from '../shared/FormField';
 import { useMessageBar } from '../shell/MessageBarContext';
 import type { Dimension } from '../api/types';
+import { RechartsChart } from './chart/RechartsChart';
+import { ChartJsChart } from './chart/ChartJsChart';
+import { LightweightChart } from './chart/LightweightChart';
 import './TimeSeriesEditor.css';
 
+type ChartLib = 'none' | 'recharts' | 'chartjs' | 'lightweight';
 const EMPTY_EDITS: Map<string, number> = new Map();
 
 interface TimeSeriesEditorProps {
@@ -26,6 +30,7 @@ export function TimeSeriesEditor({ tsIds, start, end }: TimeSeriesEditorProps) {
   const [filterEnd, setFilterEnd] = useState(end);
   const [decimals, setDecimals] = useState(5);
   const [viewDimension, setViewDimension] = useState<Dimension | null>(null);
+  const [chartLib, setChartLib] = useState<ChartLib>('none');
 
   useEffect(() => {
     const key = `${tsIds.join(',')}|${start}|${end}`;
@@ -122,6 +127,17 @@ export function TimeSeriesEditor({ tsIds, start, end }: TimeSeriesEditorProps) {
               ))}
             </select>
           </FormField>
+          <FormField label="Diagramm" compact>
+            <select
+              value={chartLib}
+              onChange={(e) => setChartLib(e.target.value as ChartLib)}
+            >
+              <option value="none">Aus</option>
+              <option value="recharts">Recharts</option>
+              <option value="chartjs">Chart.js</option>
+              <option value="lightweight">Lightweight</option>
+            </select>
+          </FormField>
           <FormField label="Nachkommastellen" compact>
             <input
               type="number"
@@ -141,6 +157,14 @@ export function TimeSeriesEditor({ tsIds, start, end }: TimeSeriesEditorProps) {
 
       {headers.length > 0 && rows.length > 0 && displayRows.length === 0 && (
         <StatusMessage type="info">Keine Werte im Filterbereich.</StatusMessage>
+      )}
+
+      {displayRows.length > 0 && headers.length > 0 && viewDimension && chartLib !== 'none' && (
+        <div style={{ padding: 'var(--space-sm) 0' }}>
+          {chartLib === 'recharts' && <RechartsChart rows={displayRows} headers={headers} dimension={viewDimension} />}
+          {chartLib === 'chartjs' && <ChartJsChart rows={displayRows} headers={headers} dimension={viewDimension} />}
+          {chartLib === 'lightweight' && <LightweightChart rows={displayRows} headers={headers} dimension={viewDimension} />}
+        </div>
       )}
 
       {displayRows.length > 0 && headers.length > 0 && viewDimension && (
