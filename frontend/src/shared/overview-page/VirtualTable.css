@@ -9,7 +9,6 @@
   table-layout: fixed;
   font-size: var(--font-size-sm);
   width: 100% !important;
-  min-height: 100%;
 }
 
 .vtable-table thead {
