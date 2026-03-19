@@ -50,7 +50,8 @@ Spring Boot 3.4.x Anwendung mit dualem Persistenz-Ansatz: Raw JDBC für Zeitreih
 | POST | `/api/timeseries` | Zeitreihe anlegen |
 | GET | `/api/timeseries/{tsId}` | Header lesen |
 | GET | `/api/timeseries?key=...` | Header per Key |
-| POST | `/api/timeseries/{tsId}/values` | Tag schreiben |
+| POST | `/api/timeseries/{tsId}/values` | Tag schreiben (QH/H Array) |
+| POST | `/api/timeseries/{tsId}/value` | Einzelwert schreiben (Tag/Monat/Jahr) |
 | GET | `/api/timeseries/{tsId}/values?start=...&end=...` | Werte lesen |
 | DELETE | `/api/timeseries/{tsId}` | Zeitreihe löschen |
 | POST | `/api/timeseries/aggregate` | Zeitreihen summieren (Cross-Dim/Unit) |
@@ -99,8 +100,10 @@ Spring Boot 3.4.x Anwendung mit dualem Persistenz-Ansatz: Raw JDBC für Zeitreih
 - **Kompression**: `segmentby = ts_id`, automatisch nach 3-6 Monaten
 - **Lesen**: Index `(ts_id, ts_time)`, fetchSize=10.000
 - **HikariCP**: Pool-Size 30 (PostgreSQL max_connections=100)
-- **Aggregation QH/H**: Parallele Reads per CompletableFuture (schneller als SQL ANY() wegen Hash-Partitionierung)
-- **Aggregation Tag/Monat/Jahr**: SQL-Shortcut mit SUM(value) GROUP BY bei gleicher Dimension+Einheit
+- **Aggregation gleiche Dim+Unit**: PL/pgSQL Stored Procedures (`ts_sum_15min`, `ts_sum_1h`) — Summierung komplett in DB
+- **Aggregation Cross-Dim/Unit**: Parallele Java-Reads mit dediziertem ExecutorService (nicht ForkJoinPool!)
+- **Hypertable Hash-Partitionierung**: `ANY(array)` ist langsamer als parallele Einzelabfragen für QH/H
+- **Bulk-Header**: `HeaderRepository.findByIds()` statt N Einzelabfragen bei Aggregation
 - **VirtualTable**: TanStack Virtual für Übersichtsseiten (nur sichtbare Zeilen im DOM)
 
 ## Projektstruktur
@@ -250,6 +253,7 @@ TS_DB_PASSWORD=postgres
 ## Frontend-Features
 - **Tab-Persistenz**: Offene Tabs werden in `sessionStorage` gespeichert, überleben Browser-Refresh (F5)
 - **Diagramme**: 3 Chart-Bibliotheken zum Vergleich (Recharts, Chart.js, Lightweight Charts), umschaltbar per Dropdown
+- **Chart-Downsampling**: Gemeinsame Utility `chart/chartUtils.ts` (max 5000 Punkte), Typen/Farben in `chart/chartTypes.ts`
 - **Zeitreihen-Übersicht**: OverviewPage mit Mehrfachauswahl → Editor öffnen oder Summieren
 - **Aggregation**: Kontextaktion "Summieren" öffnet Editor mit on-the-fly summierter Zeitreihe (read-only)
 - **Multi-Zeitreihen**: Unterschiedliche Laufzeiten werden mit NaN aufgefüllt (kein Fehler mehr)
@@ -257,3 +261,8 @@ TS_DB_PASSWORD=postgres
 ## Gradle-Konfiguration
 - `gradle.properties`: `org.gradle.java.home` zeigt auf JDK 21 (unter `~/.jdks/jdk-21.0.10+7`)
 - Spring Boot Plugin baut Fat-JAR (kein Shadow-Plugin mehr)
+
+## Gotchas
+- **Git Bash + Docker**: `MSYS_NO_PATHCONV=1` vor `docker exec` setzen, sonst werden Unix-Pfade in Windows-Pfade konvertiert
+- **TreeView (Headless Tree)**: `useTree` reagiert nicht auf Datenänderungen — `tree.rebuildTree()` aufrufen, nicht remounten
+- **Sidebar-Fallback**: `sidebarTree.ts` (Frontend) muss manuell mit `sidebar.xml` (Backend) synchron gehalten werden
