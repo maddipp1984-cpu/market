@@ -4,10 +4,34 @@ import type { TimingInfo } from '../../api/client';
 import { calculateTimestampMs } from './timestampCalculator';
 import { toDateStringBerlin } from './aggregation';
 import type {
+  Dimension,
   TimeSeriesHeaderResponse,
   TimeSeriesValuesResponse,
   MultiSeriesRow,
 } from '../../api/types';
+
+/**
+ * Berechnet die Anzahl Slots zwischen zwei Timestamps fuer eine Dimension.
+ */
+function findSlotOffset(globalStartMs: number, seriesStartMs: number, dimension: Dimension): number {
+  if (globalStartMs === seriesStartMs) return 0;
+  const diffMs = seriesStartMs - globalStartMs;
+  switch (dimension) {
+    case 'QUARTER_HOUR': return Math.round(diffMs / (15 * 60_000));
+    case 'HOUR': return Math.round(diffMs / (60 * 60_000));
+    case 'DAY': return Math.round(diffMs / (24 * 60 * 60_000));
+    case 'MONTH': {
+      const a = new Date(globalStartMs);
+      const b = new Date(seriesStartMs);
+      return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+    }
+    case 'YEAR': {
+      const a = new Date(globalStartMs);
+      const b = new Date(seriesStartMs);
+      return b.getFullYear() - a.getFullYear();
+    }
+  }
+}
 
 export interface LoadTiming {
   headerTimings: TimingInfo[];
@@ -44,12 +68,44 @@ export function useMultiTimeSeries(): UseMultiTimeSeriesResult {
 
   const rows = useMemo<MultiSeriesRow[]>(() => {
     if (valuesResponses.length === 0) return [];
-    const first = valuesResponses[0];
-    return first.values.map((_, i) => ({
-      index: i + 1,
-      timestampMs: calculateTimestampMs(first.start, first.dimension, i),
-      values: valuesResponses.map(vr => vr.values[i]),
-    }));
+
+    // Finde den groessten Zeitraum (fruehester Start, meiste Werte ab diesem Start)
+    const dim = valuesResponses[0].dimension;
+    const startTimestamps = valuesResponses.map(vr => calculateTimestampMs(vr.start, dim, 0));
+    const globalStartMs = Math.min(...startTimestamps);
+    const globalStartIdx = startTimestamps.indexOf(globalStartMs);
+    const globalStartStr = valuesResponses[globalStartIdx].start;
+
+    // Berechne fuer jede Serie: Offset (Anzahl Slots zwischen globalStart und ihrem Start)
+    // und wie viele Gesamt-Slots noetig sind
+    const offsets: number[] = [];
+    let totalSlots = 0;
+    for (let s = 0; s < valuesResponses.length; s++) {
+      const vr = valuesResponses[s];
+      const offset = findSlotOffset(globalStartMs, startTimestamps[s], dim);
+      offsets.push(offset);
+      totalSlots = Math.max(totalSlots, offset + vr.values.length);
+    }
+
+    // Baue Zeilen: fuer jeden Slot den Timestamp + Wert pro Serie (NaN wenn ausserhalb)
+    const result: MultiSeriesRow[] = [];
+    for (let i = 0; i < totalSlots; i++) {
+      const values: number[] = [];
+      for (let s = 0; s < valuesResponses.length; s++) {
+        const localIdx = i - offsets[s];
+        if (localIdx >= 0 && localIdx < valuesResponses[s].values.length) {
+          values.push(valuesResponses[s].values[localIdx]);
+        } else {
+          values.push(NaN);
+        }
+      }
+      result.push({
+        index: i + 1,
+        timestampMs: calculateTimestampMs(globalStartStr, dim, i),
+        values,
+      });
+    }
+    return result;
   }, [valuesResponses]);
 
   const load = useCallback(async (tsIds: number[], start: string, end: string) => {
@@ -80,13 +136,6 @@ export function useMultiTimeSeries(): UseMultiTimeSeriesResult {
       const dimensions = new Set(headerResults.map(h => h.data.dimension));
       if (dimensions.size > 1) {
         setError('Alle Zeitreihen müssen die gleiche Dimension haben');
-        return;
-      }
-
-      // Validierung: gleiche Anzahl Werte
-      const counts = new Set(valuesResults.map(v => v.data.count));
-      if (counts.size > 1) {
-        setError('Alle Zeitreihen müssen die gleiche Anzahl Werte haben');
         return;
       }
 
