@@ -8,6 +8,8 @@ import de.market.timeseries.model.TimeSeriesSlice;
 import de.market.timeseries.model.Unit;
 import de.market.timeseries.repository.TimeSeriesRepository;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
@@ -23,17 +25,21 @@ import java.util.stream.Collectors;
 @Service
 public class AggregationService {
 
+    private static final Logger log = LoggerFactory.getLogger(AggregationService.class);
     private final ExecutorService aggregationExecutor = Executors.newFixedThreadPool(15);
 
     private final TimeSeriesService service;
     private final TimeSeriesClient client;
     private final TimeSeriesRepository tsRepo;
+    private final de.market.timeseries.repository.HeaderRepository headerRepo;
 
     public AggregationService(TimeSeriesService service, TimeSeriesClient client,
-                              TimeSeriesRepository tsRepo) {
+                              TimeSeriesRepository tsRepo,
+                              de.market.timeseries.repository.HeaderRepository headerRepo) {
         this.service = service;
         this.client = client;
         this.tsRepo = tsRepo;
+        this.headerRepo = headerRepo;
     }
 
     public record AggregationResult(
@@ -52,12 +58,17 @@ public class AggregationService {
             throw new IllegalArgumentException("end muss nach start liegen: " + start + " / " + end);
         }
 
-        // 1. Alle Header laden
-        List<TimeSeriesHeader> headers = new ArrayList<>();
-        for (long id : tsIds) {
-            headers.add(service.getHeader(id)
-                    .orElseThrow(() -> new IllegalArgumentException("Zeitreihe nicht gefunden: tsId=" + id)));
+        long t0 = System.currentTimeMillis();
+
+        // 1. Alle Header in einer Query laden
+        List<TimeSeriesHeader> headers = headerRepo.findByIds(tsIds);
+        if (headers.size() != tsIds.size()) {
+            throw new IllegalArgumentException("Nicht alle Zeitreihen gefunden: erwartet "
+                    + tsIds.size() + ", gefunden " + headers.size());
         }
+
+        long t1 = System.currentTimeMillis();
+        log.info("Aggregation: {} Header geladen in {} ms", headers.size(), t1 - t0);
 
         // 2. Kleinste Dimension bestimmen
         TimeDimension targetDim = headers.stream()
@@ -83,12 +94,16 @@ public class AggregationService {
         boolean allSameUnit = headers.stream().allMatch(h -> h.getUnit() == targetUnit);
 
         if (allSameDim && allSameUnit) {
+            long t2 = System.currentTimeMillis();
             TimeSeriesSlice sumSlice;
             if (targetDim.useTimestamptz()) {
                 sumSlice = tsRepo.readSumSubdaily(tsIds, targetDim, start, end);
             } else {
                 sumSlice = tsRepo.readSumSimple(tsIds, targetDim, start, end);
             }
+            long t3 = System.currentTimeMillis();
+            log.info("Aggregation SQL-Shortcut: {} Werte in {} ms (gesamt: {} ms)",
+                    sumSlice.size(), t3 - t2, t3 - t0);
             return new AggregationResult(headers, targetDim, targetUnit, sumSlice);
         }
 

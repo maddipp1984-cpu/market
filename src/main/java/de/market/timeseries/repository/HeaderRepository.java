@@ -72,6 +72,29 @@ public class HeaderRepository {
         }
     }
 
+    public List<TimeSeriesHeader> findByIds(List<Long> tsIds) throws SQLException {
+        String sql = "SELECT ts_id, ts_key, time_dim, unit_id, currency_id, object_id, description, created_at, updated_at " +
+                     "FROM ts_header WHERE ts_id = ANY(?)";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            java.sql.Array sqlIds = conn.createArrayOf("bigint", tsIds.toArray(new Long[0]));
+            try {
+                ps.setArray(1, sqlIds);
+                List<TimeSeriesHeader> result = new ArrayList<>();
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        result.add(mapRow(rs));
+                    }
+                }
+                return result;
+            } finally {
+                sqlIds.free();
+            }
+        }
+    }
+
     public Optional<TimeSeriesHeader> findByKey(String tsKey) throws SQLException {
         String sql = "SELECT ts_id, ts_key, time_dim, unit_id, currency_id, object_id, description, created_at, updated_at " +
                      "FROM ts_header WHERE ts_key = ?";
