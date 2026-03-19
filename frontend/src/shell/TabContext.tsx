@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
 import { getTabType } from './tabTypes';
 
 export interface Tab {
@@ -25,6 +25,52 @@ interface TabContextValue {
 
 const TabContext = createContext<TabContextValue | null>(null);
 
+const SESSION_KEY = 'market-tabs';
+
+interface PersistedTab {
+  id: string;
+  type: string;
+  label: string;
+  params?: Record<string, unknown>;
+}
+
+interface PersistedState {
+  tabs: PersistedTab[];
+  activeTabId: string | null;
+  counter: number;
+}
+
+function saveSession(tabs: Tab[], activeTabId: string | null, counter: number) {
+  const state: PersistedState = {
+    tabs: tabs.map(t => ({ id: t.id, type: t.type, label: t.label, params: t.params })),
+    activeTabId,
+    counter,
+  };
+  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(state)); } catch { /* ignore */ }
+}
+
+function restoreSession(): { tabs: Tab[]; activeTabId: string | null; counter: number } | null {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const state: PersistedState = JSON.parse(raw);
+    if (!Array.isArray(state.tabs) || state.tabs.length === 0) return null;
+
+    const tabs: Tab[] = [];
+    for (const pt of state.tabs) {
+      const tabType = getTabType(pt.type);
+      if (!tabType) continue; // Tab-Typ existiert nicht mehr
+      tabs.push({ id: pt.id, type: pt.type, label: pt.label, icon: tabType.icon, params: pt.params });
+    }
+    if (tabs.length === 0) return null;
+
+    const activeTabId = tabs.some(t => t.id === state.activeTabId) ? state.activeTabId : tabs[0].id;
+    return { tabs, activeTabId, counter: state.counter || 0 };
+  } catch {
+    return null;
+  }
+}
+
 function createDashboardTab(counter: React.MutableRefObject<number>): Tab {
   const dashboard = getTabType('dashboard')!;
   return { id: `tab-${++counter.current}`, type: 'dashboard', label: dashboard.label, icon: dashboard.icon };
@@ -33,8 +79,25 @@ function createDashboardTab(counter: React.MutableRefObject<number>): Tab {
 export function TabProvider({ children }: { children: ReactNode }) {
   const tabCounterRef = useRef(0);
   const closeGuardsRef = useRef<Map<string, () => boolean>>(new Map());
-  const [tabs, setTabs] = useState<Tab[]>(() => [createDashboardTab(tabCounterRef)]);
-  const [activeTabId, setActiveTabId] = useState<string | null>(() => tabs[0]?.id ?? null);
+
+  const [tabs, setTabs] = useState<Tab[]>(() => {
+    const restored = restoreSession();
+    if (restored) {
+      tabCounterRef.current = restored.counter;
+      return restored.tabs;
+    }
+    return [createDashboardTab(tabCounterRef)];
+  });
+  const [activeTabId, setActiveTabId] = useState<string | null>(() => {
+    const restored = restoreSession();
+    if (restored) return restored.activeTabId;
+    return tabs[0]?.id ?? null;
+  });
+
+  // Persist tab state to sessionStorage on every change
+  useEffect(() => {
+    saveSession(tabs, activeTabId, tabCounterRef.current);
+  }, [tabs, activeTabId]);
 
   const openTab = useCallback((type: string, params?: Record<string, unknown>) => {
     const tabType = getTabType(type);
@@ -99,7 +162,9 @@ export function TabProvider({ children }: { children: ReactNode }) {
     setTabs(prev => prev.map(t => t.id === id ? { ...t, label } : t));
   }, []);
 
-  const tabParamsRef = useRef<Map<string, Record<string, unknown>>>(new Map());
+  const tabParamsRef = useRef(new Map<string, Record<string, unknown>>(
+    tabs.filter(t => t.params).map(t => [t.id, t.params!])
+  ));
 
   const getTabParams = useCallback((tabId: string): Record<string, unknown> | undefined => {
     return tabParamsRef.current.get(tabId);
