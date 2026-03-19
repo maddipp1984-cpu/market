@@ -19,8 +19,10 @@
   letter-spacing: 0.05em;
 }
 
-.sidebar-logo svg {
-  color: var(--color-sidebar-accent);
+.sidebar-logo-img {
+  height: 28px;
+  width: auto;
+  object-fit: contain;
 }
 
 /* Section labels (root-level tree nodes, level 0) */

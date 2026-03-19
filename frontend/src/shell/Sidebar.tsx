@@ -6,13 +6,8 @@ import { fetchSidebarConfig, type SidebarNodeConfig } from '../api/client';
 import { TreeView, type TreeNode } from '../shared/TreeView';
 import { useAuth } from '../auth/AuthContext';
 import type { ItemInstance } from '@headless-tree/core';
+import psiLogo from './psi-logo.png';
 import './Sidebar.css';
-
-const logoIcon = (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-  </svg>
-);
 
 /** Convert backend config nodes to SidebarNode[], skipping unknown tabTypes */
 function convertConfigNodes(nodes: SidebarNodeConfig[]): SidebarNode[] {
@@ -127,8 +122,7 @@ export function Sidebar() {
   return (
     <nav className="sidebar">
       <div className="sidebar-logo">
-        {logoIcon}
-        TIMESERIES
+        <img src={psiLogo} alt="PSI" className="sidebar-logo-img" />
       </div>
       <TreeView
         data={treeData}
