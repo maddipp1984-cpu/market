@@ -31,7 +31,7 @@ function flattenNodes(nodes: TreeNode[], map: Map<string, TreeNode>, childrenMap
   }
 }
 
-export function TreeView({ data, variant = 'light', defaultExpanded, paddingBase = '0px', onSelect, selectOnClick, selectedId, renderNode }: TreeViewProps) {
+function TreeViewInner({ data, variant = 'light', defaultExpanded, paddingBase = '0px', onSelect, selectOnClick, selectedId, renderNode }: TreeViewProps) {
   const { nodeMap, childrenMap, rootChildIds } = useMemo(() => {
     const nodeMap = new Map<string, TreeNode>();
     const childrenMap = new Map<string, string[]>();
@@ -108,4 +108,14 @@ export function TreeView({ data, variant = 'light', defaultExpanded, paddingBase
       })}
     </div>
   );
+}
+
+/** Wrapper that remounts the tree when data changes, so initialState is reapplied */
+export function TreeView(props: TreeViewProps) {
+  const dataKey = useMemo(() => {
+    const collectIds = (nodes: TreeNode[]): string => nodes.map(n => n.id + (n.children ? collectIds(n.children) : '')).join(',');
+    return collectIds(props.data);
+  }, [props.data]);
+
+  return <TreeViewInner key={dataKey} {...props} />;
 }

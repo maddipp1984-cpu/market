@@ -25,15 +25,11 @@ export const defaultSidebarTree: SidebarNode[] = [
     id: 'stammdaten',
     label: 'Stammdaten',
     children: [
-      {
-        id: 'objekte-gruppe',
-        label: 'Objekte',
-        children: [
-          { id: 'objekttypen', label: 'Objekttypen', tabType: 'objekttypen' },
-          { id: 'einheiten', label: 'Einheiten', tabType: 'einheiten' },
-          { id: 'waehrungen', label: 'Waehrungen', tabType: 'waehrungen' },
-        ],
-      },
+      { id: 'business-partners', label: 'Geschaeftspartner', tabType: 'business-partners' },
+      { id: 'objekte', label: 'Objekte', tabType: 'objekte' },
+      { id: 'objekttypen', label: 'Objekttypen', tabType: 'objekttypen' },
+      { id: 'einheiten', label: 'Einheiten', tabType: 'einheiten' },
+      { id: 'waehrungen', label: 'Waehrungen', tabType: 'waehrungen' },
     ],
   },
   {
