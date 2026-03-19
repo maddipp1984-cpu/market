@@ -24,6 +24,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 @RestController
@@ -123,36 +125,54 @@ public class TimeSeriesController {
             }
         }
 
-        // 5. Alle Zeitreihen lesen, konvertieren, summieren
-        double[] sumValues = null;
-        TimeSeriesSlice resultSlice = null;
+        // 5. Alle Zeitreihen parallel lesen und konvertieren
+        final TimeDimension finalTargetDim = targetDim;
+        final Unit finalTargetUnit = targetUnit;
 
+        List<CompletableFuture<TimeSeriesSlice>> futures = new ArrayList<>();
         for (int i = 0; i < tsIds.size(); i++) {
-            TimeSeriesHeader h = headers.get(i);
-            Unit sourceUnit = h.getUnit();
-            boolean needsDimConvert = h.getTimeDimension() != targetDim;
-            boolean needsUnitConvert = sourceUnit != targetUnit;
-
-            TimeSeriesSlice slice;
-            if (needsDimConvert || needsUnitConvert) {
-                slice = client.read(tsIds.get(i), req.getStart(), req.getEnd(),
-                        targetDim, AggregationFunction.SUM,
-                        needsUnitConvert ? targetUnit : null);
-            } else {
-                slice = client.read(tsIds.get(i), req.getStart(), req.getEnd());
-            }
-
-            if (sumValues == null) {
-                sumValues = slice.getValues().clone();
-                resultSlice = slice;
-            } else {
-                double[] vals = slice.getValues();
-                int len = Math.min(sumValues.length, vals.length);
-                for (int j = 0; j < len; j++) {
-                    double a = Double.isNaN(sumValues[j]) ? 0 : sumValues[j];
-                    double b = Double.isNaN(vals[j]) ? 0 : vals[j];
-                    sumValues[j] = a + b;
+            final TimeSeriesHeader h = headers.get(i);
+            final long id = tsIds.get(i);
+            futures.add(CompletableFuture.supplyAsync(() -> {
+                try {
+                    Unit sourceUnit = h.getUnit();
+                    boolean needsDimConvert = h.getTimeDimension() != finalTargetDim;
+                    boolean needsUnitConvert = sourceUnit != finalTargetUnit;
+                    if (needsDimConvert || needsUnitConvert) {
+                        return client.read(id, req.getStart(), req.getEnd(),
+                                finalTargetDim, AggregationFunction.SUM,
+                                needsUnitConvert ? finalTargetUnit : null);
+                    } else {
+                        return client.read(id, req.getStart(), req.getEnd());
+                    }
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
                 }
+            }));
+        }
+
+        // Auf alle Ergebnisse warten und summieren
+        List<TimeSeriesSlice> slices;
+        try {
+            slices = futures.stream()
+                    .map(CompletableFuture::join)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof SQLException) throw (SQLException) cause;
+            throw new RuntimeException(e);
+        }
+
+        double[] sumValues = slices.get(0).getValues().clone();
+        TimeSeriesSlice resultSlice = slices.get(0);
+
+        for (int i = 1; i < slices.size(); i++) {
+            double[] vals = slices.get(i).getValues();
+            int len = Math.min(sumValues.length, vals.length);
+            for (int j = 0; j < len; j++) {
+                double a = Double.isNaN(sumValues[j]) ? 0 : sumValues[j];
+                double b = Double.isNaN(vals[j]) ? 0 : vals[j];
+                sumValues[j] = a + b;
             }
         }
 
