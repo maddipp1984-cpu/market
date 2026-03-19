@@ -7,11 +7,9 @@
   <folder id="stammdaten" label="Stammdaten">
     <item id="business-partners" tabType="business-partners" />
     <item id="objekte" tabType="objekte" />
-    <folder id="objekte-gruppe" label="Objekte">
-      <item id="objekttypen" tabType="objekttypen" />
-      <item id="einheiten" tabType="einheiten" />
-      <item id="waehrungen" tabType="waehrungen" />
-    </folder>
+    <item id="objekttypen" tabType="objekttypen" />
+    <item id="einheiten" tabType="einheiten" />
+    <item id="waehrungen" tabType="waehrungen" />
   </folder>
   <folder id="system" label="System">
     <folder id="batchplanung" label="Batchplanung">
