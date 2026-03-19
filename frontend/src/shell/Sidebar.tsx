@@ -102,8 +102,20 @@ export function Sidebar() {
     );
   }, []);
 
-  // Root sections are expanded by default
-  const defaultExpanded = useMemo(() => sidebarTree.map(s => s.id), [sidebarTree]);
+  // All folders expanded by default
+  const defaultExpanded = useMemo(() => {
+    const ids: string[] = [];
+    const collect = (nodes: typeof sidebarTree) => {
+      for (const n of nodes) {
+        if (n.children && n.children.length > 0) {
+          ids.push(n.id);
+          collect(n.children);
+        }
+      }
+    };
+    collect(sidebarTree);
+    return ids;
+  }, [sidebarTree]);
 
   return (
     <nav className="sidebar">
