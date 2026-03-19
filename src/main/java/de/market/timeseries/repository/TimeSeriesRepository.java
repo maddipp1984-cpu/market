@@ -279,6 +279,115 @@ public class TimeSeriesRepository {
     }
 
     // ================================================================
+    // Aggregation: SQL-Shortcut (gleiche Dimension + Einheit)
+    // ================================================================
+
+    /**
+     * Summiert mehrere subdaily-Zeitreihen (QH/H) in einer einzigen SQL-Query.
+     * PostgreSQL summiert die Arrays elementweise per LATERAL unnest.
+     */
+    public TimeSeriesSlice readSumSubdaily(List<Long> tsIds, TimeDimension dim,
+                                            LocalDateTime start, LocalDateTime end) throws SQLException {
+        requireSubdaily(dim, "readSumSubdaily");
+        if (!end.isAfter(start)) {
+            throw new IllegalArgumentException("end muss nach start liegen");
+        }
+
+        LocalDate firstDay = start.toLocalDate();
+        LocalDate lastDayExcl = end.toLocalDate();
+        if (!end.toLocalTime().equals(LocalTime.MIDNIGHT)) {
+            lastDayExcl = lastDayExcl.plusDays(1);
+        }
+
+        // Array-Parameter fuer ANY()
+        Long[] idArray = tsIds.toArray(new Long[0]);
+
+        String sql = "WITH dates AS (" +
+                "  SELECT DISTINCT ts_date FROM " + dim.getTableName() +
+                "  WHERE ts_id = ANY(?) AND ts_date >= ? AND ts_date < ?" +
+                ") " +
+                "SELECT d.ts_date, " +
+                "  ARRAY(SELECT COALESCE(SUM(elem), 0) " +
+                "    FROM " + dim.getTableName() + " v, " +
+                "    LATERAL unnest(v.vals) WITH ORDINALITY AS u(elem, idx) " +
+                "    WHERE v.ts_date = d.ts_date AND v.ts_id = ANY(?) " +
+                "    GROUP BY idx ORDER BY idx" +
+                "  ) AS sum_vals " +
+                "FROM dates d ORDER BY d.ts_date";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            java.sql.Array sqlIds1 = conn.createArrayOf("bigint", idArray);
+            java.sql.Array sqlIds2 = conn.createArrayOf("bigint", idArray);
+            ps.setArray(1, sqlIds1);
+            ps.setObject(2, firstDay);
+            ps.setObject(3, lastDayExcl);
+            ps.setArray(4, sqlIds2);
+            ps.setFetchSize(1_000);
+
+            Map<LocalDate, double[]> dayValues = new HashMap<>();
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    LocalDate date = rs.getObject(1, LocalDate.class);
+                    java.sql.Array sqlArray = rs.getArray(2);
+                    Double[] boxed = (Double[]) sqlArray.getArray();
+                    double[] vals = new double[boxed.length];
+                    for (int i = 0; i < boxed.length; i++) {
+                        vals[i] = boxed[i] != null ? boxed[i] : Double.NaN;
+                    }
+                    dayValues.put(date, vals);
+                }
+            }
+
+            double[] values = assembleValues(dayValues, dim, start, end, lastDayExcl);
+            return new TimeSeriesSlice(start, end, dim, values);
+        }
+    }
+
+    /**
+     * Summiert mehrere simple-Zeitreihen (Tag/Monat/Jahr) in einer einzigen SQL-Query.
+     */
+    public TimeSeriesSlice readSumSimple(List<Long> tsIds, TimeDimension dim,
+                                          LocalDateTime start, LocalDateTime end) throws SQLException {
+        Long[] idArray = tsIds.toArray(new Long[0]);
+        String timeCol = dim == TimeDimension.YEAR ? "ts_year" : "ts_date";
+
+        String sql = "SELECT " + timeCol + ", COALESCE(SUM(value), 0) " +
+                "FROM " + dim.getTableName() +
+                " WHERE ts_id = ANY(?) AND " + timeCol + " >= ? AND " + timeCol + " < ?" +
+                " GROUP BY " + timeCol +
+                " ORDER BY " + timeCol;
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            java.sql.Array sqlIds = conn.createArrayOf("bigint", idArray);
+            ps.setArray(1, sqlIds);
+            if (dim == TimeDimension.YEAR) {
+                ps.setShort(2, (short) start.getYear());
+                ps.setShort(3, (short) end.getYear());
+            } else {
+                ps.setObject(2, start.toLocalDate());
+                ps.setObject(3, end.toLocalDate());
+            }
+
+            List<Double> valueList = new ArrayList<>();
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    valueList.add(rs.getDouble(2));
+                }
+            }
+
+            double[] values = new double[valueList.size()];
+            for (int i = 0; i < valueList.size(); i++) {
+                values[i] = valueList.get(i);
+            }
+            return new TimeSeriesSlice(start, end, dim, values);
+        }
+    }
+
+    // ================================================================
     // Löschen
     // ================================================================
 

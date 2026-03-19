@@ -8,6 +8,7 @@ import de.market.timeseries.model.TimeDimension;
 import de.market.timeseries.model.TimeSeriesHeader;
 import de.market.timeseries.model.TimeSeriesSlice;
 import de.market.timeseries.model.Unit;
+import de.market.timeseries.repository.TimeSeriesRepository;
 import de.market.timeseries.rest.dto.AggregateRequest;
 import de.market.timeseries.rest.dto.AggregateResponse;
 import de.market.timeseries.rest.dto.CreateTimeSeriesRequest;
@@ -34,10 +35,13 @@ public class TimeSeriesController {
 
     private final TimeSeriesService service;
     private final TimeSeriesClient client;
+    private final TimeSeriesRepository tsRepo;
 
-    public TimeSeriesController(TimeSeriesService service, TimeSeriesClient client) {
+    public TimeSeriesController(TimeSeriesService service, TimeSeriesClient client,
+                                TimeSeriesRepository tsRepo) {
         this.service = service;
         this.client = client;
+        this.tsRepo = tsRepo;
     }
 
     @PostMapping
@@ -125,7 +129,28 @@ public class TimeSeriesController {
             }
         }
 
-        // 5. Alle Zeitreihen parallel lesen und konvertieren
+        // 5. SQL-Shortcut: Wenn alle gleiche Dimension + gleiche Einheit → eine einzige Query
+        boolean allSameDim = headers.stream().allMatch(h -> h.getTimeDimension() == targetDim);
+        boolean allSameUnit = headers.stream().allMatch(h -> h.getUnit() == targetUnit);
+
+        if (allSameDim && allSameUnit) {
+            TimeSeriesSlice sumSlice;
+            if (targetDim.useTimestamptz()) {
+                sumSlice = tsRepo.readSumSubdaily(tsIds, targetDim, req.getStart(), req.getEnd());
+            } else {
+                sumSlice = tsRepo.readSumSimple(tsIds, targetDim, req.getStart(), req.getEnd());
+            }
+
+            String keys = headers.stream().map(TimeSeriesHeader::getTsKey).collect(Collectors.joining(", "));
+            TimeSeriesHeaderResponse headerResp = new TimeSeriesHeaderResponse();
+            headerResp.setSynthetic(-1, "SUM(" + keys + ")", targetDim.name(),
+                    targetUnit.getSymbol(), null, null,
+                    "Summierung von " + headers.size() + " Zeitreihen (SQL)");
+            TimeSeriesValuesResponse valuesResp = TimeSeriesValuesResponse.from(sumSlice);
+            return ResponseEntity.ok(new AggregateResponse(headerResp, valuesResp));
+        }
+
+        // 6. Fallback: Alle Zeitreihen parallel lesen und konvertieren (Java)
         final TimeDimension finalTargetDim = targetDim;
         final Unit finalTargetUnit = targetUnit;
 
