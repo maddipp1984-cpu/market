@@ -150,7 +150,7 @@ export function ValuesTable({ rows, headers, edits, dimension, decimals, readOnl
         if (v > max) max = v;
         sum += v;
       }
-      return { min, max, avg: sum / valid.length, count: valid.length };
+      return { min, max, avg: sum / valid.length, sum, count: valid.length };
     });
   }, [rows, headers, getEffectiveValue]);
 
@@ -288,7 +288,7 @@ export function ValuesTable({ rows, headers, edits, dimension, decimals, readOnl
         <div className="grid-footer">
           {copied && <div className="copy-hint">Kopiert!</div>}
           {pastedCount > 0 && <div className="copy-hint">{pastedCount} Werte eingefügt!</div>}
-          {(['Min', 'Max', 'Avg'] as const).map(label => {
+          {(['Min', 'Max', 'Avg', 'Sum'] as const).map(label => {
             const allCols = table.getAllColumns();
             return (
               <div key={label} className="grid-row stat-row">
@@ -297,7 +297,7 @@ export function ValuesTable({ rows, headers, edits, dimension, decimals, readOnl
                 {allStats.map((stats, i) => (
                   <div key={headers[i].tsId} className="grid-cell stat-value-cell" style={{ flex: 1 }}>
                     {stats ? formatValue(
-                      label === 'Min' ? stats.min : label === 'Max' ? stats.max : stats.avg,
+                      label === 'Min' ? stats.min : label === 'Max' ? stats.max : label === 'Avg' ? stats.avg : stats.sum,
                       decimals
                     ) : ''}
                   </div>
