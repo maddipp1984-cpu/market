@@ -14,8 +14,9 @@ function convertConfigNodes(nodes: SidebarNodeConfig[]): SidebarNode[] {
   const result: SidebarNode[] = [];
   for (const node of nodes) {
     if (node.children) {
-      // Folder
+      // Folder — skip if empty after filtering
       const children = convertConfigNodes(node.children);
+      if (children.length === 0) continue;
       result.push({ id: node.id, label: node.label ?? node.id, children });
     } else if (node.tabType) {
       // Leaf item
@@ -129,6 +130,7 @@ export function Sidebar() {
         variant="dark"
         defaultExpanded={defaultExpanded}
         paddingBase="var(--space-lg)"
+        selectOnClick
         onSelect={handleSelect}
         renderNode={renderNode}
       />

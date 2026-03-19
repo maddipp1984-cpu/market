@@ -8,10 +8,8 @@ export interface SidebarNode {
   tabType?: string;
 }
 
-// Konvention:
-// - children → Ordner (Klick klappt auf/zu, kein Tab)
-// - tabType  → Blatt  (Klick oeffnet Tab)
-// - Beides gleichzeitig: tabType wird ignoriert
+// Fallback wenn Backend nicht erreichbar. Muss mit sidebar.xml synchron gehalten werden!
+// Siehe: src/main/resources/sidebar.xml
 export const defaultSidebarTree: SidebarNode[] = [
   {
     id: 'daten',

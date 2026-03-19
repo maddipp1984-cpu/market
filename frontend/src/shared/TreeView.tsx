@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useMemo } from 'react';
+import { type ReactNode, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useTree } from '@headless-tree/react';
 import { syncDataLoaderFeature, selectionFeature, hotkeysCoreFeature, type ItemInstance } from '@headless-tree/core';
 import './TreeView.css';
@@ -24,40 +24,64 @@ interface TreeViewProps {
 function flattenNodes(nodes: TreeNode[], map: Map<string, TreeNode>, childrenMap: Map<string, string[]>) {
   for (const node of nodes) {
     map.set(node.id, node);
-    if (node.children) {
+    if (node.children && node.children.length > 0) {
       childrenMap.set(node.id, node.children.map(c => c.id));
       flattenNodes(node.children, map, childrenMap);
     }
   }
 }
 
-function TreeViewInner({ data, variant = 'light', defaultExpanded, paddingBase = '0px', onSelect, selectOnClick, selectedId, renderNode }: TreeViewProps) {
-  const { nodeMap, childrenMap, rootChildIds } = useMemo(() => {
+export function TreeView({ data, variant = 'light', defaultExpanded, paddingBase = '0px', onSelect, selectOnClick, selectedId, renderNode }: TreeViewProps) {
+  const nodeMapRef = useRef(new Map<string, TreeNode>());
+  const childrenMapRef = useRef(new Map<string, string[]>());
+
+  const { rootChildIds } = useMemo(() => {
     const nodeMap = new Map<string, TreeNode>();
     const childrenMap = new Map<string, string[]>();
     flattenNodes(data, nodeMap, childrenMap);
     const rootChildIds = data.map(n => n.id);
-    // Add virtual root
     nodeMap.set('__root__', { id: '__root__', label: '', children: data });
     childrenMap.set('__root__', rootChildIds);
-    return { nodeMap, childrenMap, rootChildIds };
+    nodeMapRef.current = nodeMap;
+    childrenMapRef.current = childrenMap;
+    return { rootChildIds };
   }, [data]);
 
   const tree = useTree<TreeNode>({
     rootItemId: '__root__',
     dataLoader: {
-      getItem: (itemId) => nodeMap.get(itemId) ?? { id: itemId, label: '' },
-      getChildren: (itemId) => childrenMap.get(itemId) ?? [],
+      getItem: (itemId) => {
+        const node = nodeMapRef.current.get(itemId);
+        if (!node) {
+          console.warn(`[TreeView] Unknown item requested: "${itemId}"`);
+          return { id: itemId, label: '' };
+        }
+        return node;
+      },
+      getChildren: (itemId) => childrenMapRef.current.get(itemId) ?? [],
     },
     getItemName: (item) => item.getItemData().label,
-    isItemFolder: (item) => (childrenMap.get(item.getId())?.length ?? 0) > 0,
+    isItemFolder: (item) => (childrenMapRef.current.get(item.getId())?.length ?? 0) > 0,
     initialState: {
-      expandedItems: (defaultExpanded ?? rootChildIds).filter(id => nodeMap.has(id)),
+      expandedItems: (defaultExpanded ?? rootChildIds).filter(id => nodeMapRef.current.has(id)),
     },
     features: [syncDataLoaderFeature, selectionFeature, hotkeysCoreFeature],
   });
 
-  const handleItemClick = useCallback((item: ItemInstance<TreeNode>) => {
+  // Rebuild tree when data changes (instead of remounting)
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    tree.rebuildTree();
+  }, [data]);
+
+  const handleItemClick = useCallback((item: ItemInstance<TreeNode>, e: React.MouseEvent) => {
+    // Call headless-tree's own handler first (accessibility, focus)
+    item.getProps().onClick?.(e as never);
+
     if (item.isFolder()) {
       if (item.isExpanded()) {
         item.collapse();
@@ -87,7 +111,7 @@ function TreeViewInner({ data, variant = 'light', defaultExpanded, paddingBase =
             style={{ paddingLeft: `calc(${paddingBase} + ${level} * var(--tree-indent))` }}
             data-level={level}
             {...item.getProps()}
-            onClick={() => handleItemClick(item)}
+            onClick={(e) => handleItemClick(item, e)}
             onDoubleClick={() => handleItemDblClick(item)}
           >
             {item.isFolder() ? (
@@ -108,14 +132,4 @@ function TreeViewInner({ data, variant = 'light', defaultExpanded, paddingBase =
       })}
     </div>
   );
-}
-
-/** Wrapper that remounts the tree when data changes, so initialState is reapplied */
-export function TreeView(props: TreeViewProps) {
-  const dataKey = useMemo(() => {
-    const collectIds = (nodes: TreeNode[]): string => nodes.map(n => n.id + (n.children ? collectIds(n.children) : '')).join(',');
-    return collectIds(props.data);
-  }, [props.data]);
-
-  return <TreeViewInner key={dataKey} {...props} />;
 }
