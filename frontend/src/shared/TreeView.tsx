@@ -46,13 +46,13 @@ export function TreeView({ data, variant = 'light', defaultExpanded, paddingBase
   const tree = useTree<TreeNode>({
     rootItemId: '__root__',
     dataLoader: {
-      getItem: (itemId) => nodeMap.get(itemId)!,
+      getItem: (itemId) => nodeMap.get(itemId) ?? { id: itemId, label: '' },
       getChildren: (itemId) => childrenMap.get(itemId) ?? [],
     },
     getItemName: (item) => item.getItemData().label,
     isItemFolder: (item) => (childrenMap.get(item.getId())?.length ?? 0) > 0,
     initialState: {
-      expandedItems: defaultExpanded ?? rootChildIds,
+      expandedItems: (defaultExpanded ?? rootChildIds).filter(id => nodeMap.has(id)),
     },
     features: [syncDataLoaderFeature, selectionFeature, hotkeysCoreFeature],
   });
