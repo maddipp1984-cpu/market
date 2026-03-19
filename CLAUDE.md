@@ -53,6 +53,9 @@ Spring Boot 3.4.x Anwendung mit dualem Persistenz-Ansatz: Raw JDBC für Zeitreih
 | POST | `/api/timeseries/{tsId}/values` | Tag schreiben |
 | GET | `/api/timeseries/{tsId}/values?start=...&end=...` | Werte lesen |
 | DELETE | `/api/timeseries/{tsId}` | Zeitreihe löschen |
+| POST | `/api/timeseries/aggregate` | Zeitreihen summieren (Cross-Dim/Unit) |
+| GET | `/api/timeseries-overview` | Zeitreihen-Übersicht (TableResponse) |
+| POST | `/api/timeseries-overview/query` | Zeitreihen filtern |
 | POST | `/api/objects` | Objekt anlegen |
 | GET | `/api/objects/{objectId}` | Objekt lesen |
 | PUT | `/api/objects/{objectId}/timeseries/{tsId}` | Zuordnung |
@@ -95,6 +98,10 @@ Spring Boot 3.4.x Anwendung mit dualem Persistenz-Ansatz: Raw JDBC für Zeitreih
 ### Performance
 - **Kompression**: `segmentby = ts_id`, automatisch nach 3-6 Monaten
 - **Lesen**: Index `(ts_id, ts_time)`, fetchSize=10.000
+- **HikariCP**: Pool-Size 30 (PostgreSQL max_connections=100)
+- **Aggregation QH/H**: Parallele Reads per CompletableFuture (schneller als SQL ANY() wegen Hash-Partitionierung)
+- **Aggregation Tag/Monat/Jahr**: SQL-Shortcut mit SUM(value) GROUP BY bei gleicher Dimension+Einheit
+- **VirtualTable**: TanStack Virtual für Übersichtsseiten (nur sichtbare Zeilen im DOM)
 
 ## Projektstruktur
 ```
@@ -142,12 +149,14 @@ src/main/java/de/market/
         repository/
             HeaderRepository.java          -- @Repository, CRUD ts_header
             ObjectRepository.java          -- @Repository, CRUD ts_object
-            TimeSeriesRepository.java      -- @Repository, Lesen/Schreiben/Löschen
+            TimeSeriesRepository.java      -- @Repository, Lesen/Schreiben/Löschen + readSumSubdaily/readSumSimple
+            TimeSeriesOverviewRepository.java -- Raw JDBC für Übersicht (QueryRegistry)
         rest/
-            TimeSeriesController.java      -- @RestController /api/timeseries
+            TimeSeriesController.java      -- @RestController /api/timeseries + /aggregate
+            TimeSeriesOverviewController.java -- @RestController /api/timeseries-overview
             ObjectController.java          -- @RestController /api/objects
             GlobalExceptionHandler.java    -- @RestControllerAdvice
-            dto/                           -- Request/Response DTOs
+            dto/                           -- Request/Response DTOs (inkl. AggregateRequest/Response)
     businesspartner/                       -- Stammdaten-Modul (JPA)
         model/
             BusinessPartner.java           -- @Entity, @OneToMany cascade ALL
@@ -238,6 +247,13 @@ TS_DB_PASSWORD=postgres
 - SLF4J + Logback (via Spring Boot)
 - JUnit 5 + Mockito (via spring-boot-starter-test)
 
+## Frontend-Features
+- **Tab-Persistenz**: Offene Tabs werden in `sessionStorage` gespeichert, überleben Browser-Refresh (F5)
+- **Diagramme**: 3 Chart-Bibliotheken zum Vergleich (Recharts, Chart.js, Lightweight Charts), umschaltbar per Dropdown
+- **Zeitreihen-Übersicht**: OverviewPage mit Mehrfachauswahl → Editor öffnen oder Summieren
+- **Aggregation**: Kontextaktion "Summieren" öffnet Editor mit on-the-fly summierter Zeitreihe (read-only)
+- **Multi-Zeitreihen**: Unterschiedliche Laufzeiten werden mit NaN aufgefüllt (kein Fehler mehr)
+
 ## Gradle-Konfiguration
-- `gradle.properties`: `org.gradle.java.home` zeigt auf JDK 17 (Foojay-Download unter `~/.gradle/jdks/`)
+- `gradle.properties`: `org.gradle.java.home` zeigt auf JDK 21 (unter `~/.jdks/jdk-21.0.10+7`)
 - Spring Boot Plugin baut Fat-JAR (kein Shadow-Plugin mehr)

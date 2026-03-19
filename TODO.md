@@ -43,10 +43,17 @@
 - [x] **D4** — Review-Findings fixen: Fehlende Tests (Anschnitt bei Aggregation, Metadaten, MIN/MAX, Fehlerfälle)
 
 ### Zeitreihen-Uebersicht & Detailmaske
-- [ ] **ZR1** — Uebersichtsseite: Alle Zeitreihen mit Metadaten, Mehrfachauswahl → Editor oeffnen (IN ARBEIT)
+- [x] **ZR1** — Uebersichtsseite: Alle Zeitreihen mit Metadaten, Mehrfachauswahl → Editor oeffnen
 - [ ] **ZR2** — Detailmaske: Zeitreihen-Metadaten bearbeiten (Key, Einheit, Waehrung, Objekt-Zuordnung)
 - [ ] **ZR3** — Zeitreihe neu anlegen (aus Uebersicht oder Detailmaske)
 - [ ] **ZR4** — Zeitreihe loeschen (Einzel + Mehrfachauswahl aus Uebersicht)
+- [x] **ZR5** — On-the-fly Summierung (Cross-Dimension + Unit-Konvertierung, parallel, SQL-Shortcut)
+- [x] **ZR6** — Diagramm-Ansicht (Recharts, Chart.js, Lightweight Charts zum Vergleich)
+- [x] **ZR7** — Multi-Zeitreihen mit unterschiedlichen Laufzeiten (NaN-Auffuellung)
+- [ ] **ZR8** — Chart-Bibliothek evaluieren und auf eine reduzieren
+
+### Diagramm
+- [ ] **CH1** — Chart-Bibliothek entscheiden (Recharts vs Chart.js vs Lightweight) und andere entfernen
 
 ### REST-API Aufräumen
 - [ ] **R1** — ObjectController prüfen: Wird er gebraucht? Vermutlich nein → entfernen
@@ -89,3 +96,10 @@
 - [x] Write-API: TimeSeriesClient.write() mit Disaggregation/Aggregation, writeSimple im Service, Tests
 - [x] Übergeordnete Objekte (ts_object): ObjectType-Enum, TsObject-Model, ObjectRepository, Service-Integration, Migration, Tests
 - [x] **Spring Boot Migration**: Java 17, Maven-Standard-Layout, Spring Boot 3.4.1, REST-Controller, Exception Handling
+- [x] **Zeitreihen-Uebersicht** (2026-03-19): OverviewPage mit allen Metadaten, Mehrfachauswahl, Editor-Anbindung, VirtualTable-Virtualisierung
+- [x] **On-the-fly Summierung** (2026-03-19): POST /api/timeseries/aggregate, Cross-Dimension-Disaggregation, Unit-Konvertierung, parallele Reads, SQL-Shortcut fuer Tag/Monat/Jahr
+- [x] **Diagramm-Ansicht** (2026-03-19): 3 Chart-Bibliotheken (Recharts, Chart.js, Lightweight Charts) mit Zoom, Legende, Farben
+- [x] **Tab-Persistenz** (2026-03-19): sessionStorage fuer offene Tabs bei Browser-Refresh
+- [x] **Multi-Zeitreihen Laufzeiten** (2026-03-19): Unterschiedliche Laufzeiten mit NaN-Auffuellung statt Fehler
+- [x] **read() fuer alle Dimensionen** (2026-03-19): Service leitet automatisch an read() oder readSimple() weiter
+- [x] **Summe im Footer** (2026-03-19): Min/Max/Avg/Sum in der Werte-Tabelle
