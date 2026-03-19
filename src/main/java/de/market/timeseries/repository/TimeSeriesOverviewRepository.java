@@ -52,6 +52,8 @@ public class TimeSeriesOverviewRepository {
                     row.put("currency", rs.getString("iso_code"));
                     row.put("object", rs.getString("object_key"));
                     row.put("description", rs.getString("description"));
+                    row.put("firstDate", rs.getDate("first_date"));
+                    row.put("lastDate", rs.getDate("last_date"));
                     row.put("createdAt", rs.getTimestamp("created_at"));
                     row.put("updatedAt", rs.getTimestamp("updated_at"));
                     rows.add(row);

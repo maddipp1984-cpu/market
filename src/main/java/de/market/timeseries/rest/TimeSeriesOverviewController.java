@@ -26,6 +26,8 @@ public class TimeSeriesOverviewController {
             new ColumnMeta("currency", "Waehrung", "c.iso_code", "TEXT"),
             new ColumnMeta("object", "Objekt", "o.object_key", "TEXT"),
             new ColumnMeta("description", "Beschreibung", "h.description", "TEXT"),
+            new ColumnMeta("firstDate", "Beginn", "vr.first_date", "DATE"),
+            new ColumnMeta("lastDate", "Ende", "vr.last_date", "DATE"),
             new ColumnMeta("createdAt", "Erstellt", "h.created_at", "TIMESTAMP"),
             new ColumnMeta("updatedAt", "Geaendert", "h.updated_at", "TIMESTAMP")
     );
