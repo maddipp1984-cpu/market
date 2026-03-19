@@ -49,6 +49,6 @@ pitest {
 tasks.register('benchmark', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'de.market.benchmark.Benchmark'
-    args = project.hasProperty('benchArgs') ? project.benchArgs.split(',') : ['100', '2024']
+    args = project.hasProperty('benchArgs') ? project.benchArgs.split(',') : ['QH_']
     jvmArgs = ['-Xmx2g']
 }
