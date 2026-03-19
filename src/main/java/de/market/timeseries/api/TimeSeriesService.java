@@ -118,7 +118,11 @@ public class TimeSeriesService {
      */
     public TimeSeriesSlice read(long tsId, LocalDateTime start, LocalDateTime end) throws SQLException {
         TimeSeriesHeader h = requireHeader(tsId);
-        return tsRepo.read(tsId, h.getTimeDimension(), start, end);
+        TimeDimension dim = h.getTimeDimension();
+        if (dim == TimeDimension.QUARTER_HOUR || dim == TimeDimension.HOUR) {
+            return tsRepo.read(tsId, dim, start, end);
+        }
+        return tsRepo.readSimple(tsId, dim, start, end);
     }
 
     // ================================================================
