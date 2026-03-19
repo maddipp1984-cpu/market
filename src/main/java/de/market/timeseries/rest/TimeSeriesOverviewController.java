@@ -21,7 +21,7 @@ public class TimeSeriesOverviewController {
     private static final List<ColumnMeta> COLUMNS = List.of(
             new ColumnMeta("id", "ID", "h.ts_id", "NUMBER"),
             new ColumnMeta("key", "Schluessel", "h.ts_key", "TEXT"),
-            new ColumnMeta("dimension", "Dimension", "dimension", "TEXT"),
+            new ColumnMeta("dimension", "Dimension", "CASE h.time_dim WHEN 1 THEN '15 Minuten' WHEN 2 THEN '1 Stunde' WHEN 3 THEN 'Tag' WHEN 4 THEN 'Monat' WHEN 5 THEN 'Jahr' END", "TEXT"),
             new ColumnMeta("unit", "Einheit", "u.symbol", "TEXT"),
             new ColumnMeta("currency", "Waehrung", "c.iso_code", "TEXT"),
             new ColumnMeta("object", "Objekt", "o.object_key", "TEXT"),
