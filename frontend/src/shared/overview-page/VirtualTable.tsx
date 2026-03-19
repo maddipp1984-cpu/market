@@ -275,11 +275,9 @@ export function VirtualTable<T extends Record<string, any>>({
     const target = e.target as HTMLElement;
     if (target.closest('tr') && !target.closest('thead')) return;
     if (!contextActions || contextActions.length === 0) return;
+    // Only show menu if rows are selected
+    if (selected.size === 0) return;
     e.preventDefault();
-
-    // Show context menu with multi-actions only (no row selected)
-    const multiActions = contextActions.filter(a => a.multi);
-    if (multiActions.length === 0 && selected.size === 0) return;
 
     setCtxMenu({ x: e.clientX, y: e.clientY, rowId: '' });
   }, [contextActions, selected]);
