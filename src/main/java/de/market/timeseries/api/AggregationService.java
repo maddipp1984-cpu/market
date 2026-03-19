@@ -78,12 +78,17 @@ public class AggregationService {
             }
         }
 
-        // 5. SQL-Shortcut: Gleiche Dimension + Einheit + einfache Werte (Tag/Monat/Jahr)
+        // 5. SQL-Shortcut: Gleiche Dimension + Einheit → Summierung komplett in PostgreSQL
         boolean allSameDim = headers.stream().allMatch(h -> h.getTimeDimension() == targetDim);
         boolean allSameUnit = headers.stream().allMatch(h -> h.getUnit() == targetUnit);
 
-        if (allSameDim && allSameUnit && !targetDim.useTimestamptz()) {
-            TimeSeriesSlice sumSlice = tsRepo.readSumSimple(tsIds, targetDim, start, end);
+        if (allSameDim && allSameUnit) {
+            TimeSeriesSlice sumSlice;
+            if (targetDim.useTimestamptz()) {
+                sumSlice = tsRepo.readSumSubdaily(tsIds, targetDim, start, end);
+            } else {
+                sumSlice = tsRepo.readSumSimple(tsIds, targetDim, start, end);
+            }
             return new AggregationResult(headers, targetDim, targetUnit, sumSlice);
         }
 

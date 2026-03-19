@@ -283,8 +283,9 @@ public class TimeSeriesRepository {
     // ================================================================
 
     /**
-     * Summiert mehrere subdaily-Zeitreihen (QH/H) in einer einzigen SQL-Query.
-     * Liest alle Rohdaten in einem Rutsch, summiert Arrays in Java (schneller als SQL unnest).
+     * Summiert mehrere subdaily-Zeitreihen (QH/H) per Stored Procedure.
+     * Die Summierung erfolgt komplett in PostgreSQL (elementweise Array-Summe),
+     * nur das Ergebnis wird uebertragen.
      */
     public TimeSeriesSlice readSumSubdaily(List<Long> tsIds, TimeDimension dim,
                                             LocalDateTime start, LocalDateTime end) throws SQLException {
@@ -300,48 +301,36 @@ public class TimeSeriesRepository {
         }
 
         Long[] idArray = tsIds.toArray(new Long[0]);
-
-        // Eine Query fuer alle Zeitreihen, sortiert nach Datum
-        String sql = "SELECT ts_date, vals FROM " + dim.getTableName() +
-                " WHERE ts_id = ANY(?) AND ts_date >= ? AND ts_date < ?" +
-                " ORDER BY ts_date";
+        String func = dim == TimeDimension.QUARTER_HOUR ? "ts_sum_15min" : "ts_sum_1h";
+        String sql = "SELECT ts_date, vals FROM " + func + "(?, ?, ?)";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             java.sql.Array sqlIds = conn.createArrayOf("bigint", idArray);
             try {
-            ps.setArray(1, sqlIds);
-            ps.setObject(2, firstDay);
-            ps.setObject(3, lastDayExcl);
-            ps.setFetchSize(10_000);
+                ps.setArray(1, sqlIds);
+                ps.setObject(2, firstDay);
+                ps.setObject(3, lastDayExcl);
+                ps.setFetchSize(1_000);
 
-            // Lesen und direkt pro Datum aufsummieren
-            Map<LocalDate, double[]> sumByDate = new HashMap<>();
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    LocalDate date = rs.getObject(1, LocalDate.class);
-                    java.sql.Array sqlArray = rs.getArray(2);
-                    Double[] boxed = (Double[]) sqlArray.getArray();
-                    sqlArray.free();
-
-                    double[] existing = sumByDate.get(date);
-                    if (existing == null) {
+                Map<LocalDate, double[]> dayValues = new HashMap<>();
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        LocalDate date = rs.getObject(1, LocalDate.class);
+                        java.sql.Array sqlArray = rs.getArray(2);
+                        Double[] boxed = (Double[]) sqlArray.getArray();
+                        sqlArray.free();
                         double[] vals = new double[boxed.length];
                         for (int i = 0; i < boxed.length; i++) {
-                            vals[i] = boxed[i] != null ? boxed[i] : 0;
+                            vals[i] = boxed[i] != null ? boxed[i] : Double.NaN;
                         }
-                        sumByDate.put(date, vals);
-                    } else {
-                        for (int i = 0; i < Math.min(existing.length, boxed.length); i++) {
-                            if (boxed[i] != null) existing[i] += boxed[i];
-                        }
+                        dayValues.put(date, vals);
                     }
                 }
-            }
 
-            double[] values = assembleValues(sumByDate, dim, start, end, lastDayExcl);
-            return new TimeSeriesSlice(start, end, dim, values);
+                double[] values = assembleValues(dayValues, dim, start, end, lastDayExcl);
+                return new TimeSeriesSlice(start, end, dim, values);
             } finally {
                 sqlIds.free();
             }
