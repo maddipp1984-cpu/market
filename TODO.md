@@ -29,6 +29,15 @@
 - [ ] **AUTH13** — Frontend: Field-Restriction-Guards im TimeSeriesEditor
 - [ ] **AUTH14** — E2E-Test: Neuer User, Gruppe, Rechte, Sichtbarkeit, Schreiben, Loeschen
 
+### Aggregation Performance-Benchmark
+- [ ] **PERF1** — Benchmark fuer alle Aggregations-Ansaetze mit verschiedenen Szenarien (10/100/1k/10k/100k ZR × 3 Tage/1 Monat/1 Jahr/5 Jahre):
+  - a) Stored Procedure (`ts_sum_15min`) — LATERAL unnest in DB
+  - b) Eine Query + Java-Summierung (`SELECT ts_date, vals ... ANY(?)`)
+  - c) Parallele Einzelreads (CompletableFuture)
+  - d) Gruppiert nach Dimension (SQL pro Gruppe + Disaggregation)
+- [ ] **PERF2** — PostgreSQL-Tuning evaluieren: shared_buffers, work_mem, parallel workers
+- [ ] **PERF3** — Ergebnisse dokumentieren und optimalen Ansatz pro Szenario waehlen
+
 ### Architektur / Infrastruktur
 - [ ] **A1** — Transaktionsmanagement: Zusammenhängende Schreiboperationen in einer Transaktion
 - [ ] **A2** — Fehlerbehandlung: Fachliche Exceptions, Logging, Retry bei Connection-Timeouts
