@@ -11,6 +11,12 @@ const iconEditor = (
   </svg>
 );
 
+const iconSum = (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 6H6l6 6-6 6h12" />
+  </svg>
+);
+
 export function ZeitreihenPage({ tabId }: { tabId: string }) {
   const { openTab } = useTabContext();
 
@@ -19,11 +25,22 @@ export function ZeitreihenPage({ tabId }: { tabId: string }) {
     openTab('timeseries-editor', { tsIds });
   }, [openTab]);
 
+  const openSumView = useCallback((rows: Record<string, unknown>[]) => {
+    const tsIds = rows.map(r => r.id as number);
+    openTab('timeseries-editor', { tsIds, aggregateMode: 'sum' });
+  }, [openTab]);
+
   const extraActions: ContextAction[] = [
     {
       label: 'Im Editor oeffnen',
       icon: iconEditor,
       onClick: openInEditor,
+      multi: true,
+    },
+    {
+      label: 'Summieren',
+      icon: iconSum,
+      onClick: openSumView,
       multi: true,
     },
   ];

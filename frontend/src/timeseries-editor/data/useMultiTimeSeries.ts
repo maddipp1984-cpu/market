@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useRef } from 'react';
-import { fetchHeader, fetchValues, writeDay } from '../../api/client';
+import { fetchHeader, fetchValues, writeDay, aggregateTimeSeries } from '../../api/client';
 import type { TimingInfo } from '../../api/client';
 import { calculateTimestampMs } from './timestampCalculator';
 import { toDateStringBerlin } from './aggregation';
@@ -48,7 +48,7 @@ interface UseMultiTimeSeriesResult {
   saving: boolean;
   error: string | null;
   loadTiming: LoadTiming | null;
-  load: (tsIds: number[], start: string, end: string) => Promise<void>;
+  load: (tsIds: number[], start: string, end: string, aggregateMode?: string) => Promise<void>;
   updateValue: (seriesIdx: number, rowIndex: number, value: number) => void;
   save: () => Promise<boolean>;
 }
@@ -108,7 +108,7 @@ export function useMultiTimeSeries(): UseMultiTimeSeriesResult {
     return result;
   }, [valuesResponses]);
 
-  const load = useCallback(async (tsIds: number[], start: string, end: string) => {
+  const load = useCallback(async (tsIds: number[], start: string, end: string, aggregateMode?: string) => {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -123,29 +123,45 @@ export function useMultiTimeSeries(): UseMultiTimeSeriesResult {
 
     try {
       const t0 = performance.now();
-      const [headerResults, valuesResults] = await Promise.all([
-        Promise.all(tsIds.map(id => fetchHeader(id, controller.signal))),
-        Promise.all(tsIds.map(id => fetchValues(id, start, end, controller.signal))),
-      ]);
 
-      if (controller.signal.aborted) return;
+      if (aggregateMode === 'sum') {
+        // Aggregations-Modus: Backend summiert alles
+        const result = await aggregateTimeSeries(tsIds, start, end, controller.signal);
+        if (controller.signal.aborted) return;
+        const totalMs = Math.round(performance.now() - t0);
 
-      const totalMs = Math.round(performance.now() - t0);
+        setHeaders([result.header]);
+        setValuesResponses([result.values]);
+        setLoadTiming({
+          headerTimings: [result.timing],
+          valuesTimings: [result.timing],
+          totalMs,
+        });
+      } else {
+        // Normaler Modus: einzelne Zeitreihen laden
+        const [headerResults, valuesResults] = await Promise.all([
+          Promise.all(tsIds.map(id => fetchHeader(id, controller.signal))),
+          Promise.all(tsIds.map(id => fetchValues(id, start, end, controller.signal))),
+        ]);
 
-      // Validierung: gleiche Dimension
-      const dimensions = new Set(headerResults.map(h => h.data.dimension));
-      if (dimensions.size > 1) {
-        setError('Alle Zeitreihen müssen die gleiche Dimension haben');
-        return;
+        if (controller.signal.aborted) return;
+        const totalMs = Math.round(performance.now() - t0);
+
+        // Validierung: gleiche Dimension (nur im normalen Modus)
+        const dimensions = new Set(headerResults.map(h => h.data.dimension));
+        if (dimensions.size > 1) {
+          setError('Alle Zeitreihen müssen die gleiche Dimension haben');
+          return;
+        }
+
+        setHeaders(headerResults.map(r => r.data));
+        setValuesResponses(valuesResults.map(r => r.data));
+        setLoadTiming({
+          headerTimings: headerResults.map(r => r.timing),
+          valuesTimings: valuesResults.map(r => r.timing),
+          totalMs,
+        });
       }
-
-      setHeaders(headerResults.map(r => r.data));
-      setValuesResponses(valuesResults.map(r => r.data));
-      setLoadTiming({
-        headerTimings: headerResults.map(r => r.timing),
-        valuesTimings: valuesResults.map(r => r.timing),
-        totalMs,
-      });
     } catch (e) {
       if (controller.signal.aborted) return;
       setError(e instanceof Error ? e.message : 'Unbekannter Fehler');

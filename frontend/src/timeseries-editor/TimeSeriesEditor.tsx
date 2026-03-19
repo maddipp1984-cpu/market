@@ -20,9 +20,10 @@ interface TimeSeriesEditorProps {
   tsIds: number[];
   start: string;
   end: string;
+  aggregateMode?: string;
 }
 
-export function TimeSeriesEditor({ tsIds, start, end }: TimeSeriesEditorProps) {
+export function TimeSeriesEditor({ tsIds, start, end, aggregateMode }: TimeSeriesEditorProps) {
   const { headers, rows, edits, hasEdits, loading, saving, error, loadTiming, load, updateValue, save } = useMultiTimeSeries();
   const { showMessage } = useMessageBar();
   const loadedRef = useRef('');
@@ -39,7 +40,7 @@ export function TimeSeriesEditor({ tsIds, start, end }: TimeSeriesEditorProps) {
     setFilterStart(start);
     setFilterEnd(end);
     if (tsIds.length > 0 && start && end) {
-      load(tsIds, start, end);
+      load(tsIds, start, end, aggregateMode);
     }
   }, [tsIds, start, end, load]);
 

@@ -10,6 +10,7 @@ export function TimeSeriesEditorPage({ tabId }: { tabId: string }) {
   const { updateTabLabel, getTabParams } = useTabContext();
   const params = getTabParams(tabId);
   const initialTsIds = params?.tsIds as number[] | undefined;
+  const aggregateMode = params?.aggregateMode as string | undefined;
 
   const [tsIds, setTsIds] = useState(initialTsIds ? initialTsIds.join(', ') : '');
   const [start, setStart] = useState('2022-01-01T00:00');
@@ -21,7 +22,9 @@ export function TimeSeriesEditorPage({ tabId }: { tabId: string }) {
     if (!didAutoLoad.current && initialTsIds && initialTsIds.length > 0) {
       didAutoLoad.current = true;
       setActiveTs(prev => ({ tsIds: initialTsIds, start, end, seq: prev.seq + 1 }));
-      updateTabLabel(tabId, 'ZR ' + initialTsIds.join(', '));
+      updateTabLabel(tabId, aggregateMode === 'sum'
+        ? 'SUM(' + initialTsIds.length + ' ZR)'
+        : 'ZR ' + initialTsIds.join(', '));
     }
   }, []);
 
@@ -75,6 +78,7 @@ export function TimeSeriesEditorPage({ tabId }: { tabId: string }) {
           tsIds={activeTs.tsIds}
           start={activeTs.start}
           end={activeTs.end}
+          aggregateMode={aggregateMode}
         />
       )}
     </DataPage>

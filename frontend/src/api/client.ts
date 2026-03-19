@@ -68,6 +68,27 @@ export async function fetchValues(
   return { data, timing: extractTiming(res, t0) };
 }
 
+export async function aggregateTimeSeries(
+  tsIds: number[],
+  start: string,
+  end: string,
+  signal?: AbortSignal
+): Promise<{ header: TimeSeriesHeaderResponse; values: TimeSeriesValuesResponse; timing: TimingInfo }> {
+  const t0 = performance.now();
+  const res = await authFetch('/api/timeseries/aggregate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tsIds, start, end }),
+    signal,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return { header: data.header, values: data.values, timing: extractTiming(res, t0) };
+}
+
 export async function fetchObjects(signal?: AbortSignal): Promise<{ data: ObjectResponse[]; timing: TimingInfo }> {
   const t0 = performance.now();
   const res = await authFetch('/api/objects', { signal });

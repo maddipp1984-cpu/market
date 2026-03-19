@@ -30,6 +30,19 @@ public class TimeSeriesHeaderResponse {
         return r;
     }
 
+    public void setSynthetic(long tsId, String tsKey, String dimension,
+                             String unit, String currency, Long objectId, String description) {
+        this.tsId = tsId;
+        this.tsKey = tsKey;
+        this.dimension = dimension;
+        this.unit = unit;
+        this.currency = currency;
+        this.objectId = objectId;
+        this.description = description;
+        this.createdAt = null;
+        this.updatedAt = null;
+    }
+
     public long getTsId() { return tsId; }
     public String getTsKey() { return tsKey; }
     public String getDimension() { return dimension; }
