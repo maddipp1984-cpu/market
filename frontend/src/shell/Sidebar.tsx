@@ -35,14 +35,21 @@ function convertConfigNodes(nodes: SidebarNodeConfig[]): SidebarNode[] {
   return result;
 }
 
+const iconFolder = (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+  </svg>
+);
+
 /** Enriches sidebar nodes with icons from tabTypes registry */
 function enrichWithIcons(nodes: SidebarNode[]): TreeNode[] {
   return nodes.map(node => {
     const tabType = node.tabType ? getTabType(node.tabType) : undefined;
+    const isFolder = node.children && node.children.length > 0;
     const enriched: TreeNode = {
       id: node.id,
       label: node.label,
-      icon: node.icon ?? tabType?.icon,
+      icon: node.icon ?? tabType?.icon ?? (isFolder ? iconFolder : undefined),
     };
     if (node.children) {
       enriched.children = enrichWithIcons(node.children);
