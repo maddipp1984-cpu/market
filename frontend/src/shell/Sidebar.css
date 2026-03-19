@@ -11,17 +11,13 @@
 .sidebar-logo {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-xl) var(--space-lg);
-  color: var(--color-sidebar-text-active);
-  font-size: 0.95rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+  justify-content: center;
+  padding: var(--space-lg) var(--space-md);
 }
 
 .sidebar-logo-img {
-  height: 28px;
-  width: auto;
+  width: 100%;
+  height: auto;
   object-fit: contain;
 }
 
