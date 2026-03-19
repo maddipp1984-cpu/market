@@ -1,6 +1,7 @@
 import type { ReactNode, ComponentType } from 'react';
 import { DashboardPage } from '../pages/DashboardPage';
 import { TimeSeriesEditorPage } from '../timeseries-editor/TimeSeriesEditorPage';
+import { ZeitreihenPage } from '../pages/ZeitreihenPage';
 import { ObjectsPage } from '../pages/ObjectsPage';
 import { ObjektNeuPage } from '../pages/ObjektNeuPage';
 import { ObjekttypenPage } from '../pages/ObjekttypenPage';
@@ -58,7 +59,8 @@ const iconSettings = (
 
 export const tabTypes: TabType[] = [
   { type: 'dashboard', label: 'Dashboard', icon: iconDashboard, singleton: true, component: DashboardPage },
-  { type: 'zeitreihen', label: 'Zeitreihen', icon: iconTimeSeries, component: TimeSeriesEditorPage },
+  { type: 'zeitreihen', label: 'Zeitreihen', icon: iconTimeSeries, singleton: true, component: ZeitreihenPage },
+  { type: 'timeseries-editor', label: 'Zeitreihen-Editor', icon: iconTimeSeries, component: TimeSeriesEditorPage },
   { type: 'objekte', label: 'Objekte', icon: iconObjects, component: ObjectsPage },
   { type: 'objekt-neu', label: 'Neues Objekt', icon: iconObjects, component: ObjektNeuPage },
   { type: 'objekttypen', label: 'Objekttypen', icon: iconObjects, component: ObjekttypenPage },

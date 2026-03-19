@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DataPage } from '../shared/DataPage';
 import { Card } from '../shared/Card';
 import { Button } from '../shared/Button';
@@ -7,11 +7,23 @@ import { TimeSeriesEditor } from './TimeSeriesEditor';
 import { useTabContext } from '../shell/TabContext';
 
 export function TimeSeriesEditorPage({ tabId }: { tabId: string }) {
-  const { updateTabLabel } = useTabContext();
-  const [tsIds, setTsIds] = useState('15201');
+  const { updateTabLabel, getTabParams } = useTabContext();
+  const params = getTabParams(tabId);
+  const initialTsIds = params?.tsIds as number[] | undefined;
+
+  const [tsIds, setTsIds] = useState(initialTsIds ? initialTsIds.join(', ') : '');
   const [start, setStart] = useState('2022-01-01T00:00');
   const [end, setEnd] = useState('2025-01-01T00:00');
   const [activeTs, setActiveTs] = useState({ tsIds: [] as number[], start: '', end: '', seq: 0 });
+  const didAutoLoad = useRef(false);
+
+  useEffect(() => {
+    if (!didAutoLoad.current && initialTsIds && initialTsIds.length > 0) {
+      didAutoLoad.current = true;
+      setActiveTs(prev => ({ tsIds: initialTsIds, start, end, seq: prev.seq + 1 }));
+      updateTabLabel(tabId, 'ZR ' + initialTsIds.join(', '));
+    }
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

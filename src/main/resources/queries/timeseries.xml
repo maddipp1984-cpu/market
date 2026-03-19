@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<queries module="timeseries">
+    <query key="timeseries/overview" name="Zeitreihen Uebersicht">
+        <![CDATA[
+        SELECT h.ts_id,
+               h.ts_key,
+               CASE h.time_dim
+                   WHEN 1 THEN '15 Minuten'
+                   WHEN 2 THEN '1 Stunde'
+                   WHEN 3 THEN 'Tag'
+                   WHEN 4 THEN 'Monat'
+                   WHEN 5 THEN 'Jahr'
+               END AS dimension,
+               u.symbol,
+               c.iso_code,
+               o.object_key,
+               h.description,
+               h.created_at,
+               h.updated_at
+        FROM ts_header h
+        JOIN ts_unit u ON u.unit_id = h.unit_id
+        LEFT JOIN ts_currency c ON c.currency_id = h.currency_id
+        LEFT JOIN ts_object o ON o.object_id = h.object_id
+        ORDER BY h.ts_key
+        ]]>
+    </query>
+</queries>
