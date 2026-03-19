@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 @Service
 public class AggregationService {
 
-    private static final int MAX_TS_IDS = 100;
     private final ExecutorService aggregationExecutor = Executors.newFixedThreadPool(15);
 
     private final TimeSeriesService service;
@@ -48,9 +47,6 @@ public class AggregationService {
             throws SQLException {
         if (tsIds == null || tsIds.size() < 2) {
             throw new IllegalArgumentException("Mindestens 2 Zeitreihen erforderlich");
-        }
-        if (tsIds.size() > MAX_TS_IDS) {
-            throw new IllegalArgumentException("Maximal " + MAX_TS_IDS + " Zeitreihen erlaubt, erhalten: " + tsIds.size());
         }
         if (!end.isAfter(start)) {
             throw new IllegalArgumentException("end muss nach start liegen: " + start + " / " + end);
