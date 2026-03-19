@@ -7,6 +7,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { ContextMenu, type ContextMenuEntry } from './ContextMenu';
 import './VirtualTable.css';
 
@@ -40,6 +41,7 @@ interface VirtualTableProps<T extends Record<string, any>> {
 }
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}([T ]|$)/;
+const ROW_HEIGHT = 33;
 
 function formatDateTime(value: unknown): string {
   if (typeof value !== 'string') return '-';
@@ -154,6 +156,15 @@ export function VirtualTable<T extends Record<string, any>>({
 
   const { rows: tableRows } = table.getRowModel();
 
+  // Virtualizer
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: tableRows.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 20,
+  });
+
   // Selection — uses stable row IDs, not visual indices
   const selected = selectedRowIds ?? EMPTY_SET;
   const lastClickedRef = useRef<number | null>(null);
@@ -227,9 +238,15 @@ export function VirtualTable<T extends Record<string, any>>({
 
     const effectiveSelected = selected.size > 0 ? selected : new Set([ctxMenu.rowId]);
     const isSingle = effectiveSelected.size === 1;
-    const selectedData = tableRows
-      .map(r => r.original as Record<string, unknown>)
-      .filter(row => effectiveSelected.has(getRowId(row, rowIdKey)));
+
+    // Build a lookup map for O(1) access instead of filtering all rows
+    const selectedData: Record<string, unknown>[] = [];
+    for (let i = 0; i < tableRows.length && selectedData.length < effectiveSelected.size; i++) {
+      const row = tableRows[i].original as Record<string, unknown>;
+      if (effectiveSelected.has(getRowId(row, rowIdKey))) {
+        selectedData.push(row);
+      }
+    }
 
     const items: ContextMenuEntry[] = [];
     let lastWasDanger = false;
@@ -250,9 +267,11 @@ export function VirtualTable<T extends Record<string, any>>({
   }, [ctxMenu, contextActions, selected, tableRows, rowIdKey]);
 
   const colSpan = columns.length + 1 + (selectable ? 1 : 0);
+  const totalHeight = virtualizer.getTotalSize();
+  const virtualItems = virtualizer.getVirtualItems();
 
   return (
-    <div className="vtable">
+    <div className="vtable" ref={scrollRef}>
       <table className="vtable-table" style={{ width: table.getTotalSize() + 40 + (selectable ? 40 : 0) }}>
         <thead>
           {table.getHeaderGroups().map(hg => (
@@ -298,39 +317,51 @@ export function VirtualTable<T extends Record<string, any>>({
               </td>
             </tr>
           ) : (
-            tableRows.map((row, i) => {
-              const rowData = row.original as Record<string, unknown>;
-              const id = getRowId(rowData, rowIdKey);
-              const isSelected = selectable && selected.has(id);
-              return (
-                <tr
-                  key={row.id}
-                  className={`${i % 2 !== 0 ? 'odd' : ''}${isSelected ? ' selected' : ''}`}
-                  onClick={e => handleRowClick(e, i)}
-                  onDoubleClick={() => onRowDoubleClick?.(row.original)}
-                  onContextMenu={e => handleContextMenu(e, rowData)}
-                  style={onRowDoubleClick || contextActions ? { cursor: 'pointer' } : undefined}
-                >
-                  <td className="vtable-rownum-col">{i + 1}</td>
-                  {selectable && (
-                    <td className="vtable-checkbox-col">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={e => handleCheckbox(rowData, e.target.checked, i)}
-                        onClick={e => e.stopPropagation()}
-                        aria-label="Zeile auswaehlen"
-                      />
-                    </td>
-                  )}
-                  {row.getVisibleCells().map(cell => (
-                    <td key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              );
-            })
+            <>
+              {/* Top spacer */}
+              {virtualItems.length > 0 && virtualItems[0].start > 0 && (
+                <tr><td colSpan={colSpan} style={{ height: virtualItems[0].start, padding: 0, border: 'none' }} /></tr>
+              )}
+              {virtualItems.map(virtualRow => {
+                const row = tableRows[virtualRow.index];
+                const i = virtualRow.index;
+                const rowData = row.original as Record<string, unknown>;
+                const id = getRowId(rowData, rowIdKey);
+                const isSelected = selectable && selected.has(id);
+                return (
+                  <tr
+                    key={row.id}
+                    className={`${i % 2 !== 0 ? 'odd' : ''}${isSelected ? ' selected' : ''}`}
+                    onClick={e => handleRowClick(e, i)}
+                    onDoubleClick={() => onRowDoubleClick?.(row.original)}
+                    onContextMenu={e => handleContextMenu(e, rowData)}
+                    style={onRowDoubleClick || contextActions ? { cursor: 'pointer', height: ROW_HEIGHT } : { height: ROW_HEIGHT }}
+                  >
+                    <td className="vtable-rownum-col">{i + 1}</td>
+                    {selectable && (
+                      <td className="vtable-checkbox-col">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={e => handleCheckbox(rowData, e.target.checked, i)}
+                          onClick={e => e.stopPropagation()}
+                          aria-label="Zeile auswaehlen"
+                        />
+                      </td>
+                    )}
+                    {row.getVisibleCells().map(cell => (
+                      <td key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+              {/* Bottom spacer */}
+              {virtualItems.length > 0 && (
+                <tr><td colSpan={colSpan} style={{ height: totalHeight - virtualItems[virtualItems.length - 1].end, padding: 0, border: 'none' }} /></tr>
+              )}
+            </>
           )}
         </tbody>
       </table>
