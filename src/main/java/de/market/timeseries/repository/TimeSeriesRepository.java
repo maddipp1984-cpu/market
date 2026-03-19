@@ -310,6 +310,7 @@ public class TimeSeriesRepository {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             java.sql.Array sqlIds = conn.createArrayOf("bigint", idArray);
+            try {
             ps.setArray(1, sqlIds);
             ps.setObject(2, firstDay);
             ps.setObject(3, lastDayExcl);
@@ -322,6 +323,7 @@ public class TimeSeriesRepository {
                     LocalDate date = rs.getObject(1, LocalDate.class);
                     java.sql.Array sqlArray = rs.getArray(2);
                     Double[] boxed = (Double[]) sqlArray.getArray();
+                    sqlArray.free();
 
                     double[] existing = sumByDate.get(date);
                     if (existing == null) {
@@ -340,6 +342,9 @@ public class TimeSeriesRepository {
 
             double[] values = assembleValues(sumByDate, dim, start, end, lastDayExcl);
             return new TimeSeriesSlice(start, end, dim, values);
+            } finally {
+                sqlIds.free();
+            }
         }
     }
 
@@ -348,6 +353,9 @@ public class TimeSeriesRepository {
      */
     public TimeSeriesSlice readSumSimple(List<Long> tsIds, TimeDimension dim,
                                           LocalDateTime start, LocalDateTime end) throws SQLException {
+        if (!end.isAfter(start)) {
+            throw new IllegalArgumentException("end muss nach start liegen: " + start + " / " + end);
+        }
         Long[] idArray = tsIds.toArray(new Long[0]);
         String timeCol = dim == TimeDimension.YEAR ? "ts_year" : "ts_date";
 
@@ -361,6 +369,7 @@ public class TimeSeriesRepository {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             java.sql.Array sqlIds = conn.createArrayOf("bigint", idArray);
+            try {
             ps.setArray(1, sqlIds);
             if (dim == TimeDimension.YEAR) {
                 ps.setShort(2, (short) start.getYear());
@@ -382,6 +391,9 @@ public class TimeSeriesRepository {
                 values[i] = valueList.get(i);
             }
             return new TimeSeriesSlice(start, end, dim, values);
+            } finally {
+                sqlIds.free();
+            }
         }
     }
 

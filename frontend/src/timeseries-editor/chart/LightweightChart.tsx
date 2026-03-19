@@ -3,7 +3,7 @@ import { createChart, type IChartApi, type ISeriesApi, LineSeries, type UTCTimes
 import type { ChartProps } from './chartTypes';
 import { SERIES_COLORS } from './chartTypes';
 
-export function LightweightChart({ rows, headers }: ChartProps) {
+export function LightweightChart({ rows, headers, dimension: _dimension }: ChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Line'>[]>([]);

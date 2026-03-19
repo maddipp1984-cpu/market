@@ -79,20 +79,18 @@ function createDashboardTab(counter: React.MutableRefObject<number>): Tab {
 export function TabProvider({ children }: { children: ReactNode }) {
   const tabCounterRef = useRef(0);
   const closeGuardsRef = useRef<Map<string, () => boolean>>(new Map());
+  const [initialState] = useState(() => restoreSession());
 
   const [tabs, setTabs] = useState<Tab[]>(() => {
-    const restored = restoreSession();
-    if (restored) {
-      tabCounterRef.current = restored.counter;
-      return restored.tabs;
+    if (initialState) {
+      tabCounterRef.current = initialState.counter;
+      return initialState.tabs;
     }
     return [createDashboardTab(tabCounterRef)];
   });
-  const [activeTabId, setActiveTabId] = useState<string | null>(() => {
-    const restored = restoreSession();
-    if (restored) return restored.activeTabId;
-    return tabs[0]?.id ?? null;
-  });
+  const [activeTabId, setActiveTabId] = useState<string | null>(() =>
+    initialState ? initialState.activeTabId : tabs[0]?.id ?? null
+  );
 
   // Persist tab state to sessionStorage on every change
   useEffect(() => {
