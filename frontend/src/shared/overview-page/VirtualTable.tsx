@@ -270,9 +270,23 @@ export function VirtualTable<T extends Record<string, any>>({
   const totalHeight = virtualizer.getTotalSize();
   const virtualItems = virtualizer.getVirtualItems();
 
+  const handleEmptyContextMenu = useCallback((e: React.MouseEvent) => {
+    // Only trigger if clicking on empty table area (not on a row)
+    const target = e.target as HTMLElement;
+    if (target.closest('tr') && !target.closest('thead')) return;
+    if (!contextActions || contextActions.length === 0) return;
+    e.preventDefault();
+
+    // Show context menu with multi-actions only (no row selected)
+    const multiActions = contextActions.filter(a => a.multi);
+    if (multiActions.length === 0 && selected.size === 0) return;
+
+    setCtxMenu({ x: e.clientX, y: e.clientY, rowId: '' });
+  }, [contextActions, selected]);
+
   return (
-    <div className="vtable" ref={scrollRef}>
-      <table className="vtable-table" style={{ width: table.getTotalSize() + 40 + (selectable ? 40 : 0) }}>
+    <div className="vtable" ref={scrollRef} onContextMenu={handleEmptyContextMenu}>
+      <table className="vtable-table">
         <thead>
           {table.getHeaderGroups().map(hg => (
             <tr key={hg.id}>
