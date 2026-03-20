@@ -808,20 +808,340 @@ DTO Response (Entity → DTO Mapping)</div>
         </table>
     </section>
 
-    <section id="security">
+    <section id="security" class="page-break">
         <h2>Security-Modell</h2>
+
+        <h3>Übersicht</h3>
+        <p>Das System nutzt Keycloak als Identity Provider mit OAuth2/OIDC. Die Autorisierung erfolgt über ein eigenes 3-Ebenen-RBAC-Modell (Users → Groups → Permissions), das in der lokalen Datenbank gespeichert wird.</p>
+
+        <div class="diagram">
+Keycloak (Identity Provider)
+    │ JWT Token
+    ▼
+Spring Security (SecurityConfig)
+    │ Bearer Token Validation
+    ▼
+UserRegistrationFilter
+    │ Auto-Registrierung bei erstem Login
+    ▼
+PermissionService
+    │ Effektive Berechtigungen berechnen
+    ▼
+AuthUser → AuthGroup → AuthPermission
+                        (Resource × ObjectType → Read/Write/Delete)</div>
+
+        <h3>RBAC-Modell</h3>
+        <ul>
+            <li><strong>AuthUser</strong> — Wird automatisch beim ersten Keycloak-Login angelegt (UserRegistrationFilter)</li>
+            <li><strong>AuthGroup</strong> — Benutzer können mehreren Gruppen zugeordnet werden</li>
+            <li><strong>AuthPermission</strong> — Pro Gruppe: Resource + ObjectType → canRead / canWrite / canDelete</li>
+            <li><strong>AuthFieldRestriction</strong> — Feld-Level-Einschränkungen pro Gruppe (z.B. "Preis" nur für bestimmte Gruppen sichtbar)</li>
+            <li><strong>AuthResource</strong> — Definiert verfügbare Ressourcen (z.B. "zeitreihen", "business-partners")</li>
+        </ul>
+
+        <h3>Permission-Aggregation</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Aspekt</th>
+                    <th>Logik</th>
+                    <th>Erklärung</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Read/Write/Delete</td><td>OR über Gruppen</td><td>Wenn EINE Gruppe das Recht hat → Benutzer hat es</td></tr>
+                <tr><td>Field-Restrictions</td><td>AND über Gruppen</td><td>Nur wenn ALLE Gruppen einschränken → Feld ist eingeschränkt</td></tr>
+                <tr><td>Admin</td><td>Bypass</td><td>Admin überspringt alle Checks</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Frontend-Integration</h3>
+        <p>Der <code>AuthContext</code> stellt Berechtigungsprüfungen als React-Hooks bereit:</p>
+        <ul>
+            <li><code>canRead(resourceKey, objectTypeId?)</code> — Leseberechtigung prüfen</li>
+            <li><code>canWrite(resourceKey, objectTypeId?)</code> — Schreibberechtigung prüfen</li>
+            <li><code>canDelete(resourceKey, objectTypeId?)</code> — Löschberechtigung prüfen</li>
+            <li><code>isFieldRestricted(resourceKey, fieldKey, objectTypeId?)</code> — Feld-Restriktion prüfen</li>
+            <li><code>isAdmin</code> — Admin-Status</li>
+            <li>Sidebar: Admin-Nodes nur für Admins sichtbar, andere Nodes nach ResourceKey gefiltert</li>
+        </ul>
     </section>
 
-    <section id="rest-api">
+    <section id="rest-api" class="page-break">
         <h2>REST-API-Referenz</h2>
+        <p>Alle Endpoints unter <code>/api/</code> sind durch Keycloak JWT geschützt. HTTP-Methoden sind farbcodiert.</p>
+
+        <h3>Zeitreihen</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Methode</th>
+                    <th>Pfad</th>
+                    <th>Beschreibung</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/timeseries</code></td><td>Zeitreihe anlegen</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/timeseries/{tsId}</code></td><td>Header lesen</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/timeseries?key=...</code></td><td>Header per Key suchen</td></tr>
+                <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/timeseries/{tsId}/values</code></td><td>Tageswerte schreiben (QH/H Array)</td></tr>
+                <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/timeseries/{tsId}/value</code></td><td>Einzelwert schreiben (Tag/Monat/Jahr)</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/timeseries/{tsId}/values?start=...&amp;end=...</code></td><td>Werte lesen</td></tr>
+                <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/api/timeseries/{tsId}</code></td><td>Zeitreihe löschen</td></tr>
+                <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/api/timeseries/{tsId}/values</code></td><td>Alle Werte löschen (Header bleibt)</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/timeseries/{tsId}/count</code></td><td>Anzahl Datenpunkte</td></tr>
+                <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/timeseries/aggregate</code></td><td>Zeitreihen summieren (Cross-Dim/Unit)</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Zeitreihen-Übersicht</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Methode</th>
+                    <th>Pfad</th>
+                    <th>Beschreibung</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/timeseries-overview</code></td><td>Alle Zeitreihen (TableResponse)</td></tr>
+                <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/timeseries-overview/query</code></td><td>Zeitreihen filtern</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Objekte</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Methode</th>
+                    <th>Pfad</th>
+                    <th>Beschreibung</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/objects</code></td><td>Objekt anlegen</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/objects</code></td><td>Alle Objekte</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/objects/{objectId}</code></td><td>Objekt lesen</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/objects?key=...</code></td><td>Objekt per Key</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/objects?type=...</code></td><td>Objekte nach Typ</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/objects/{objectId}/timeseries</code></td><td>Zugeordnete Zeitreihen</td></tr>
+                <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/objects/{objectId}/timeseries/{tsId}</code></td><td>Zeitreihe zuordnen</td></tr>
+                <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/api/objects/{objectId}/timeseries/{tsId}</code></td><td>Zuordnung entfernen</td></tr>
+                <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/objects/query</code></td><td>Objekte filtern</td></tr>
+                <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/api/objects/{objectId}</code></td><td>Objekt löschen</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Geschäftspartner</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Methode</th>
+                    <th>Pfad</th>
+                    <th>Beschreibung</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/business-partners</code></td><td>GP-Liste (TableResponse)</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/business-partners/{id}</code></td><td>GP lesen (mit Ansprechpartnern)</td></tr>
+                <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/business-partners</code></td><td>GP anlegen</td></tr>
+                <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/business-partners/{id}</code></td><td>GP aktualisieren</td></tr>
+                <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/api/business-partners/{id}</code></td><td>GP löschen</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Währungen</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Methode</th>
+                    <th>Pfad</th>
+                    <th>Beschreibung</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/currencies</code></td><td>Währungsliste (TableResponse)</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/currencies/{id}</code></td><td>Währung lesen</td></tr>
+                <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/currencies</code></td><td>Währung anlegen</td></tr>
+                <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/currencies/{id}</code></td><td>Währung aktualisieren</td></tr>
+                <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/api/currencies/{id}</code></td><td>Währung löschen</td></tr>
+                <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/currencies/query</code></td><td>Währungen filtern</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Batch-Jobs</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Methode</th>
+                    <th>Pfad</th>
+                    <th>Beschreibung</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/batch-jobs/catalog</code></td><td>Job-Katalog (verfügbare Typen)</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/batch-schedules</code></td><td>Schedule-Übersicht (TableResponse)</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/batch-schedules/{id}</code></td><td>Schedule lesen</td></tr>
+                <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/batch-schedules</code></td><td>Schedule anlegen</td></tr>
+                <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/batch-schedules/{id}</code></td><td>Schedule aktualisieren</td></tr>
+                <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/api/batch-schedules/{id}</code></td><td>Schedule löschen</td></tr>
+                <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/batch-schedules/{id}/trigger</code></td><td>Manuell auslösen</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/batch-history</code></td><td>Ausführungshistorie (TableResponse)</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/batch-schedules/{id}/history</code></td><td>Historie für einen Schedule</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/batch-history/{execId}/log</code></td><td>Logfile-Inhalt (text/plain)</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Administration</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Methode</th>
+                    <th>Pfad</th>
+                    <th>Beschreibung</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/permissions/me</code></td><td>Eigene effektive Berechtigungen</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/admin/users</code></td><td>Benutzerliste</td></tr>
+                <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/admin/users</code></td><td>Benutzer anlegen (Keycloak)</td></tr>
+                <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/admin/users/{id}/admin</code></td><td>Admin-Status setzen</td></tr>
+                <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/admin/users/{id}/enabled</code></td><td>Benutzer aktivieren/deaktivieren</td></tr>
+                <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/admin/users/{id}/password</code></td><td>Passwort setzen</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/admin/users/{id}/effective</code></td><td>Effektive Berechtigungen eines Users</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/admin/groups</code></td><td>Gruppen-Liste</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/admin/groups/{id}</code></td><td>Gruppe lesen (Mitglieder + Permissions)</td></tr>
+                <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/admin/groups</code></td><td>Gruppe anlegen</td></tr>
+                <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/admin/groups/{id}</code></td><td>Gruppe aktualisieren</td></tr>
+                <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/api/admin/groups/{id}</code></td><td>Gruppe löschen</td></tr>
+                <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/admin/groups/{id}/members</code></td><td>Mitglied hinzufügen</td></tr>
+                <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/api/admin/groups/{id}/members/{userId}</code></td><td>Mitglied entfernen</td></tr>
+                <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/admin/groups/{id}/permissions</code></td><td>Gruppen-Berechtigungen setzen</td></tr>
+                <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/admin/groups/{id}/field-restrictions</code></td><td>Feld-Restriktionen setzen</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/admin/resources</code></td><td>Verfügbare Ressourcen</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Konfiguration &amp; Filter</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Methode</th>
+                    <th>Pfad</th>
+                    <th>Beschreibung</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/config/sidebar</code></td><td>Sidebar-Baumstruktur (aus XML)</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/filter-presets?pageKey=...</code></td><td>Filter-Presets laden</td></tr>
+                <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/filter-presets</code></td><td>Preset speichern</td></tr>
+                <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/filter-presets/{id}</code></td><td>Preset aktualisieren</td></tr>
+                <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/api/filter-presets/{id}</code></td><td>Preset löschen</td></tr>
+                <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/filter-presets/{id}/default</code></td><td>Als Default markieren</td></tr>
+                <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/api/filter-presets/{id}/default</code></td><td>Default entfernen</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/filter-presets/default?pageKey=...</code></td><td>Default-Preset laden</td></tr>
+                <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/admin/queries/reload</code></td><td>SQL-Queries neu laden</td></tr>
+                <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/admin/queries</code></td><td>Geladene Query-Keys</td></tr>
+            </tbody>
+        </table>
     </section>
 
     <section id="shared-components">
         <h2>Shared Components</h2>
+
+        <h3>Backend</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Komponente</th>
+                    <th>Package</th>
+                    <th>Beschreibung</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>TableResponse</td><td><code>shared.dto</code></td><td>Generische Tabellenantwort (columns + data)</td></tr>
+                <tr><td>ColumnMeta</td><td><code>shared.dto</code></td><td>Spalten-Metadaten (key, label, sqlColumn, type)</td></tr>
+                <tr><td>FilterQueryBuilder</td><td><code>shared.dto</code></td><td>Sichere WHERE-Klausel-Generierung</td></tr>
+                <tr><td>FilterCondition</td><td><code>shared.dto</code></td><td>Filter-Bedingung (column, operator, value)</td></tr>
+                <tr><td>QueryRegistry</td><td><code>shared.query</code></td><td>SQL-Queries aus DB laden (ConcurrentHashMap)</td></tr>
+                <tr><td>QueryLoader</td><td><code>shared.query</code></td><td>XML → DB Synchronisation beim Start</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Frontend</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Komponente</th>
+                    <th>Pfad</th>
+                    <th>Beschreibung</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>OverviewPage</td><td><code>shared/overview-page/</code></td><td>Template für Übersichtsseiten</td></tr>
+                <tr><td>VirtualTable</td><td><code>shared/overview-page/</code></td><td>Virtualisierte Tabelle (TanStack)</td></tr>
+                <tr><td>FilterBuilder</td><td><code>shared/overview-page/</code></td><td>Filter-Panel mit Operatoren</td></tr>
+                <tr><td>ContextMenu</td><td><code>shared/overview-page/</code></td><td>Rechtsklick-Menü für Zeilen</td></tr>
+                <tr><td>DetailPage</td><td><code>shared/detail-page/</code></td><td>Template für Detail-/Bearbeitungsseiten</td></tr>
+                <tr><td>Button</td><td><code>shared/</code></td><td>Primary/Success/Ghost Varianten</td></tr>
+                <tr><td>Card</td><td><code>shared/</code></td><td>Karten-Container mit Rahmen/Schatten</td></tr>
+                <tr><td>FormField</td><td><code>shared/</code></td><td>Label + Input Wrapper (compact Mode)</td></tr>
+                <tr><td>Chip</td><td><code>shared/</code></td><td>Info-Badge Komponente</td></tr>
+                <tr><td>StatusMessage</td><td><code>shared/</code></td><td>Fehler-/Info-/Erfolgsmeldungen</td></tr>
+                <tr><td>TreeView</td><td><code>shared/</code></td><td>Generischer Baum (dark/light Variante)</td></tr>
+                <tr><td>FilterBar</td><td><code>shared/</code></td><td>Horizontale Filterleiste mit Aktionen</td></tr>
+                <tr><td>PageLayout</td><td><code>shared/</code></td><td>Seiten-Layout mit maxWidth und Titel</td></tr>
+            </tbody>
+        </table>
     </section>
 
     <section id="build">
         <h2>Build &amp; Deployment</h2>
+
+        <h3>Backend</h3>
+        <pre>./gradlew build          # Kompilieren + Tests
+./gradlew bootRun        # Spring Boot starten (Port 8080)
+./gradlew bootJar        # Fat-JAR erstellen
+./gradlew benchmark      # Standalone Performance-Benchmark</pre>
+
+        <h3>Frontend</h3>
+        <pre>npm run dev              # Vite Dev-Server (Port 5173, /api → localhost:8080)
+npm run build            # Production Build → dist/
+npm run preview          # Lokale Vorschau des Production Builds</pre>
+
+        <h3>Konfiguration</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Variable</th>
+                    <th>Default</th>
+                    <th>Beschreibung</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><code>TS_JDBC_URL</code></td><td><code>jdbc:postgresql://localhost:5432/timeseries</code></td><td>Datenbank-URL</td></tr>
+                <tr><td><code>TS_DB_USER</code></td><td><code>postgres</code></td><td>Datenbank-Benutzer</td></tr>
+                <tr><td><code>TS_DB_PASSWORD</code></td><td><code>postgres</code></td><td>Datenbank-Passwort</td></tr>
+            </tbody>
+        </table>
+
+        <div class="info-box">
+            <strong>Vite Proxy:</strong> Im Entwicklungsmodus leitet Vite alle <code>/api</code>-Requests an <code>http://localhost:8080</code> weiter. In Produktion muss ein Reverse-Proxy (z.B. nginx) konfiguriert werden.
+        </div>
+
+        <h3>Datenbank (Docker)</h3>
+        <pre># TimescaleDB Container starten
+docker run -d --name timescaledb \
+  -p 5432:5432 \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=timeseries \
+  timescale/timescaledb:latest-pg16
+
+# Schema anlegen
+docker exec -i timescaledb psql -U postgres -d timeseries &lt; sql/schema.sql
+
+# Migrationen ausführen
+docker exec -i timescaledb psql -U postgres -d timeseries &lt; sql/migrations/001_*.sql</pre>
     </section>
 
     <!-- Use Cases -->
