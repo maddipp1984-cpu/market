@@ -355,11 +355,76 @@
     <!-- Technische Dokumentation -->
 
     <section id="uebersicht">
-        <h1>Projektübersicht</h1>
+        <h1>Zeitreihensystem — Dokumentation</h1>
+        <p>
+            Performantes Zeitreihensystem für die Verwaltung von über 10 Millionen Zeitreihen.
+            Gebaut auf TimescaleDB (PostgreSQL-Extension) mit Spring Boot Backend und React Frontend.
+            Das System dient der Erfassung, Verwaltung und Analyse von Zeitreihendaten in verschiedenen
+            Zeitdimensionen (15 Minuten bis Jahr).
+        </p>
+        <h3>Kernfähigkeiten</h3>
+        <ul>
+            <li><strong>Zeitreihen-Management</strong> — Lesen, Schreiben, Löschen von Zeitreihen in 5 Zeitdimensionen (15min, 1h, Tag, Monat, Jahr)</li>
+            <li><strong>On-the-fly Aggregation</strong> — Summierung beliebig vieler Zeitreihen mit Cross-Dimension- und Unit-Konvertierung</li>
+            <li><strong>Stammdaten</strong> — Geschäftspartner, Währungen, Objekte, Einheiten</li>
+            <li><strong>Batchplanung</strong> — Quartz-basiertes Job-System mit Cron/Intervall-Schedules und Ausführungshistorie</li>
+            <li><strong>Berechtigungssystem</strong> — RBAC mit Keycloak-Integration, Gruppen, Feld-Restriktionen</li>
+            <li><strong>Diagramme</strong> — Interaktive Charts mit Zoom, Downsampling, mehrere Bibliotheken zur Auswahl</li>
+            <li><strong>Tab-basierte Navigation</strong> — Multi-Tab-Oberfläche mit Session-Persistenz (überlebt Browser-Refresh)</li>
+        </ul>
     </section>
 
-    <section id="tech-stack">
+    <section id="tech-stack" class="page-break">
         <h2>Tech-Stack</h2>
+
+        <h3>Backend</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Technologie</th>
+                    <th>Version</th>
+                    <th>Einsatz</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Java</td><td>17 (LTS)</td><td>Programmiersprache</td></tr>
+                <tr><td>Spring Boot</td><td>3.4.1</td><td>Application Framework (Web, JDBC, Quartz)</td></tr>
+                <tr><td>TimescaleDB</td><td>—</td><td>Zeitreihen-Datenbank (PostgreSQL-Extension)</td></tr>
+                <tr><td>Raw JDBC</td><td>—</td><td>Zeitreihen-Zugriff + Übersichtsabfragen (Performance)</td></tr>
+                <tr><td>JPA/Hibernate</td><td>—</td><td>Stammdaten-CRUD (Einzeloperationen)</td></tr>
+                <tr><td>HikariCP</td><td>—</td><td>Connection Pool (30 Connections)</td></tr>
+                <tr><td>Quartz Scheduler</td><td>—</td><td>Batch-Job-Scheduling</td></tr>
+                <tr><td>Keycloak</td><td>—</td><td>OAuth2/OIDC Identity Provider</td></tr>
+                <tr><td>Gradle</td><td>—</td><td>Build-System mit Spring Boot Plugin</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Frontend</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Technologie</th>
+                    <th>Version</th>
+                    <th>Einsatz</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>React</td><td>18</td><td>UI-Framework</td></tr>
+                <tr><td>TypeScript</td><td>5</td><td>Typsicherheit</td></tr>
+                <tr><td>Vite</td><td>4</td><td>Build-Tool + Dev-Server</td></tr>
+                <tr><td>TanStack Table</td><td>8</td><td>Headless Table (Sortierung, Filter)</td></tr>
+                <tr><td>TanStack Virtual</td><td>3</td><td>Virtualisierung (nur sichtbare Zeilen im DOM)</td></tr>
+                <tr><td>Headless Tree</td><td>1</td><td>Sidebar-Baumnavigation</td></tr>
+                <tr><td>Keycloak JS</td><td>26</td><td>OAuth2 Client</td></tr>
+                <tr><td>Recharts / Chart.js / Lightweight Charts</td><td>—</td><td>Diagramme (3 Bibliotheken zum Vergleich)</td></tr>
+            </tbody>
+        </table>
+
+        <div class="info-box">
+            <strong>Persistenz-Strategie:</strong> Übersichtsseiten (Tabellen mit vielen Zeilen) nutzen immer Raw JDBC
+            via DataSource. JPA wird nur für Einzel-CRUD-Operationen (findById, create, update, delete) eingesetzt.
+            Dieses duale Modell kombiniert die Performance von Raw JDBC mit dem Komfort von JPA.
+        </div>
     </section>
 
     <section id="architektur">
