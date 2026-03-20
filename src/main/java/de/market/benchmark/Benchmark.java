@@ -2,6 +2,7 @@ package de.market.benchmark;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import de.market.timeseries.repository.PostgresTimeSeriesProcedures;
 import de.market.timeseries.repository.TimeSeriesRepository;
 import de.market.timeseries.model.TimeDimension;
 import de.market.timeseries.model.TimeSeriesSlice;
@@ -40,7 +41,8 @@ public class Benchmark {
 
         try (HikariDataSource ds = new HikariDataSource(config)) {
             DSLContext dsl = DSL.using(ds, SQLDialect.POSTGRES);
-            TimeSeriesRepository tsRepo = new TimeSeriesRepository(dsl);
+            PostgresTimeSeriesProcedures procedures = new PostgresTimeSeriesProcedures(dsl);
+            TimeSeriesRepository tsRepo = new TimeSeriesRepository(dsl, procedures);
 
             List<Long> allIds = loadIdsByPrefix(ds, prefix);
             if (allIds.isEmpty()) {
