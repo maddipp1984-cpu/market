@@ -427,12 +427,152 @@
         </div>
     </section>
 
-    <section id="architektur">
+    <section id="architektur" class="page-break">
         <h2>Architektur</h2>
+
+        <h3>Schichtenmodell</h3>
+        <div class="diagram">
+┌─────────────────────────────────────────────────────────┐
+│  Frontend (React + TypeScript)                          │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐              │
+│  │ Overview  │  │ Detail   │  │ Editor   │  ← Templates │
+│  │ Page      │  │ Page     │  │ Page     │              │
+│  └─────┬────┘  └────┬─────┘  └────┬─────┘              │
+│        └─────────────┼─────────────┘                    │
+│                      │ authFetch (Bearer Token)         │
+├──────────────────────┼──────────────────────────────────┤
+│  Backend (Spring Boot 3.4)                              │
+│        ┌─────────────▼──────────────┐                   │
+│        │   REST Controller          │ ← @RestController │
+│        └─────────────┬──────────────┘                   │
+│        ┌─────────────▼──────────────┐                   │
+│        │   Service                  │ ← @Service        │
+│        └──────┬──────────────┬──────┘                   │
+│        ┌──────▼──────┐ ┌────▼───────┐                   │
+│        │ Raw JDBC    │ │ JPA Repo   │                   │
+│        │ (Übersicht) │ │ (Einzel)   │                   │
+│        └──────┬──────┘ └────┬───────┘                   │
+├───────────────┼─────────────┼───────────────────────────┤
+│  TimescaleDB (PostgreSQL)                               │
+│  ┌────────────┐ ┌───────────┐ ┌──────────────┐         │
+│  │ ts_values_* │ │ ts_header │ │ Stammdaten   │         │
+│  │ (Hypertable)│ │           │ │ (JPA Tables) │         │
+│  └────────────┘ └───────────┘ └──────────────┘         │
+└─────────────────────────────────────────────────────────┘</div>
+
+        <h3>Package-Struktur (Backend)</h3>
+        <div class="diagram">
+de.market/
+├── shared/          Gemeinsame DTOs + Query-System
+│   ├── dto/         TableResponse, ColumnMeta, FilterQueryBuilder
+│   └── query/       QueryRegistry, QueryLoader, QueryController
+├── timeseries/      Zeitreihen-Kernmodul
+│   ├── api/         Services (TimeSeriesService, AggregationService)
+│   ├── client/      Entwickler-API (DimensionConverter, UnitConverter)
+│   ├── model/       POJOs + Enums (TimeDimension, Unit, TimeSeriesSlice)
+│   ├── repository/  Raw JDBC Repositories
+│   ├── rest/        REST-Controller + DTOs
+│   └── security/    Keycloak, RBAC, Admin-API
+├── currency/        Währungs-Modul (JPA)
+├── businesspartner/ Geschäftspartner-Modul (JPA)
+├── scheduling/      Batch-Job-System (Quartz)
+└── benchmark/       Standalone Performance-Benchmark</div>
+
+        <h3>Frontend-Struktur</h3>
+        <div class="diagram">
+frontend/src/
+├── styles/              Design-Tokens (CSS Custom Properties)
+├── shell/               App-Shell (Sidebar, TabBar, TabContext)
+├── shared/              Wiederverwendbare UI-Komponenten
+│   ├── overview-page/   OverviewPage, VirtualTable, FilterBuilder
+│   └── detail-page/     DetailPage (Toolbar, Dirty-Guard, Validierung)
+├── auth/                Keycloak-Integration, AuthContext
+├── api/                 REST-Client (client.ts, types.ts)
+├── admin/               Admin-Seiten (Users, Groups, Permissions)
+├── timeseries-editor/   Zeitreihen-Editor + Charts
+│   ├── data/            useMultiTimeSeries, aggregation, timestamps
+│   ├── chart/           Recharts, Chart.js, Lightweight Charts
+│   └── table/           ValuesTable (inline-editable)
+└── pages/               Feature-Seiten (je Domain-Entität)</div>
+
+        <h3>Dualer Persistenz-Ansatz</h3>
+        <p>
+            Das System verwendet zwei komplementäre Persistenz-Strategien, je nach Anwendungsfall:
+        </p>
+        <ul>
+            <li><strong>Raw JDBC</strong> für alle Übersichtsabfragen — Performance-kritische Abfragen werden über die QueryRegistry gesteuert und liefern ein generisches <code>TableResponse</code>-Format. Alle Tabellen mit vielen Zeilen laufen über diesen Weg.</li>
+            <li><strong>JPA/Hibernate</strong> für Einzel-CRUD-Operationen — <code>findById</code>, <code>create</code>, <code>update</code>, <code>delete</code> nutzen JPA-Repositories mit Entity-Mapping für Komfort und Typsicherheit.</li>
+            <li><strong>Regel:</strong> <code>findAll()</code> oder Tabellen mit vielen Zeilen verwenden immer Raw JDBC, niemals JPA.</li>
+            <li><strong>JPA-Konfiguration:</strong> <code>ddl-auto=validate</code> (Schema wird nicht automatisch geändert), <code>open-in-view=false</code> (keine Lazy-Loading-Probleme in Controllern).</li>
+        </ul>
     </section>
 
-    <section id="datenbank">
+    <section id="datenbank" class="page-break">
         <h2>Datenbank-Design</h2>
+
+        <h3>Zeitdimensionen</h3>
+        <p>Jede Zeitdimension hat eine eigene Werte-Tabelle mit optimierter Chunk-Größe und Kompression.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Dimension</th>
+                    <th>Tabelle</th>
+                    <th>Zeittyp</th>
+                    <th>Hypertable</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>1</td><td>15 Minuten</td><td><code>ts_values_15min</code></td><td>TIMESTAMPTZ</td><td>Ja</td></tr>
+                <tr><td>2</td><td>1 Stunde</td><td><code>ts_values_1h</code></td><td>TIMESTAMPTZ</td><td>Ja</td></tr>
+                <tr><td>3</td><td>Tag</td><td><code>ts_values_day</code></td><td>DATE</td><td>Ja</td></tr>
+                <tr><td>4</td><td>Monat</td><td><code>ts_values_month</code></td><td>DATE</td><td>Ja</td></tr>
+                <tr><td>5</td><td>Jahr</td><td><code>ts_values_year</code></td><td>SMALLINT</td><td>Nein</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Tabellendesign</h3>
+        <ul>
+            <li><strong><code>ts_header</code></strong> — Metadaten jeder Zeitreihe (Key, Dimension, Einheit, Währung, Objekt-Zuordnung)</li>
+            <li><strong><code>ts_values_*</code></strong> — Separate Werte-Tabellen pro Dimension mit unterschiedlichen Chunk-Größen</li>
+            <li><strong><code>ts_object</code> / <code>ts_object_type</code></strong> — Übergeordnete Objekte mit 1:n Beziehung zu Zeitreihen</li>
+            <li><strong>Stammdaten-Tabellen</strong> — <code>ts_currency</code>, <code>business_partner</code>, <code>contact_person</code>, <code>batch_schedule</code></li>
+            <li><strong>Auth-Tabellen</strong> — <code>ts_auth_user</code>, <code>ts_auth_group</code>, <code>ts_auth_permission</code>, <code>ts_auth_field_restriction</code>, <code>ts_auth_resource</code></li>
+            <li><strong>System-Tabellen</strong> — <code>ts_query</code> (SQL-Registry), <code>filter_preset</code> (gespeicherte Filter)</li>
+        </ul>
+
+        <h3>TimescaleDB-Features</h3>
+        <ul>
+            <li><strong>Hypertables</strong> — Automatische Partitionierung nach Zeit für 15min, 1h, Tag, Monat</li>
+            <li><strong>Hash-Partitionierung</strong> — Auf <code>ts_id</code> für schnellen Einzelreihen-Zugriff</li>
+            <li><strong>Kompression</strong> — <code>segmentby = ts_id</code>, automatisch nach 3–6 Monaten</li>
+            <li><strong>Stored Procedures</strong> — <code>ts_sum_15min</code>, <code>ts_sum_1h</code> für DB-seitige Summierung (PL/pgSQL)</li>
+            <li><strong>Index</strong> — <code>(ts_id, ts_time)</code> für schnelles Lesen einzelner Zeitreihen</li>
+        </ul>
+
+        <h3>DST-Handling (Sommerzeit/Winterzeit)</h3>
+        <div class="info-box">
+            <strong>Zeitzone:</strong> Immer <code>Europe/Berlin</code> (Konstante in <code>TimeSeriesSlice.ZONE</code>).
+            <code>TIMESTAMPTZ</code> speichert intern UTC — jeder Zeitpunkt ist eindeutig.
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Tag</th>
+                    <th>Viertelstunden (QH)</th>
+                    <th>Stunden (H)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Normaltag</td><td>96</td><td>24</td></tr>
+                <tr><td>Sommerzeit (März)</td><td>92</td><td>23</td></tr>
+                <tr><td>Winterzeit (Oktober)</td><td>100</td><td>25</td></tr>
+            </tbody>
+        </table>
+        <p>
+            Timestamps werden lazy berechnet: <code>slice.getTimestamp(date, index)</code>. Der TimeSeriesSlice kennt
+            die Zeitzone und berechnet die korrekten Zeitstempel unter Berücksichtigung der DST-Übergänge.
+        </p>
     </section>
 
     <section id="backend-patterns">
