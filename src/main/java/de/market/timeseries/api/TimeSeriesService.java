@@ -227,7 +227,7 @@ public class TimeSeriesService {
     // Filter-Preset-Operationen
     // ================================================================
 
-    public long createPreset(FilterPreset preset) throws SQLException {
+    public long createPreset(FilterPreset preset) {
         if (preset.getName() == null || preset.getName().isBlank()) {
             throw new IllegalArgumentException("Preset-Name darf nicht leer sein");
         }
@@ -237,15 +237,15 @@ public class TimeSeriesService {
         return presetRepo.create(preset);
     }
 
-    public Optional<FilterPreset> getPreset(long presetId) throws SQLException {
+    public Optional<FilterPreset> getPreset(long presetId) {
         return presetRepo.findById(presetId);
     }
 
-    public List<FilterPreset> getPresets(String pageKey, String userId) throws SQLException {
+    public List<FilterPreset> getPresets(String pageKey, String userId) {
         return presetRepo.findByPageKey(pageKey, userId);
     }
 
-    public boolean updatePreset(FilterPreset preset) throws SQLException {
+    public boolean updatePreset(FilterPreset preset) {
         if (preset.getName() == null || preset.getName().isBlank()) {
             throw new IllegalArgumentException("Preset-Name darf nicht leer sein");
         }
@@ -255,19 +255,19 @@ public class TimeSeriesService {
         return presetRepo.update(preset);
     }
 
-    public boolean deletePreset(long presetId) throws SQLException {
+    public boolean deletePreset(long presetId) {
         return presetRepo.delete(presetId);
     }
 
-    public void setPresetAsDefault(long presetId, String pageKey, String scope, String userId) throws SQLException {
+    public void setPresetAsDefault(long presetId, String pageKey, String scope, String userId) {
         presetRepo.setDefault(presetId, pageKey, scope, userId);
     }
 
-    public void clearPresetDefault(long presetId) throws SQLException {
+    public void clearPresetDefault(long presetId) {
         presetRepo.clearDefault(presetId);
     }
 
-    public Optional<FilterPreset> getDefaultPreset(String pageKey, String userId) throws SQLException {
+    public Optional<FilterPreset> getDefaultPreset(String pageKey, String userId) {
         return presetRepo.findDefault(pageKey, userId);
     }
 

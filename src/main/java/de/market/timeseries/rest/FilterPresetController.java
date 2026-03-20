@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -40,7 +39,7 @@ public class FilterPresetController {
 
     @GetMapping
     public ResponseEntity<List<FilterPresetResponse>> getPresets(
-            @RequestParam String pageKey) throws SQLException {
+            @RequestParam String pageKey) {
 
         String userId = SecurityUtils.getCurrentUserId();
         List<FilterPresetResponse> result = service.getPresets(pageKey, userId).stream()
@@ -51,7 +50,7 @@ public class FilterPresetController {
 
     @PostMapping
     public ResponseEntity<Map<String, Long>> create(
-            @RequestBody CreateFilterPresetRequest req) throws SQLException {
+            @RequestBody CreateFilterPresetRequest req) {
 
         String userId = SecurityUtils.getCurrentUserId();
 
@@ -83,7 +82,7 @@ public class FilterPresetController {
     @PutMapping("/{presetId}")
     public ResponseEntity<Void> update(
             @PathVariable long presetId,
-            @RequestBody CreateFilterPresetRequest req) throws SQLException {
+            @RequestBody CreateFilterPresetRequest req) {
 
         String userId = SecurityUtils.getCurrentUserId();
 
@@ -116,7 +115,7 @@ public class FilterPresetController {
     }
 
     @DeleteMapping("/{presetId}")
-    public ResponseEntity<Void> delete(@PathVariable long presetId) throws SQLException {
+    public ResponseEntity<Void> delete(@PathVariable long presetId) {
         String userId = SecurityUtils.getCurrentUserId();
 
         // Owner-Check
@@ -135,7 +134,7 @@ public class FilterPresetController {
     public ResponseEntity<Void> setDefault(
             @PathVariable long presetId,
             @RequestParam String pageKey,
-            @RequestParam String scope) throws SQLException {
+            @RequestParam String scope) {
 
         String userId = SecurityUtils.getCurrentUserId();
 
@@ -149,7 +148,7 @@ public class FilterPresetController {
     }
 
     @DeleteMapping("/{presetId}/default")
-    public ResponseEntity<Void> clearDefault(@PathVariable long presetId) throws SQLException {
+    public ResponseEntity<Void> clearDefault(@PathVariable long presetId) {
         String userId = SecurityUtils.getCurrentUserId();
 
         // Owner-Check
@@ -163,7 +162,7 @@ public class FilterPresetController {
 
     @GetMapping("/default")
     public ResponseEntity<FilterPresetResponse> getDefault(
-            @RequestParam String pageKey) throws SQLException {
+            @RequestParam String pageKey) {
 
         String userId = SecurityUtils.getCurrentUserId();
         return service.getDefaultPreset(pageKey, userId)
