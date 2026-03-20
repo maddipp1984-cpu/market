@@ -69,7 +69,10 @@ export function ZeitreihenPage({ tabId }: { tabId: string }) {
       tabId={tabId}
       columnOverrides={columnOverrides}
       emptyMessage="Keine Zeitreihen vorhanden"
-      onRowDoubleClick={(row) => openTab('timeseries-editor', { tsIds: [row.id as number] })}
+      onRowDoubleClick={(row) => {
+        const { start, end } = getDateRange([row]);
+        openTab('timeseries-editor', { tsIds: [row.id as number], start, end });
+      }}
       extraContextActions={extraActions}
     />
   );
