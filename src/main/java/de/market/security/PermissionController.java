@@ -1,4 +1,4 @@
-package de.market.timeseries.security;
+package de.market.security;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

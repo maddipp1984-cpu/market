@@ -1,4 +1,4 @@
-package de.market.timeseries.security;
+package de.market.security;
 
 import org.jooq.DSLContext;
 import org.jooq.Record;

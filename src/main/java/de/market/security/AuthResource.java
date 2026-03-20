@@ -1,4 +1,4 @@
-package de.market.timeseries.security;
+package de.market.security;
 
 public class AuthResource {
     private String resourceKey;

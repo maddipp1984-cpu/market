@@ -1,4 +1,4 @@
-package de.market.timeseries.security;
+package de.market.security;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;

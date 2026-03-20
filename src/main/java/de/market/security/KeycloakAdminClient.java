@@ -1,4 +1,4 @@
-package de.market.timeseries.security;
+package de.market.security;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

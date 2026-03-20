@@ -1,18 +1,23 @@
-package de.market.timeseries.security;
+package de.market.security;
 
-public class AuthPermission {
-    private int permissionId;
-    private int groupId;
+import java.util.HashSet;
+import java.util.Set;
+
+public class EffectivePermission {
     private String resourceKey;
-    private Integer objectTypeId; // nullable
+    private Integer objectTypeId; // nullable = resource-level
     private boolean canRead;
     private boolean canWrite;
     private boolean canDelete;
+    private Set<String> restrictedFields = new HashSet<>();
 
-    public int getPermissionId() { return permissionId; }
-    public void setPermissionId(int permissionId) { this.permissionId = permissionId; }
-    public int getGroupId() { return groupId; }
-    public void setGroupId(int groupId) { this.groupId = groupId; }
+    public EffectivePermission() {}
+
+    public EffectivePermission(String resourceKey, Integer objectTypeId) {
+        this.resourceKey = resourceKey;
+        this.objectTypeId = objectTypeId;
+    }
+
     public String getResourceKey() { return resourceKey; }
     public void setResourceKey(String resourceKey) { this.resourceKey = resourceKey; }
     public Integer getObjectTypeId() { return objectTypeId; }
@@ -23,4 +28,6 @@ public class AuthPermission {
     public void setCanWrite(boolean canWrite) { this.canWrite = canWrite; }
     public boolean isCanDelete() { return canDelete; }
     public void setCanDelete(boolean canDelete) { this.canDelete = canDelete; }
+    public Set<String> getRestrictedFields() { return restrictedFields; }
+    public void setRestrictedFields(Set<String> restrictedFields) { this.restrictedFields = restrictedFields; }
 }

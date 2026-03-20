@@ -1,4 +1,4 @@
-package de.market.timeseries.security;
+package de.market.security;
 
 public class AuthGroup {
     private int groupId;

@@ -1,4 +1,4 @@
-package de.market.timeseries.security;
+package de.market.security;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;

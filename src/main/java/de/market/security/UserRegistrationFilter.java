@@ -1,4 +1,4 @@
-package de.market.timeseries.security;
+package de.market.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

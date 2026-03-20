@@ -30,7 +30,7 @@
     <!-- ============================================ -->
     <appender name="USER_SIFT" class="ch.qos.logback.classic.sift.SiftingAppender">
         <!-- Nur authentifizierte Requests (kein Startup/Scheduler-Noise) -->
-        <filter class="de.market.timeseries.security.UserSessionLogFilter" />
+        <filter class="de.market.security.UserSessionLogFilter" />
         <discriminator>
             <key>userSession</key>
             <defaultValue>_unknown</defaultValue>

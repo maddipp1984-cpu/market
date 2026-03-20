@@ -1,4 +1,4 @@
-package de.market.timeseries.security;
+package de.market.security;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

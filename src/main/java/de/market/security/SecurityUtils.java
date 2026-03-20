@@ -1,4 +1,4 @@
-package de.market.timeseries.security;
+package de.market.security;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;

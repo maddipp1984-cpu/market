@@ -5,8 +5,8 @@ import de.market.timeseries.api.TimeSeriesService;
 import de.market.timeseries.model.FilterPreset;
 import de.market.timeseries.rest.dto.CreateFilterPresetRequest;
 import de.market.timeseries.rest.dto.FilterPresetResponse;
-import de.market.timeseries.security.PermissionService;
-import de.market.timeseries.security.SecurityUtils;
+import de.market.security.PermissionService;
+import de.market.security.SecurityUtils;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
