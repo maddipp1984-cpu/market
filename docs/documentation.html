@@ -1272,28 +1272,179 @@ Synthetische Summen-Zeitreihe im Editor (read-only)
         <p>10 vordefinierte Serien-Farben (Blau, Rot, Grün, Orange, Violett, Cyan, Pink, Lime, Dunkelorange, Indigo) sorgen für gute Unterscheidbarkeit bei Multi-Zeitreihen-Diagrammen.</p>
     </section>
 
-    <section id="uc-geschaeftspartner">
-        <h2>Geschäftspartner</h2>
+    <section id="uc-geschaeftspartner" class="page-break">
+        <h2>Use Case: Geschäftspartner</h2>
+
+        <h3>Übersicht</h3>
+        <p>Die Geschäftspartner-Verwaltung nutzt das Standard-CRUD-Pattern: OverviewPage für die Liste, DetailPage für Einzelbearbeitung.</p>
+
+        <h3>Funktionen</h3>
+        <ul>
+            <li><strong>Übersicht</strong> — Alle Geschäftspartner in tabellarischer Form (Kurzname, Name, Adresse, Stadt)</li>
+            <li><strong>Neu anlegen</strong> — Über Toolbar-Button "Neu" → Formular im neuen Tab</li>
+            <li><strong>Bearbeiten</strong> — Doppelklick auf Zeile → DetailPage im Edit-Modus</li>
+            <li><strong>Löschen</strong> — Einzeln (DetailPage) oder Mehrfachauswahl (OverviewPage)</li>
+            <li><strong>Filtern</strong> — FilterBuilder mit allen Spalten</li>
+        </ul>
+
+        <h3>Ansprechpartner</h3>
+        <p>Jeder Geschäftspartner kann beliebig viele Ansprechpartner haben. Diese werden als aufklappbare Karten (ContactPersonCard) dargestellt.</p>
+        <ul>
+            <li>Felder: Vorname, Nachname, E-Mail, Telefon, Funktionen (Abrechnung, BK-Verantwortlicher)</li>
+            <li>Hinzufügen/Entfernen direkt im Formular</li>
+            <li>Cascade-Speicherung: Beim Speichern des GP werden alle Ansprechpartner mit gespeichert (@OneToMany Cascade)</li>
+        </ul>
+
+        <h3>Validierung</h3>
+        <ul>
+            <li>Kurzname ist Pflichtfeld und muss eindeutig sein</li>
+            <li>Name ist Pflichtfeld</li>
+        </ul>
     </section>
 
     <section id="uc-waehrungen">
-        <h2>Währungen</h2>
+        <h2>Use Case: Währungen</h2>
+
+        <p>Einfaches CRUD-Modul für Währungen. Nutzt dasselbe Pattern wie Geschäftspartner (OverviewPage + DetailPage), aber ohne Nested-Entities.</p>
+        <ul>
+            <li><strong>Felder</strong>: ISO-Code (3 Zeichen, z.B. EUR), Name, Symbol</li>
+            <li><strong>Validierung</strong>: ISO-Code muss exakt 3 Zeichen lang und eindeutig sein</li>
+            <li><strong>Filtern</strong>: Über FilterBuilder oder POST /query Endpoint</li>
+        </ul>
     </section>
 
-    <section id="uc-batchplanung">
-        <h2>Batchplanung</h2>
+    <section id="uc-batchplanung" class="page-break">
+        <h2>Use Case: Batchplanung</h2>
+
+        <h3>Konzept</h3>
+        <p>Das Batch-System basiert auf dem Template→Instanz-Muster: Job-Typen werden im Code definiert (AbstractBatchJob), Planungen (Schedules) in der Datenbank. Pro Job-Typ können beliebig viele Schedules angelegt werden.</p>
+        <div class="diagram">
+Code (AbstractBatchJob)          Datenbank (batch_schedule)
+┌──────────────────────┐         ┌─────────────────────────┐
+│ CleanupOrphanedHeaders│ ◄──── │ Schedule 1: täglich 02:00│
+│ Job                   │         │ Schedule 2: manuell     │
+│  - getJobKey()        │         │ Schedule 3: alle 6h     │
+│  - getParameters()    │         └─────────────────────────┘
+│  - execute(params)    │
+└──────────────────────┘
+        </div>
+
+        <h3>Job-Katalog</h3>
+        <p>Der Endpoint <code>GET /api/batch-jobs/catalog</code> liefert alle verfügbaren Job-Typen mit ihren Parameterdefinitionen. Jeder Parameter hat einen Typ (STRING, INTEGER, BOOLEAN, DATE, ENUM, PATTERN), ob er Pflicht ist, und einen Defaultwert.</p>
+
+        <h3>Schedule anlegen</h3>
+        <ul>
+            <li><strong>Job-Typ wählen</strong> — Dropdown mit verfügbaren Jobs aus dem Katalog</li>
+            <li><strong>Schedule-Typ</strong>: NONE (nur manuell), CRON (Cron-Ausdruck), INTERVAL (Sekunden)</li>
+            <li><strong>Parameter</strong> — Dynamisches Formular basierend auf den Parameterdefinitionen des Job-Typs</li>
+            <li><strong>Aktivierung</strong> — Schedule wird sofort in Quartz registriert</li>
+        </ul>
+
+        <h3>Manuell auslösen</h3>
+        <p>Über den Button 'Jetzt ausführen' kann ein Schedule manuell getriggert werden. Optional können Parameter überschrieben werden.</p>
+
+        <h3>Historie</h3>
+        <ul>
+            <li>Alle Ausführungen mit Status (RUNNING, COMPLETED, FAILED)</li>
+            <li>Startzeit, Endzeit, Dauer</li>
+            <li>Anzahl bearbeiteter Datensätze</li>
+            <li>Logfile-Einsicht (text/plain)</li>
+            <li>Filterbar nach Schedule, Status, Zeitraum</li>
+        </ul>
     </section>
 
-    <section id="uc-benutzerverwaltung">
-        <h2>Benutzerverwaltung</h2>
+    <section id="uc-benutzerverwaltung" class="page-break">
+        <h2>Use Case: Benutzerverwaltung (Admin)</h2>
+
+        <div class="info-box">
+            <strong>Nur für Administratoren.</strong> Die Admin-Seiten sind nur sichtbar, wenn der angemeldete Benutzer Admin-Rechte hat.
+        </div>
+
+        <h3>Benutzer</h3>
+        <ul>
+            <li><strong>Liste</strong> — Alle registrierten Benutzer (aus lokaler DB, synchronisiert mit Keycloak)</li>
+            <li><strong>Anlegen</strong> — Benutzer in Keycloak erstellen (Benutzername, E-Mail, Passwort)</li>
+            <li><strong>Admin-Flag</strong> — Admin-Status setzen/entfernen (mit Lockout-Schutz: letzter Admin kann sich nicht selbst entfernen)</li>
+            <li><strong>Aktivieren/Deaktivieren</strong> — Benutzer in Keycloak sperren</li>
+            <li><strong>Passwort setzen</strong> — Passwort in Keycloak zurücksetzen</li>
+            <li><strong>Effektive Berechtigungen</strong> — Anzeige aller berechneten Rechte eines Benutzers</li>
+        </ul>
+
+        <h3>Gruppen</h3>
+        <ul>
+            <li><strong>Liste</strong> — Alle Gruppen mit Mitgliederzahl</li>
+            <li><strong>Anlegen/Bearbeiten</strong> — Name, Beschreibung</li>
+            <li><strong>Mitglieder</strong> — Benutzer hinzufügen/entfernen</li>
+            <li><strong>Berechtigungen</strong> — Pro Ressource und optional pro Objekttyp: Read/Write/Delete</li>
+        </ul>
+
+        <h3>Berechtigungs-Matrix</h3>
+        <p>Die Berechtigungs-Matrix zeigt alle Gruppen als Spalten und alle Ressourcen als Zeilen. Für jede Kombination können Read (R), Write (W) und Delete (D) Rechte gesetzt werden.</p>
+
+        <h3>Feld-Restriktionen</h3>
+        <p>Zusätzlich zu den CRUD-Rechten können pro Gruppe Feld-Restriktionen definiert werden. Diese schränken die Sichtbarkeit einzelner Felder ein (z.B. 'Preis' nur für bestimmte Gruppen).</p>
     </section>
 
     <section id="uc-sidebar">
-        <h2>Sidebar-Navigation</h2>
+        <h2>Use Case: Sidebar-Navigation</h2>
+
+        <h3>Aufbau</h3>
+        <p>Die Sidebar wird aus einer XML-Konfiguration (<code>sidebar.xml</code>) generiert und bietet eine hierarchische Baumnavigation.</p>
+        <div class="diagram">
+Daten/
+  ├─ Dashboard
+  └─ Zeitreihen
+Stammdaten/
+  ├─ Geschäftspartner
+  ├─ Objekte
+  ├─ Objekttypen
+  ├─ Einheiten
+  └─ Währungen
+System/
+  ├─ Batchplanung/
+  │  ├─ Planungen
+  │  └─ Historie
+  └─ Einstellungen
+Administration/        ← nur für Admins
+  ├─ Benutzer
+  ├─ Gruppen
+  └─ Berechtigungen
+        </div>
+
+        <h3>Berechtigungs-Filterung</h3>
+        <ul>
+            <li>Admin-Nodes (Administration/*) sind nur für Admins sichtbar</li>
+            <li>Andere Nodes werden nach ResourceKey gefiltert (nur sichtbar, wenn Benutzer Leserecht hat)</li>
+            <li>Fallback auf Frontend-Default, wenn Backend-API nicht erreichbar</li>
+        </ul>
+
+        <h3>Konfiguration</h3>
+        <p>Die Sidebar-Struktur wird in <code>src/main/resources/sidebar.xml</code> definiert. Änderungen erfordern einen Backend-Neustart. Das Frontend hat einen Fallback in <code>sidebarTree.ts</code>, der manuell synchron gehalten werden muss.</p>
     </section>
 
     <section id="uc-filter">
-        <h2>Filter-System</h2>
+        <h2>Use Case: Filter-System</h2>
+
+        <h3>FilterBuilder</h3>
+        <p>Jede OverviewPage hat einen integrierten FilterBuilder, der über den 'Filter'-Button in der Toolbar geöffnet wird.</p>
+        <ul>
+            <li><strong>Bedingungen</strong> — Spalte + Operator + Wert (mehrstufig)</li>
+            <li><strong>Operatoren</strong> — =, !=, &lt;, &gt;, &gt;=, &lt;=, LIKE, IN, BETWEEN, IS NULL, IS NOT NULL</li>
+            <li><strong>SQL-Preview</strong> — Zeigt die generierte WHERE-Klausel an</li>
+            <li><strong>Sichere Ausführung</strong> — Whitelist für Spalten, parametrisierte Werte, Max. 1000 Zeichen pro Wert</li>
+        </ul>
+
+        <h3>Filter-Presets</h3>
+        <ul>
+            <li><strong>Speichern</strong> — Aktuelle Filterbedingungen als Preset speichern (Name + Bedingungen)</li>
+            <li><strong>Laden</strong> — Gespeichertes Preset anwenden</li>
+            <li><strong>Default</strong> — Ein Preset pro Seite als Default markieren (wird beim Öffnen automatisch angewendet)</li>
+            <li><strong>Scopes</strong> — USER (nur für eigenen Benutzer) oder GLOBAL (für alle, nur Admins)</li>
+            <li><strong>Löschen</strong> — Eigene Presets oder GLOBAL-Presets (nur Admins)</li>
+        </ul>
+
+        <h3>Technische Details</h3>
+        <p>Filter werden über <code>POST /query</code> mit einem <code>FilterRequest</code> (Liste von <code>FilterCondition</code>-Objekten) an das Backend gesendet. Der <code>FilterQueryBuilder</code> validiert die Spalten gegen eine Whitelist und erzeugt parametrisierte SQL-WHERE-Klauseln.</p>
     </section>
 
 </main>
