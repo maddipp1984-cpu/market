@@ -7,7 +7,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.*;
 
 @RestController
@@ -34,7 +33,7 @@ public class AdminController {
         this.keycloakClient = keycloakClient;
     }
 
-    private UUID requireAdmin() throws SQLException {
+    private UUID requireAdmin() {
         UUID userId = UUID.fromString(SecurityUtils.getCurrentUserId());
         if (!permissionService.isAdmin(userId)) {
             throw new AccessDeniedException("Nur Administratoren haben Zugriff");
@@ -45,7 +44,7 @@ public class AdminController {
     // ==================== User Management ====================
 
     @GetMapping("/users")
-    public ResponseEntity<List<Map<String, Object>>> getUsers() throws SQLException {
+    public ResponseEntity<List<Map<String, Object>>> getUsers() {
         requireAdmin();
         List<AuthUser> dbUsers = userRepo.findAll();
         List<Map<String, Object>> result = new ArrayList<>();
@@ -66,7 +65,7 @@ public class AdminController {
 
     @PostMapping("/users")
     public ResponseEntity<Map<String, String>> createUser(@RequestBody Map<String, String> body)
-            throws SQLException, IOException, InterruptedException {
+            throws IOException, InterruptedException {
         requireAdmin();
         String username = body.get("username");
         String email = body.get("email");
@@ -85,7 +84,7 @@ public class AdminController {
     }
 
     @PutMapping("/users/{id}/admin")
-    public ResponseEntity<Void> setAdmin(@PathVariable String id, @RequestBody Map<String, Boolean> body) throws SQLException {
+    public ResponseEntity<Void> setAdmin(@PathVariable String id, @RequestBody Map<String, Boolean> body) {
         UUID currentUserId = requireAdmin();
         UUID targetUserId = UUID.fromString(id);
         boolean newAdminState = body.getOrDefault("isAdmin", false);
@@ -108,7 +107,7 @@ public class AdminController {
 
     @PutMapping("/users/{id}/enabled")
     public ResponseEntity<Void> setEnabled(@PathVariable String id, @RequestBody Map<String, Boolean> body)
-            throws SQLException, IOException, InterruptedException {
+            throws IOException, InterruptedException {
         requireAdmin();
         String validId = UUID.fromString(id).toString(); // UUID-Validierung gegen Path Traversal
         boolean enabled = body.getOrDefault("enabled", true);
@@ -119,7 +118,7 @@ public class AdminController {
 
     @PutMapping("/users/{id}/password")
     public ResponseEntity<Void> resetPassword(@PathVariable String id, @RequestBody Map<String, String> body)
-            throws SQLException, IOException, InterruptedException {
+            throws IOException, InterruptedException {
         requireAdmin();
         String validId = UUID.fromString(id).toString(); // UUID-Validierung gegen Path Traversal
         String password = body.get("password");
@@ -134,7 +133,7 @@ public class AdminController {
     // ==================== Group Management ====================
 
     @GetMapping("/groups")
-    public ResponseEntity<List<Map<String, Object>>> getGroups() throws SQLException {
+    public ResponseEntity<List<Map<String, Object>>> getGroups() {
         requireAdmin();
         List<AuthGroup> groups = groupRepo.findAll();
         List<Map<String, Object>> result = new ArrayList<>();
@@ -150,44 +149,40 @@ public class AdminController {
     }
 
     @GetMapping("/groups/{id}")
-    public ResponseEntity<Map<String, Object>> getGroup(@PathVariable int id) throws SQLException {
+    public ResponseEntity<Map<String, Object>> getGroup(@PathVariable int id) {
         requireAdmin();
         return groupRepo.findById(id)
             .map(g -> {
-                try {
-                    Map<String, Object> map = new LinkedHashMap<>();
-                    map.put("groupId", g.getGroupId());
-                    map.put("name", g.getName());
-                    map.put("description", g.getDescription());
+                Map<String, Object> map = new LinkedHashMap<>();
+                map.put("groupId", g.getGroupId());
+                map.put("name", g.getName());
+                map.put("description", g.getDescription());
 
-                    // Members
-                    List<UUID> memberIds = groupRepo.findMemberIds(g.getGroupId());
-                    List<Map<String, Object>> members = new ArrayList<>();
-                    for (UUID uid : memberIds) {
-                        userRepo.findById(uid).ifPresent(u -> {
-                            Map<String, Object> m = new LinkedHashMap<>();
-                            m.put("userId", u.getUserId().toString());
-                            m.put("username", u.getUsername());
-                            m.put("email", u.getEmail());
-                            members.add(m);
-                        });
-                    }
-                    map.put("members", members);
-
-                    // Permissions
-                    map.put("permissions", permRepo.findByGroupId(g.getGroupId()));
-                    map.put("fieldRestrictions", permRepo.findRestrictionsByGroupId(g.getGroupId()));
-
-                    return ResponseEntity.ok(map);
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
+                // Members
+                List<UUID> memberIds = groupRepo.findMemberIds(g.getGroupId());
+                List<Map<String, Object>> members = new ArrayList<>();
+                for (UUID uid : memberIds) {
+                    userRepo.findById(uid).ifPresent(u -> {
+                        Map<String, Object> m = new LinkedHashMap<>();
+                        m.put("userId", u.getUserId().toString());
+                        m.put("username", u.getUsername());
+                        m.put("email", u.getEmail());
+                        members.add(m);
+                    });
                 }
+                map.put("members", members);
+
+                // Permissions
+                map.put("permissions", permRepo.findByGroupId(g.getGroupId()));
+                map.put("fieldRestrictions", permRepo.findRestrictionsByGroupId(g.getGroupId()));
+
+                return ResponseEntity.ok(map);
             })
             .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/groups")
-    public ResponseEntity<Map<String, Integer>> createGroup(@RequestBody Map<String, String> body) throws SQLException {
+    public ResponseEntity<Map<String, Integer>> createGroup(@RequestBody Map<String, String> body) {
         requireAdmin();
         String name = body.get("name");
         String description = body.get("description");
@@ -197,7 +192,7 @@ public class AdminController {
     }
 
     @PutMapping("/groups/{id}")
-    public ResponseEntity<Void> updateGroup(@PathVariable int id, @RequestBody Map<String, String> body) throws SQLException {
+    public ResponseEntity<Void> updateGroup(@PathVariable int id, @RequestBody Map<String, String> body) {
         requireAdmin();
         String name = body.get("name");
         String description = body.get("description");
@@ -207,7 +202,7 @@ public class AdminController {
     }
 
     @DeleteMapping("/groups/{id}")
-    public ResponseEntity<Void> deleteGroup(@PathVariable int id) throws SQLException {
+    public ResponseEntity<Void> deleteGroup(@PathVariable int id) {
         requireAdmin();
         groupRepo.delete(id);
         audit.info("Gruppe geloescht: {}, durch Admin {}", id, SecurityUtils.getCurrentUsername());
@@ -215,7 +210,7 @@ public class AdminController {
     }
 
     @PostMapping("/groups/{id}/members")
-    public ResponseEntity<Void> addMember(@PathVariable int id, @RequestBody Map<String, String> body) throws SQLException {
+    public ResponseEntity<Void> addMember(@PathVariable int id, @RequestBody Map<String, String> body) {
         requireAdmin();
         String userId = body.get("userId");
         if (userId == null) throw new IllegalArgumentException("userId ist erforderlich");
@@ -224,7 +219,7 @@ public class AdminController {
     }
 
     @DeleteMapping("/groups/{id}/members/{userId}")
-    public ResponseEntity<Void> removeMember(@PathVariable int id, @PathVariable String userId) throws SQLException {
+    public ResponseEntity<Void> removeMember(@PathVariable int id, @PathVariable String userId) {
         requireAdmin();
         groupRepo.removeMember(id, UUID.fromString(userId));
         return ResponseEntity.noContent().build();
@@ -233,7 +228,7 @@ public class AdminController {
     // ==================== Permissions ====================
 
     @PutMapping("/groups/{id}/permissions")
-    public ResponseEntity<Void> setPermissions(@PathVariable int id, @RequestBody List<AuthPermission> permissions) throws SQLException {
+    public ResponseEntity<Void> setPermissions(@PathVariable int id, @RequestBody List<AuthPermission> permissions) {
         requireAdmin();
         for (AuthPermission p : permissions) {
             p.setGroupId(id);
@@ -243,7 +238,7 @@ public class AdminController {
     }
 
     @PutMapping("/groups/{id}/field-restrictions")
-    public ResponseEntity<Void> setFieldRestrictions(@PathVariable int id, @RequestBody List<AuthFieldRestriction> restrictions) throws SQLException {
+    public ResponseEntity<Void> setFieldRestrictions(@PathVariable int id, @RequestBody List<AuthFieldRestriction> restrictions) {
         requireAdmin();
         for (AuthFieldRestriction r : restrictions) {
             r.setGroupId(id);
@@ -253,13 +248,13 @@ public class AdminController {
     }
 
     @GetMapping("/resources")
-    public ResponseEntity<List<AuthResource>> getResources() throws SQLException {
+    public ResponseEntity<List<AuthResource>> getResources() {
         requireAdmin();
         return ResponseEntity.ok(resourceRepo.findAll());
     }
 
     @GetMapping("/users/{id}/effective")
-    public ResponseEntity<Map<String, Object>> getUserEffective(@PathVariable String id) throws SQLException {
+    public ResponseEntity<Map<String, Object>> getUserEffective(@PathVariable String id) {
         requireAdmin();
         UUID userId = UUID.fromString(id);
         boolean admin = permissionService.isAdmin(userId);

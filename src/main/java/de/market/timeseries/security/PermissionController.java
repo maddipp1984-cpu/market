@@ -5,7 +5,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.sql.SQLException;
 import java.util.*;
 
 @RestController
@@ -19,7 +18,7 @@ public class PermissionController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<Map<String, Object>> getMyPermissions() throws SQLException {
+    public ResponseEntity<Map<String, Object>> getMyPermissions() {
         UUID userId = UUID.fromString(SecurityUtils.getCurrentUserId());
         boolean admin = permissionService.isAdmin(userId);
         List<EffectivePermission> perms = admin ? Collections.emptyList() : permissionService.getEffectivePermissions(userId);

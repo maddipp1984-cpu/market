@@ -1,73 +1,58 @@
 package de.market.timeseries.security;
 
+import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
 
-import javax.sql.DataSource;
-import java.sql.*;
-import java.time.OffsetDateTime;
 import java.util.*;
+
+import static de.market.jooq.generated.tables.TsAuthUser.TS_AUTH_USER;
 
 @Repository
 public class AuthUserRepository {
 
-    private final DataSource dataSource;
+    private final DSLContext dsl;
 
-    public AuthUserRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
+    public AuthUserRepository(DSLContext dsl) {
+        this.dsl = dsl;
     }
 
-    public Optional<AuthUser> findById(UUID userId) throws SQLException {
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(
-                 "SELECT user_id, username, email, is_admin, created_at FROM ts_auth_user WHERE user_id = ?")) {
-            ps.setObject(1, userId);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? Optional.of(mapRow(rs)) : Optional.empty();
-            }
-        }
+    public Optional<AuthUser> findById(UUID userId) {
+        return dsl.selectFrom(TS_AUTH_USER)
+                .where(TS_AUTH_USER.USER_ID.eq(userId))
+                .fetchOptional(this::mapRow);
     }
 
-    public List<AuthUser> findAll() throws SQLException {
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(
-                 "SELECT user_id, username, email, is_admin, created_at FROM ts_auth_user ORDER BY username")) {
-            try (ResultSet rs = ps.executeQuery()) {
-                List<AuthUser> list = new ArrayList<>();
-                while (rs.next()) list.add(mapRow(rs));
-                return list;
-            }
-        }
+    public List<AuthUser> findAll() {
+        return dsl.selectFrom(TS_AUTH_USER)
+                .orderBy(TS_AUTH_USER.USERNAME)
+                .fetch(this::mapRow);
     }
 
-    public void upsert(UUID userId, String username, String email) throws SQLException {
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(
-                 "INSERT INTO ts_auth_user (user_id, username, email) VALUES (?, ?, ?) " +
-                 "ON CONFLICT (user_id) DO UPDATE SET username = EXCLUDED.username, email = EXCLUDED.email")) {
-            ps.setObject(1, userId);
-            ps.setString(2, username);
-            ps.setString(3, email);
-            ps.executeUpdate();
-        }
+    public void upsert(UUID userId, String username, String email) {
+        dsl.insertInto(TS_AUTH_USER)
+                .set(TS_AUTH_USER.USER_ID, userId)
+                .set(TS_AUTH_USER.USERNAME, username)
+                .set(TS_AUTH_USER.EMAIL, email)
+                .onDuplicateKeyUpdate()
+                .set(TS_AUTH_USER.USERNAME, username)
+                .set(TS_AUTH_USER.EMAIL, email)
+                .execute();
     }
 
-    public void setAdmin(UUID userId, boolean admin) throws SQLException {
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(
-                 "UPDATE ts_auth_user SET is_admin = ? WHERE user_id = ?")) {
-            ps.setBoolean(1, admin);
-            ps.setObject(2, userId);
-            ps.executeUpdate();
-        }
+    public void setAdmin(UUID userId, boolean admin) {
+        dsl.update(TS_AUTH_USER)
+                .set(TS_AUTH_USER.IS_ADMIN, admin)
+                .where(TS_AUTH_USER.USER_ID.eq(userId))
+                .execute();
     }
 
-    private AuthUser mapRow(ResultSet rs) throws SQLException {
+    private AuthUser mapRow(org.jooq.Record r) {
         AuthUser u = new AuthUser();
-        u.setUserId(rs.getObject("user_id", UUID.class));
-        u.setUsername(rs.getString("username"));
-        u.setEmail(rs.getString("email"));
-        u.setAdmin(rs.getBoolean("is_admin"));
-        u.setCreatedAt(rs.getObject("created_at", OffsetDateTime.class));
+        u.setUserId(r.get(TS_AUTH_USER.USER_ID));
+        u.setUsername(r.get(TS_AUTH_USER.USERNAME));
+        u.setEmail(r.get(TS_AUTH_USER.EMAIL));
+        u.setAdmin(Boolean.TRUE.equals(r.get(TS_AUTH_USER.IS_ADMIN)));
+        u.setCreatedAt(r.get(TS_AUTH_USER.CREATED_AT));
         return u;
     }
 }

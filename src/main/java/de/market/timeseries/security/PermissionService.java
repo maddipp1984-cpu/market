@@ -4,7 +4,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
-import java.sql.SQLException;
 import java.util.*;
 
 @Service
@@ -21,18 +20,18 @@ public class PermissionService {
         this.permRepo = permRepo;
     }
 
-    public void registerUser(Jwt jwt) throws SQLException {
+    public void registerUser(Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
         String username = jwt.getClaimAsString("preferred_username");
         String email = jwt.getClaimAsString("email");
         userRepo.upsert(userId, username, email);
     }
 
-    public boolean isAdmin(UUID userId) throws SQLException {
+    public boolean isAdmin(UUID userId) {
         return userRepo.findById(userId).map(AuthUser::isAdmin).orElse(false);
     }
 
-    public List<EffectivePermission> getEffectivePermissions(UUID userId) throws SQLException {
+    public List<EffectivePermission> getEffectivePermissions(UUID userId) {
         // Admin gets everything
         if (isAdmin(userId)) {
             return Collections.emptyList(); // Frontend checks isAdmin separately
@@ -86,7 +85,7 @@ public class PermissionService {
         return new ArrayList<>(effectiveMap.values());
     }
 
-    public Set<String> getVisibleResourceKeys(UUID userId) throws SQLException {
+    public Set<String> getVisibleResourceKeys(UUID userId) {
         if (isAdmin(userId)) return null; // null = all visible (admin)
 
         List<EffectivePermission> perms = getEffectivePermissions(userId);
@@ -99,7 +98,7 @@ public class PermissionService {
         return visible;
     }
 
-    public void checkAccess(UUID userId, String resourceKey, Integer objectTypeId, String scope) throws SQLException {
+    public void checkAccess(UUID userId, String resourceKey, Integer objectTypeId, String scope) {
         if (isAdmin(userId)) return;
 
         List<EffectivePermission> perms = getEffectivePermissions(userId);
@@ -128,7 +127,7 @@ public class PermissionService {
         if (!allowed) throw new AccessDeniedException("Zugriff verweigert");
     }
 
-    public Set<Integer> getPermittedTypeIds(UUID userId, String resourceKey, String scope) throws SQLException {
+    public Set<Integer> getPermittedTypeIds(UUID userId, String resourceKey, String scope) {
         if (isAdmin(userId)) return null; // null = all types allowed
 
         List<EffectivePermission> perms = getEffectivePermissions(userId);
@@ -147,7 +146,7 @@ public class PermissionService {
         return allowed;
     }
 
-    public Set<String> getRestrictedFields(UUID userId, String resourceKey, Integer objectTypeId) throws SQLException {
+    public Set<String> getRestrictedFields(UUID userId, String resourceKey, Integer objectTypeId) {
         if (isAdmin(userId)) return Collections.emptySet();
 
         List<EffectivePermission> perms = getEffectivePermissions(userId);

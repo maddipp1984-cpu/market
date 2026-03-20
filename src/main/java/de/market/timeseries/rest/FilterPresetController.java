@@ -32,7 +32,7 @@ public class FilterPresetController {
         this.permissionService = permissionService;
     }
 
-    private void checkOwnerOrAdmin(FilterPreset existing, String currentUserId) throws SQLException {
+    private void checkOwnerOrAdmin(FilterPreset existing, String currentUserId) {
         if (existing.getUserId() != null && existing.getUserId().equals(currentUserId)) return;
         if (permissionService.isAdmin(UUID.fromString(currentUserId))) return;
         throw new AccessDeniedException("Zugriff verweigert");
