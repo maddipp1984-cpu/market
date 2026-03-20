@@ -239,8 +239,11 @@ src/main/java/de/market/
         repository/
             HeaderRepository.java          -- @Repository (jOOQ), CRUD ts_header
             ObjectRepository.java          -- @Repository (jOOQ), CRUD ts_object
-            TimeSeriesRepository.java      -- @Repository (jOOQ + dsl.connection()), Lesen/Schreiben/Löschen
-            TimeSeriesOverviewRepository.java -- @Repository (jOOQ), Übersicht
+            TimeSeriesRepository.java      -- @Repository (jOOQ DSL), delegiert DB-spezifisches an Procedures
+            TimeSeriesProcedures.java      -- Interface: DB-spezifische Operationen (Procedures, Arrays)
+            PostgresTimeSeriesProcedures.java -- @Profile("!oracle"), PL/pgSQL + PostgreSQL-Arrays
+            OracleTimeSeriesProcedures.java -- @Profile("oracle"), PL/SQL (Stub)
+            TimeSeriesOverviewRepository.java -- @Repository (jOOQ DSL), Übersicht mit CTE
         rest/
             TimeSeriesController.java      -- @RestController /api/timeseries + /aggregate
             TimeSeriesOverviewController.java -- @RestController /api/timeseries-overview
@@ -319,7 +322,9 @@ TS_DB_PASSWORD=postgres
 - **Spring-Integration**: `spring-boot-starter-jooq` liefert `DSLContext`-Bean + Transaction-Integration
 - **Generierte Klassen**: Werden committed (kein DB-Container für Build nötig)
 - **Filter**: `JooqFilterBuilder.build(conditions, allowedColumns)` → jOOQ `Condition`
-- **Stored Procedures**: Aufrufe via `dsl.connection(conn -> { ... })` für direkten Connection-Zugriff
+- **DB-Abstraktion**: `TimeSeriesProcedures` Interface + `@Profile`-Implementierungen (PostgreSQL aktiv, Oracle Stub)
+- **SQL→jOOQ Workflow**: Query im SQL Developer entwickeln → auf https://www.jooq.org/translate/ übersetzen → jOOQ DSL ins Repository einfügen
+- **Raw SQL Escape-Hatch**: Jederzeit möglich via `dsl.resultQuery("SELECT ...", params)` oder `dsl.connection(conn -> { ... })` für JDBC-Zugriff
 
 ## Benchmark
 - **Code:** `src/main/java/de/market/benchmark/Benchmark.java`
