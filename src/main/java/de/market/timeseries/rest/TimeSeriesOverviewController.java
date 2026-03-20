@@ -1,14 +1,14 @@
 package de.market.timeseries.rest;
 
 import de.market.shared.dto.ColumnMeta;
-import de.market.shared.dto.FilterQueryBuilder;
 import de.market.shared.dto.FilterRequest;
+import de.market.shared.dto.JooqFilterBuilder;
 import de.market.shared.dto.TableResponse;
 import de.market.timeseries.repository.TimeSeriesOverviewRepository;
+import org.jooq.Condition;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,18 +43,17 @@ public class TimeSeriesOverviewController {
     }
 
     @GetMapping
-    public ResponseEntity<TableResponse> getAll() throws SQLException {
+    public ResponseEntity<TableResponse> getAll() {
         List<Map<String, Object>> data = repository.findAllAsRows();
         return ResponseEntity.ok(new TableResponse(COLUMNS, data));
     }
 
     @PostMapping("/query")
-    public ResponseEntity<TableResponse> query(@RequestBody FilterRequest request) throws SQLException {
+    public ResponseEntity<TableResponse> query(@RequestBody FilterRequest request) {
         List<Map<String, Object>> data;
         if (request.getConditions() != null && !request.getConditions().isEmpty()) {
-            FilterQueryBuilder.WhereClause where = FilterQueryBuilder.build(
-                    request.getConditions(), ALLOWED_SQL_COLUMNS);
-            data = repository.findFiltered(where.getSql(), where.getParams());
+            Condition condition = JooqFilterBuilder.build(request.getConditions(), ALLOWED_SQL_COLUMNS);
+            data = repository.findFiltered(condition);
         } else {
             data = repository.findAllAsRows();
         }
