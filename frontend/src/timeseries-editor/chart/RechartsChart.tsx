@@ -8,9 +8,9 @@ import type { ChartProps } from './chartTypes';
 import { SERIES_COLORS } from './chartTypes';
 import { downsampleForChart } from './chartUtils';
 
-export function RechartsChart({ rows, headers, dimension }: ChartProps) {
+export function RechartsChart({ rows, headers, dimension, maxPoints }: ChartProps) {
   const data = useMemo(() => {
-    const points = downsampleForChart(rows, headers);
+    const points = downsampleForChart(rows, headers, maxPoints);
     return points.map(p => {
       const entry: Record<string, unknown> = {
         ts: p.timestampMs,

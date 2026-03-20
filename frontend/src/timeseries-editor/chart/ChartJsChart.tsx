@@ -17,7 +17,7 @@ ChartJS.register(
   Tooltip, Legend, Filler, zoomPlugin,
 );
 
-export function ChartJsChart({ rows, headers, dimension }: ChartProps) {
+export function ChartJsChart({ rows, headers, dimension, maxPoints }: ChartProps) {
   const chartRef = useRef<ChartJS<'line'>>(null);
 
   // Reset zoom when data changes
@@ -26,7 +26,7 @@ export function ChartJsChart({ rows, headers, dimension }: ChartProps) {
   }, [rows]);
 
   const { data, options } = useMemo(() => {
-    const points = downsampleForChart(rows, headers);
+    const points = downsampleForChart(rows, headers, maxPoints);
 
     const labels = points.map(p => formatTimestamp(p.timestampMs, dimension));
     const datasets = headers.map((h, i) => ({

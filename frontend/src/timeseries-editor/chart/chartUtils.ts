@@ -1,6 +1,14 @@
 import type { MultiSeriesRow, TimeSeriesHeaderResponse } from '../../api/types';
 
-const DEFAULT_MAX_POINTS = 5000;
+export const CHART_POINT_OPTIONS = [
+  { value: 5000, label: '5.000' },
+  { value: 10000, label: '10.000' },
+  { value: 25000, label: '25.000' },
+  { value: 50000, label: '50.000' },
+  { value: 0, label: 'Alle' },
+];
+
+export const DEFAULT_MAX_POINTS = 5000;
 
 export interface DownsampledPoint {
   index: number;
@@ -11,13 +19,15 @@ export interface DownsampledPoint {
 /**
  * Downsamples rows to maxPoints by taking every Nth point.
  * Converts NaN to null for chart libraries.
+ * maxPoints=0 means no limit (all points).
  */
 export function downsampleForChart(
   rows: MultiSeriesRow[],
   headers: TimeSeriesHeaderResponse[],
   maxPoints = DEFAULT_MAX_POINTS,
 ): DownsampledPoint[] {
-  const step = rows.length > maxPoints ? Math.ceil(rows.length / maxPoints) : 1;
+  const limit = maxPoints > 0 ? maxPoints : rows.length;
+  const step = rows.length > limit ? Math.ceil(rows.length / limit) : 1;
   const result: DownsampledPoint[] = [];
   for (let i = 0; i < rows.length; i += step) {
     const r = rows[i];

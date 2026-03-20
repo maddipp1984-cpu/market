@@ -4,6 +4,7 @@ export interface ChartProps {
   rows: MultiSeriesRow[];
   headers: TimeSeriesHeaderResponse[];
   dimension: Dimension;
+  maxPoints?: number;  // 0 = alle Punkte
 }
 
 export const SERIES_COLORS = [

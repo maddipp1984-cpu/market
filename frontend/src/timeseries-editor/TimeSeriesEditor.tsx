@@ -11,6 +11,7 @@ import type { Dimension } from '../api/types';
 import { RechartsChart } from './chart/RechartsChart';
 import { ChartJsChart } from './chart/ChartJsChart';
 import { LightweightChart } from './chart/LightweightChart';
+import { CHART_POINT_OPTIONS, DEFAULT_MAX_POINTS } from './chart/chartUtils';
 import './TimeSeriesEditor.css';
 
 type ChartLib = 'none' | 'recharts' | 'chartjs' | 'lightweight';
@@ -32,6 +33,7 @@ export function TimeSeriesEditor({ tsIds, start, end, aggregateMode }: TimeSerie
   const [decimals, setDecimals] = useState(5);
   const [viewDimension, setViewDimension] = useState<Dimension | null>(null);
   const [chartLib, setChartLib] = useState<ChartLib>('none');
+  const [chartMaxPoints, setChartMaxPoints] = useState(DEFAULT_MAX_POINTS);
 
   useEffect(() => {
     const key = `${tsIds.join(',')}|${start}|${end}`;
@@ -139,6 +141,18 @@ export function TimeSeriesEditor({ tsIds, start, end, aggregateMode }: TimeSerie
               <option value="lightweight">Lightweight</option>
             </select>
           </FormField>
+          {chartLib !== 'none' && (
+            <FormField label="Datenpunkte" compact>
+              <select
+                value={chartMaxPoints}
+                onChange={(e) => setChartMaxPoints(Number(e.target.value))}
+              >
+                {CHART_POINT_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </FormField>
+          )}
           <FormField label="Nachkommastellen" compact>
             <input
               type="number"
@@ -162,9 +176,9 @@ export function TimeSeriesEditor({ tsIds, start, end, aggregateMode }: TimeSerie
 
       {displayRows.length > 0 && headers.length > 0 && viewDimension && chartLib !== 'none' && (
         <div style={{ padding: 'var(--space-sm) 0' }}>
-          {chartLib === 'recharts' && <RechartsChart rows={displayRows} headers={headers} dimension={viewDimension} />}
-          {chartLib === 'chartjs' && <ChartJsChart rows={displayRows} headers={headers} dimension={viewDimension} />}
-          {chartLib === 'lightweight' && <LightweightChart rows={displayRows} headers={headers} dimension={viewDimension} />}
+          {chartLib === 'recharts' && <RechartsChart rows={displayRows} headers={headers} dimension={viewDimension} maxPoints={chartMaxPoints} />}
+          {chartLib === 'chartjs' && <ChartJsChart rows={displayRows} headers={headers} dimension={viewDimension} maxPoints={chartMaxPoints} />}
+          {chartLib === 'lightweight' && <LightweightChart rows={displayRows} headers={headers} dimension={viewDimension} maxPoints={chartMaxPoints} />}
         </div>
       )}
 

@@ -4,13 +4,13 @@ import type { ChartProps } from './chartTypes';
 import { SERIES_COLORS } from './chartTypes';
 import { downsampleForChart } from './chartUtils';
 
-export function LightweightChart({ rows, headers, dimension: _dimension }: ChartProps) {
+export function LightweightChart({ rows, headers, dimension: _dimension, maxPoints }: ChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Line'>[]>([]);
 
   const seriesData = useMemo(() => {
-    const points = downsampleForChart(rows, headers);
+    const points = downsampleForChart(rows, headers, maxPoints);
     return headers.map((_, s) => {
       const result: { time: UTCTimestamp; value: number }[] = [];
       for (const p of points) {
