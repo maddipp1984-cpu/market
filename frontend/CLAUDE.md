@@ -52,9 +52,18 @@ frontend/
       FormField.tsx + FormField.css   -- Label + Input/Select (compact-Variante)
       PageLayout.tsx + PageLayout.css -- Seiten-Layout (optionaler maxWidth, Titel)
       StatusMessage.tsx + .css        -- Error/Info-Meldungen
+    auth/                             -- Keycloak-Authentifizierung + RBAC
+      keycloak.ts                     -- Keycloak-Init + Token-Handling
+      AuthContext.tsx                 -- React Context (authenticated, canRead/Write/Delete, isAdmin)
     api/                              -- Shared: REST-Client + Typen
-      client.ts                       -- fetchHeader, fetchValues, writeDay
+      client.ts                       -- fetchHeader, fetchValues, writeDay, authFetch, Admin-API
       types.ts                        -- Dimension, MultiSeriesRow, etc.
+    admin/                            -- Feature: Benutzerverwaltung (nur fuer Admins)
+      AdminUsersPage.tsx              -- Benutzerliste
+      AdminUserDetailPage.tsx         -- Benutzer-Detail
+      AdminGroupsPage.tsx             -- Gruppen-Verwaltung
+      AdminPermissionsPage.tsx        -- Berechtigungs-Verwaltung
+      Admin.css                       -- Admin-Styles
     timeseries-editor/                -- Feature: Zeitreihen-Editor
       TimeSeriesEditorPage.tsx        -- Tab-Seite (Formular + Editor, tabId Prop)
       TimeSeriesEditor.tsx            -- Hauptkomponente (Filter, Aggregation, Save)
@@ -66,6 +75,12 @@ frontend/
       table/
         ValuesTable.tsx               -- Virtualisierte Tabelle mit Inline-Editing
         ValuesTable.css               -- Grid-Table-Styles (Tabelle, Zellen, Editing)
+      chart/
+        RechartsChart.tsx             -- Recharts-Variante
+        ChartJsChart.tsx              -- Chart.js-Variante
+        LightweightChart.tsx          -- Lightweight Charts-Variante
+        chartUtils.ts                 -- Downsampling (max 5000 Punkte)
+        chartTypes.ts                 -- Typen + Farben
     pages/                            -- Weitere Seiten
       DashboardPage.tsx               -- KPI-Uebersicht
       BusinessPartnerPage.tsx         -- GP-Uebersicht (OverviewPage-Template)
@@ -76,6 +91,14 @@ frontend/
       ObjekttypenPage.tsx             -- Objekttypen (Platzhalter)
       EinheitenPage.tsx               -- Einheiten (Platzhalter)
       WaehrungenPage.tsx              -- Waehrungen (Platzhalter)
+      ZeitreihenPage.tsx              -- Zeitreihen-Uebersicht
+      ObjektNeuPage.tsx               -- Objekt anlegen
+      currency/
+        CurrencyDetailPage.tsx        -- Waehrungs-Detail (DetailPage-Template)
+      scheduling/
+        BatchSchedulePage.tsx         -- Schedule-Uebersicht
+        BatchScheduleDetailPage.tsx   -- Schedule-Detail (mit CSS)
+        BatchHistoryPage.tsx          -- Ausfuehrungs-Historie
       SettingsPage.tsx                -- Einstellungen (Platzhalter)
     App.tsx                           -- TabProvider + AppShell (kein Router)
     main.tsx                          -- React-Einstiegspunkt (tokens, base)
@@ -178,11 +201,24 @@ Bevor eine UI-Komponente in einer Page gebaut wird, IMMER zuerst in `src/shared/
 | Header lesen | GET | `/api/timeseries/{tsId}` |
 | Werte lesen | GET | `/api/timeseries/{tsId}/values?start=...&end=...` |
 | Tag schreiben | POST | `/api/timeseries/{tsId}/values` |
+| Zeitreihen aggregieren | POST | `/api/timeseries/aggregate` |
+| Zeitreihen-Uebersicht | GET | `/api/timeseries-overview` |
+| Zeitreihen filtern | POST | `/api/timeseries-overview/query` |
+| Sidebar-Baum | GET | `/api/config/sidebar` |
+| Geschaeftspartner CRUD | GET/POST/PUT/DELETE | `/api/business-partners` |
+| Waehrungen CRUD | GET/POST/PUT/DELETE | `/api/currencies` |
+| Batch-Schedules CRUD | GET/POST/PUT/DELETE | `/api/batch-schedules` |
+| Batch-Historie | GET | `/api/batch-history` |
+| Job-Katalog | GET | `/api/batch-jobs/catalog` |
+| Eigene Berechtigungen | GET | `/api/permissions/me` |
+| Admin-API | GET/POST/PUT/DELETE | `/api/admin/*` (Users, Groups, Permissions) |
 
 ## Dependencies
 - react, react-dom: ^18.3
-- react-router-dom: ^7 (installiert, aber nicht aktiv genutzt)
+- react-router-dom: ^7.13 (installiert, aber nicht aktiv genutzt)
 - @tanstack/react-table: ^8.20
 - @tanstack/react-virtual: ^3.11
-- @headless-tree/core + @headless-tree/react: Baumnavigation
+- @headless-tree/core + @headless-tree/react: ^1.6 Baumnavigation
+- keycloak-js: 26.1 — Keycloak-Authentifizierung
+- recharts: ^3.8, chart.js: ^4.5 + react-chartjs-2: ^5.3, lightweight-charts: ^5.1 — 3 Chart-Bibliotheken zum Vergleich
 - vite: ^4.5, typescript: ~5.6, @vitejs/plugin-react: ^4.3

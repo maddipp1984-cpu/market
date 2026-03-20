@@ -42,6 +42,7 @@ Spring Boot 3.4.x Anwendung mit dualem Persistenz-Ansatz: Raw JDBC für Zeitreih
 - **`timeseries.model`** — POJOs + Enums (keine Spring-Annotationen)
 - **`currency`** — Währungs-CRUD (JPA Entity auf `ts_currency`, REST `/api/currencies`)
 - **`scheduling`** — Batch-Job-System (Quartz Scheduler, REST `/api/batch-jobs`)
+- **`timeseries.security`** — Auth & Berechtigungen (Keycloak-Integration, RBAC mit Gruppen/Permissions/Field-Restrictions)
 - **Schichten-Regel**: `REST-Controller → Service → Repository`
 
 ### REST-API
@@ -82,6 +83,23 @@ Spring Boot 3.4.x Anwendung mit dualem Persistenz-Ansatz: Raw JDBC für Zeitreih
 | POST | `/api/batch-schedules/{id}/trigger` | Manuell auslösen (opt. Parameter) |
 | GET | `/api/batch-history` | Alle Ausführungen (TableResponse) |
 | GET | `/api/batch-history/{execId}/log` | Logfile-Inhalt |
+| GET | `/api/permissions/me` | Eigene effektive Berechtigungen |
+| GET | `/api/admin/users` | Benutzerliste (Keycloak) |
+| POST | `/api/admin/users` | Benutzer anlegen |
+| PUT | `/api/admin/users/{id}/admin` | Admin-Status setzen |
+| PUT | `/api/admin/users/{id}/enabled` | Benutzer aktivieren/deaktivieren |
+| PUT | `/api/admin/users/{id}/password` | Passwort setzen |
+| GET | `/api/admin/users/{id}/effective` | Effektive Berechtigungen eines Users |
+| GET | `/api/admin/groups` | Gruppen-Liste |
+| GET | `/api/admin/groups/{id}` | Gruppe lesen (mit Mitgliedern + Permissions) |
+| POST | `/api/admin/groups` | Gruppe anlegen |
+| PUT | `/api/admin/groups/{id}` | Gruppe aktualisieren |
+| DELETE | `/api/admin/groups/{id}` | Gruppe löschen |
+| POST | `/api/admin/groups/{id}/members` | Mitglied hinzufügen |
+| DELETE | `/api/admin/groups/{id}/members/{userId}` | Mitglied entfernen |
+| PUT | `/api/admin/groups/{id}/permissions` | Gruppen-Berechtigungen setzen |
+| PUT | `/api/admin/groups/{id}/field-restrictions` | Feld-Restriktionen setzen |
+| GET | `/api/admin/resources` | Verfügbare Ressourcen-Definitionen |
 
 ### Exception Handling (GlobalExceptionHandler)
 - `IllegalArgumentException` → 400 Bad Request
@@ -201,6 +219,18 @@ src/main/java/de/market/
             AbstractBatchJob.java          -- Abstrakte Basisklasse (mit Parameter-System)
             QuartzJobAdapter.java          -- Quartz→AbstractBatchJob Bridge (mit Parameter-Übergabe)
             CleanupOrphanedHeadersJob.java -- Demo-Job (mit excludePattern + retentionDays)
+    timeseries/
+        security/
+            SecurityConfig.java            -- @Configuration, Spring Security + Keycloak
+            KeycloakAdminClient.java        -- Keycloak Admin REST API Client
+            AdminController.java            -- @RestController /api/admin (Users, Groups, Permissions)
+            PermissionController.java       -- @RestController /api/permissions
+            PermissionService.java          -- @Service, RBAC-Logik
+            UserRegistrationFilter.java     -- Auto-Registrierung bei erstem Login
+            UserSessionLogFilter.java       -- Session-Logging
+            AuthUser/Group/Permission/Resource -- @Entity JPA-Modelle
+            EffectivePermission.java        -- Berechnete Berechtigungen (Read/Write/Delete + Field-Restrictions)
+            SecurityUtils.java             -- Hilfsmethoden (aktueller User etc.)
     benchmark/
         Benchmark.java                     -- Standalone Lese-Benchmark
 src/main/resources/
