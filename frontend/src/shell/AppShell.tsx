@@ -18,11 +18,11 @@ export function AppShell() {
             const tabType = getTabType(tab.type);
             if (!tabType) return null;
             const Component = tabType.component;
+            const isActive = activeTabId === tab.id;
             return (
               <div
                 key={tab.id}
-                className="tab-panel"
-                style={{ display: activeTabId === tab.id ? 'flex' : 'none' }}
+                className={`tab-panel${isActive ? '' : ' tab-panel--hidden'}`}
               >
                 <Component tabId={tab.id} />
               </div>
