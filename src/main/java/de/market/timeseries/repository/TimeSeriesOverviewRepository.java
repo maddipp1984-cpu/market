@@ -4,6 +4,7 @@ import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.Result;
+import org.jooq.conf.ParamType;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
@@ -63,9 +64,12 @@ public class TimeSeriesOverviewRepository {
     }
 
     public List<Map<String, Object>> findFiltered(Condition condition) {
-        String whereSql = dsl.renderInlined(condition);
+        // Render mit Bind-Parametern (nicht inlined) für SQL-Injection-Schutz
+        var query = dsl.select().where(condition);
+        String whereSql = dsl.renderContext().paramType(ParamType.INDEXED).render(condition);
+        Object[] binds = query.getBindValues().toArray();
         String sql = BASE_SQL.replaceFirst("(?i)ORDER BY", "WHERE " + whereSql + "\nORDER BY");
-        Result<Record> records = dsl.resultQuery(sql).fetch();
+        Result<Record> records = dsl.resultQuery(sql, binds).fetch();
         return mapRecords(records);
     }
 

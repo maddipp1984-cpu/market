@@ -2,9 +2,9 @@ package de.market.scheduling.repository;
 
 import de.market.scheduling.model.JobStatus;
 import org.jooq.DSLContext;
-import org.jooq.Field;
 import org.springframework.stereotype.Repository;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -53,11 +53,6 @@ public class JobExecutionLogRepository {
         var e = BATCH_JOB_EXECUTION_LOG.as("e");
         var s = BATCH_SCHEDULE.as("s");
 
-        Field<Integer> duration = field(
-                "CASE WHEN {0} IS NOT NULL THEN EXTRACT(EPOCH FROM ({0} - {1}))::INTEGER ELSE NULL END",
-                Integer.class, e.END_TIME, e.START_TIME
-        ).as("duration");
-
         return dsl
                 .select(
                         e.ID.as("id"),
@@ -65,7 +60,6 @@ public class JobExecutionLogRepository {
                         s.NAME.as("scheduleName"),
                         e.START_TIME.as("startTime"),
                         e.END_TIME.as("endTime"),
-                        duration,
                         e.STATUS.as("status"),
                         e.ERROR_MESSAGE.as("errorMessage"),
                         e.RECORDS_AFFECTED.as("recordsAffected"),
@@ -78,23 +72,7 @@ public class JobExecutionLogRepository {
                 .orderBy(e.START_TIME.desc())
                 .limit(limit)
                 .fetch()
-                .map(r -> {
-                    Map<String, Object> row = new LinkedHashMap<>();
-                    row.put("id", r.get("id"));
-                    row.put("scheduleId", r.get("scheduleId"));
-                    row.put("scheduleName", r.get("scheduleName"));
-                    Object st = r.get("startTime");
-                    row.put("startTime", st != null ? st.toString() : null);
-                    Object et = r.get("endTime");
-                    row.put("endTime", et != null ? et.toString() : null);
-                    row.put("duration", r.get("duration"));
-                    row.put("status", r.get("status"));
-                    row.put("errorMessage", r.get("errorMessage"));
-                    row.put("recordsAffected", r.get("recordsAffected"));
-                    row.put("logFile", r.get("logFile"));
-                    row.put("triggeredBy", r.get("triggeredBy"));
-                    return row;
-                });
+                .map(r -> mapRow(r, false));
     }
 
     public String findLogFileByExecutionId(long executionId) {
@@ -109,11 +87,6 @@ public class JobExecutionLogRepository {
         var e = BATCH_JOB_EXECUTION_LOG.as("e");
         var s = BATCH_SCHEDULE.as("s");
 
-        Field<Integer> duration = field(
-                "CASE WHEN {0} IS NOT NULL THEN EXTRACT(EPOCH FROM ({0} - {1}))::INTEGER ELSE NULL END",
-                Integer.class, e.END_TIME, e.START_TIME
-        ).as("duration");
-
         return dsl
                 .select(
                         e.ID.as("id"),
@@ -122,7 +95,6 @@ public class JobExecutionLogRepository {
                         s.NAME.as("scheduleName"),
                         e.START_TIME.as("startTime"),
                         e.END_TIME.as("endTime"),
-                        duration,
                         e.STATUS.as("status"),
                         e.ERROR_MESSAGE.as("errorMessage"),
                         e.RECORDS_AFFECTED.as("recordsAffected"),
@@ -134,23 +106,32 @@ public class JobExecutionLogRepository {
                 .orderBy(e.START_TIME.desc())
                 .limit(limit)
                 .fetch()
-                .map(r -> {
-                    Map<String, Object> row = new LinkedHashMap<>();
-                    row.put("id", r.get("id"));
-                    row.put("scheduleId", r.get("scheduleId"));
-                    row.put("jobKey", r.get("jobKey"));
-                    row.put("scheduleName", r.get("scheduleName"));
-                    Object st = r.get("startTime");
-                    row.put("startTime", st != null ? st.toString() : null);
-                    Object et = r.get("endTime");
-                    row.put("endTime", et != null ? et.toString() : null);
-                    row.put("duration", r.get("duration"));
-                    row.put("status", r.get("status"));
-                    row.put("errorMessage", r.get("errorMessage"));
-                    row.put("recordsAffected", r.get("recordsAffected"));
-                    row.put("logFile", r.get("logFile"));
-                    row.put("triggeredBy", r.get("triggeredBy"));
-                    return row;
-                });
+                .map(r -> mapRow(r, true));
+    }
+
+    private Map<String, Object> mapRow(org.jooq.Record r, boolean includeJobKey) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("id", r.get("id"));
+        row.put("scheduleId", r.get("scheduleId"));
+        if (includeJobKey) {
+            row.put("jobKey", r.get("jobKey"));
+        }
+        row.put("scheduleName", r.get("scheduleName"));
+        Object st = r.get("startTime");
+        row.put("startTime", st != null ? st.toString() : null);
+        Object et = r.get("endTime");
+        row.put("endTime", et != null ? et.toString() : null);
+        // Duration in Java berechnen (DB-unabhaengig, kein EXTRACT/::INTEGER)
+        if (st instanceof OffsetDateTime start && et instanceof OffsetDateTime end) {
+            row.put("duration", (int) Duration.between(start, end).getSeconds());
+        } else {
+            row.put("duration", null);
+        }
+        row.put("status", r.get("status"));
+        row.put("errorMessage", r.get("errorMessage"));
+        row.put("recordsAffected", r.get("recordsAffected"));
+        row.put("logFile", r.get("logFile"));
+        row.put("triggeredBy", r.get("triggeredBy"));
+        return row;
     }
 }

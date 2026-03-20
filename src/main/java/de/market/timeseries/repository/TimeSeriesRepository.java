@@ -258,7 +258,8 @@ public class TimeSeriesRepository {
 
         double[] values = new double[valueList.size()];
         for (int i = 0; i < valueList.size(); i++) {
-            values[i] = valueList.get(i);
+            Double v = valueList.get(i);
+            values[i] = v != null ? v : Double.NaN;
         }
 
         return new TimeSeriesSlice(start, end, dim, values);
