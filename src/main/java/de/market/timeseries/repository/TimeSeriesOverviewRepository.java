@@ -1,56 +1,34 @@
 package de.market.timeseries.repository;
 
+import org.jooq.CommonTableExpression;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
-import org.jooq.Record;
+import org.jooq.Field;
+import org.jooq.Record3;
 import org.jooq.Result;
-import org.jooq.conf.ParamType;
+import org.jooq.TableField;
 import org.springframework.stereotype.Repository;
 
+import java.sql.Date;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static de.market.jooq.generated.tables.TsCurrency.TS_CURRENCY;
+import static de.market.jooq.generated.tables.TsHeader.TS_HEADER;
+import static de.market.jooq.generated.tables.TsObject.TS_OBJECT;
+import static de.market.jooq.generated.tables.TsUnit.TS_UNIT;
+import static de.market.jooq.generated.tables.TsValuesDay.TS_VALUES_DAY;
+import static de.market.jooq.generated.tables.TsValuesMonth.TS_VALUES_MONTH;
+import static de.market.jooq.generated.tables.TsValuesYear.TS_VALUES_YEAR;
+import static de.market.jooq.generated.tables.TsValues_15min.TS_VALUES_15MIN;
+import static de.market.jooq.generated.tables.TsValues_1h.TS_VALUES_1H;
+import static org.jooq.impl.DSL.*;
+
 @Repository
 public class TimeSeriesOverviewRepository {
-
-    // language=SQL
-    private static final String BASE_SQL =
-            "WITH value_range AS (\n" +
-            "    SELECT ts_id, MIN(ts_date) AS first_date, MAX(ts_date) AS last_date FROM ts_values_15min GROUP BY ts_id\n" +
-            "    UNION ALL\n" +
-            "    SELECT ts_id, MIN(ts_date), MAX(ts_date) FROM ts_values_1h GROUP BY ts_id\n" +
-            "    UNION ALL\n" +
-            "    SELECT ts_id, MIN(ts_date), MAX(ts_date) FROM ts_values_day GROUP BY ts_id\n" +
-            "    UNION ALL\n" +
-            "    SELECT ts_id, MIN(ts_date), MAX(ts_date) FROM ts_values_month GROUP BY ts_id\n" +
-            "    UNION ALL\n" +
-            "    SELECT ts_id, (MIN(ts_year)::text || '-01-01')::date, (MAX(ts_year)::text || '-01-01')::date FROM ts_values_year GROUP BY ts_id\n" +
-            ")\n" +
-            "SELECT h.ts_id,\n" +
-            "       h.ts_key,\n" +
-            "       CASE h.time_dim\n" +
-            "           WHEN 1 THEN '15 Minuten'\n" +
-            "           WHEN 2 THEN '1 Stunde'\n" +
-            "           WHEN 3 THEN 'Tag'\n" +
-            "           WHEN 4 THEN 'Monat'\n" +
-            "           WHEN 5 THEN 'Jahr'\n" +
-            "       END AS dimension,\n" +
-            "       u.symbol,\n" +
-            "       c.iso_code,\n" +
-            "       o.object_key,\n" +
-            "       h.description,\n" +
-            "       vr.first_date,\n" +
-            "       vr.last_date,\n" +
-            "       h.created_at,\n" +
-            "       h.updated_at\n" +
-            "FROM ts_header h\n" +
-            "JOIN ts_unit u ON u.unit_id = h.unit_id\n" +
-            "LEFT JOIN ts_currency c ON c.currency_id = h.currency_id\n" +
-            "LEFT JOIN ts_object o ON o.object_id = h.object_id\n" +
-            "LEFT JOIN value_range vr ON vr.ts_id = h.ts_id\n" +
-            "ORDER BY h.ts_key";
 
     private final DSLContext dsl;
 
@@ -59,37 +37,89 @@ public class TimeSeriesOverviewRepository {
     }
 
     public List<Map<String, Object>> findAllAsRows() {
-        Result<Record> records = dsl.resultQuery(BASE_SQL).fetch();
-        return mapRecords(records);
+        return buildAndFetch(noCondition());
     }
 
     public List<Map<String, Object>> findFiltered(Condition condition) {
-        // Render mit Bind-Parametern (nicht inlined) für SQL-Injection-Schutz
-        var query = dsl.select().where(condition);
-        String whereSql = dsl.renderContext().paramType(ParamType.INDEXED).render(condition);
-        Object[] binds = query.getBindValues().toArray();
-        String sql = BASE_SQL.replaceFirst("(?i)ORDER BY", "WHERE " + whereSql + "\nORDER BY");
-        Result<Record> records = dsl.resultQuery(sql, binds).fetch();
-        return mapRecords(records);
+        return buildAndFetch(condition);
     }
 
-    private List<Map<String, Object>> mapRecords(Result<Record> records) {
-        List<Map<String, Object>> rows = new ArrayList<>();
-        for (Record r : records) {
-            Map<String, Object> row = new LinkedHashMap<>();
-            row.put("id", r.get("ts_id"));
-            row.put("key", r.get("ts_key"));
-            row.put("dimension", r.get("dimension"));
-            row.put("unit", r.get("symbol"));
-            row.put("currency", r.get("iso_code"));
-            row.put("object", r.get("object_key"));
-            row.put("description", r.get("description"));
-            row.put("firstDate", r.get("first_date"));
-            row.put("lastDate", r.get("last_date"));
-            row.put("createdAt", r.get("created_at"));
-            row.put("updatedAt", r.get("updated_at"));
-            rows.add(row);
-        }
-        return rows;
+    private List<Map<String, Object>> buildAndFetch(Condition condition) {
+        // CTE: value_range — erste und letzte Datum pro Zeitreihe über alle 5 Dimensionen
+        Field<Long> vrTsId = field(name("value_range", "ts_id"), Long.class);
+        Field<Date> vrFirstDate = field(name("value_range", "first_date"), Date.class);
+        Field<Date> vrLastDate = field(name("value_range", "last_date"), Date.class);
+
+        CommonTableExpression<Record3<Long, Date, Date>> valueRange =
+                name("value_range").fields("ts_id", "first_date", "last_date").as(
+                        select(TS_VALUES_15MIN.TS_ID.cast(Long.class),
+                                min(TS_VALUES_15MIN.TS_DATE).cast(Date.class),
+                                max(TS_VALUES_15MIN.TS_DATE).cast(Date.class))
+                                .from(TS_VALUES_15MIN).groupBy(TS_VALUES_15MIN.TS_ID)
+                        .unionAll(
+                                select(TS_VALUES_1H.TS_ID.cast(Long.class),
+                                        min(TS_VALUES_1H.TS_DATE).cast(Date.class),
+                                        max(TS_VALUES_1H.TS_DATE).cast(Date.class))
+                                        .from(TS_VALUES_1H).groupBy(TS_VALUES_1H.TS_ID))
+                        .unionAll(
+                                select(TS_VALUES_DAY.TS_ID.cast(Long.class),
+                                        min(TS_VALUES_DAY.TS_DATE).cast(Date.class),
+                                        max(TS_VALUES_DAY.TS_DATE).cast(Date.class))
+                                        .from(TS_VALUES_DAY).groupBy(TS_VALUES_DAY.TS_ID))
+                        .unionAll(
+                                select(TS_VALUES_MONTH.TS_ID.cast(Long.class),
+                                        min(TS_VALUES_MONTH.TS_DATE).cast(Date.class),
+                                        max(TS_VALUES_MONTH.TS_DATE).cast(Date.class))
+                                        .from(TS_VALUES_MONTH).groupBy(TS_VALUES_MONTH.TS_ID))
+                        .unionAll(
+                                select(TS_VALUES_YEAR.TS_ID.cast(Long.class),
+                                        min(yearToDate(TS_VALUES_YEAR.TS_YEAR)),
+                                        max(yearToDate(TS_VALUES_YEAR.TS_YEAR)))
+                                        .from(TS_VALUES_YEAR).groupBy(TS_VALUES_YEAR.TS_ID))
+                );
+
+        var h = TS_HEADER.as("h");
+        var u = TS_UNIT.as("u");
+        var c = TS_CURRENCY.as("c");
+        var o = TS_OBJECT.as("o");
+
+        Field<String> dimensionLabel = when(h.TIME_DIM.eq((short) 1), inline("15 Minuten"))
+                .when(h.TIME_DIM.eq((short) 2), inline("1 Stunde"))
+                .when(h.TIME_DIM.eq((short) 3), inline("Tag"))
+                .when(h.TIME_DIM.eq((short) 4), inline("Monat"))
+                .when(h.TIME_DIM.eq((short) 5), inline("Jahr"))
+                .otherwise(inline(""));
+
+        return dsl
+                .with(valueRange)
+                .select(
+                        h.TS_ID.as("id"),
+                        h.TS_KEY.as("key"),
+                        dimensionLabel.as("dimension"),
+                        u.SYMBOL.as("unit"),
+                        c.ISO_CODE.as("currency"),
+                        o.OBJECT_KEY.as("object"),
+                        h.DESCRIPTION.as("description"),
+                        vrFirstDate.as("firstDate"),
+                        vrLastDate.as("lastDate"),
+                        h.CREATED_AT.as("createdAt"),
+                        h.UPDATED_AT.as("updatedAt")
+                )
+                .from(h)
+                .join(u).on(u.UNIT_ID.eq(h.UNIT_ID))
+                .leftJoin(c).on(c.CURRENCY_ID.eq(h.CURRENCY_ID))
+                .leftJoin(o).on(o.OBJECT_ID.eq(h.OBJECT_ID))
+                .leftJoin(valueRange).on(vrTsId.eq(h.TS_ID))
+                .where(condition)
+                .orderBy(h.TS_KEY)
+                .fetchMaps();
+    }
+
+    /**
+     * Konvertiert SMALLINT-Jahr zu DATE: CONCAT(year, '-01-01') → DATE.
+     * jOOQ übersetzt concat() und cast(DATE) korrekt pro Dialekt.
+     */
+    private static Field<Date> yearToDate(TableField<?, Short> yearField) {
+        return concat(yearField.cast(String.class), inline("-01-01")).cast(Date.class);
     }
 }
