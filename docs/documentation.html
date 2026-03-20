@@ -575,12 +575,237 @@ frontend/src/
         </p>
     </section>
 
-    <section id="backend-patterns">
+    <section id="backend-patterns" class="page-break">
         <h2>Backend-Patterns</h2>
+
+        <h3>Overview-Pattern (Übersichtsseiten)</h3>
+        <p>
+            Alle tabellarischen Übersichtsseiten folgen demselben Pattern: Raw JDBC über QueryRegistry
+            für maximale Performance.
+        </p>
+        <div class="diagram">
+Controller (GET oder POST /query)
+    │
+    ▼
+OverviewRepository (Raw JDBC)
+    │
+    ├── QueryRegistry.get("key") → SQL laden
+    │
+    ├── FilterQueryBuilder.build(conditions, allowedColumns) → WHERE-Klausel
+    │
+    └── PreparedStatement → ResultSet → List&lt;Map&lt;String, Object&gt;&gt;
+    │
+    ▼
+TableResponse { columns: ColumnMeta[], data: Map[] }</div>
+
+        <h4>QueryRegistry + QueryLoader</h4>
+        <ul>
+            <li>QueryLoader parst XML-Dateien aus <code>classpath:queries/*.xml</code> beim Start (ApplicationReadyEvent)</li>
+            <li>Upsert in Tabelle <code>ts_query</code> (key, name, sql_text)</li>
+            <li>QueryRegistry lädt alle Queries aus DB in ConcurrentHashMap (<code>@PostConstruct</code>)</li>
+            <li>Neue Queries hinzufügen: XML-Datei in <code>src/main/resources/queries/</code> anlegen</li>
+        </ul>
+
+        <h4>FilterQueryBuilder</h4>
+        <ul>
+            <li>Baut sichere WHERE-Klauseln aus FilterCondition-Objekten</li>
+            <li>Whitelist (allowedColumns) verhindert SQL-Injection</li>
+            <li>Werte werden parametrisiert (<code>?</code> Platzhalter)</li>
+            <li>Unterstützte Operatoren: <code>=</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>&lt;=</code>, <code>LIKE</code> (case-insensitive), <code>IN</code>, <code>BETWEEN</code>, <code>IS NULL</code>, <code>IS NOT NULL</code></li>
+            <li>Max. Wertlänge: 1000 Zeichen</li>
+        </ul>
+
+        <h4>TableResponse</h4>
+        <ul>
+            <li>Generische Antwort: <code>List&lt;ColumnMeta&gt;</code> + <code>List&lt;Map&lt;String, Object&gt;&gt;</code></li>
+            <li>ColumnMeta: key (interner Name), label (Anzeigename), sqlColumn (SQL-Ausdruck), type (TEXT/NUMBER/DATE)</li>
+        </ul>
+
+        <h4>Anwendungsbeispiele</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Repository</th>
+                    <th>Query-Key</th>
+                    <th>Einsatz</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>TimeSeriesOverviewRepository</td><td>timeseries</td><td>Zeitreihen-Übersicht</td></tr>
+                <tr><td>CurrencyOverviewRepository</td><td>currency</td><td>Währungs-Übersicht</td></tr>
+                <tr><td>BusinessPartnerOverviewRepository</td><td>businesspartner</td><td>GP-Übersicht</td></tr>
+                <tr><td>ScheduleOverviewRepository</td><td>schedule</td><td>Batchplanungs-Übersicht</td></tr>
+                <tr><td>JobExecutionLogRepository</td><td>—</td><td>Batch-Historie</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Detail-Pattern (Einzel-CRUD)</h3>
+        <p>
+            Stammdaten-Entitäten nutzen JPA/Hibernate für Einzeloperationen. Der Flow ist immer gleich:
+        </p>
+        <div class="diagram">
+Controller (POST/PUT/DELETE)
+    │
+    ▼
+Service (@Service, @Transactional)
+    │
+    ├── Validierung (required fields, uniqueness)
+    │
+    ├── DTO → Entity Mapping
+    │
+    └── JpaRepository.save() / .delete()
+    │
+    ▼
+DTO Response (Entity → DTO Mapping)</div>
+
+        <ul>
+            <li>Validierung im Service, nicht im Controller</li>
+            <li>DTO-Mapping: <code>toDto()</code> und <code>toEntity()</code> Methoden im Service</li>
+            <li><code>@Transactional</code> auf Klassen- oder Methodenebene</li>
+            <li><code>@OneToMany</code> Cascade: Service-Loop (clear + addAll), nicht JPA orphanRemoval</li>
+            <li>JpaRepository mit <code>existsByField()</code> für Uniqueness-Checks</li>
+        </ul>
+
+        <h4>Anwendungsbeispiele</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Modul</th>
+                    <th>Entity</th>
+                    <th>Repository</th>
+                    <th>Besonderheiten</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>currency</td><td>CurrencyEntity</td><td>CurrencyJpaRepository</td><td>ISO-Code 3 Zeichen, Uniqueness</td></tr>
+                <tr><td>businesspartner</td><td>BusinessPartner</td><td>BusinessPartnerRepository</td><td>@OneToMany zu ContactPerson (Cascade)</td></tr>
+                <tr><td>scheduling</td><td>BatchScheduleEntity</td><td>BatchScheduleJpaRepository</td><td>Quartz-Integration</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Exception Handling</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Exception</th>
+                    <th>HTTP Status</th>
+                    <th>Response</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>IllegalArgumentException</td><td>400 Bad Request</td><td>Fehlermeldung</td></tr>
+                <tr><td>MethodArgumentNotValidException</td><td>400 Bad Request</td><td>Feld-Validierungsfehler</td></tr>
+                <tr><td>IllegalStateException</td><td>409 Conflict</td><td>Fehlermeldung</td></tr>
+                <tr><td>AccessDeniedException</td><td>403 Forbidden</td><td>"Zugriff verweigert"</td></tr>
+                <tr><td>AuthenticationException</td><td>401 Unauthorized</td><td>"Nicht authentifiziert"</td></tr>
+                <tr><td>SQLException</td><td>500 Internal Server Error</td><td>"Interner Datenbankfehler" (keine Details)</td></tr>
+            </tbody>
+        </table>
+        <p>Handled by <code>GlobalExceptionHandler</code> (<code>@RestControllerAdvice</code>).</p>
     </section>
 
-    <section id="frontend-patterns">
+    <section id="frontend-patterns" class="page-break">
         <h2>Frontend-Patterns</h2>
+
+        <h3>OverviewPage-Template</h3>
+        <p>
+            Alle tabellarischen Seiten nutzen die <code>OverviewPage</code>-Komponente. Sie liefert automatisch:
+            VirtualTable (Virtualisierung), FilterBuilder (Filterpanel), Filter-Presets, Toolbar
+            (Aktualisieren/Neu/Löschen), Sortierung, Kontextmenü.
+        </p>
+
+        <h4>Props</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Prop</th>
+                    <th>Typ</th>
+                    <th>Beschreibung</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>pageKey</td><td>string</td><td>Eindeutiger Schlüssel (für Presets, Permissions)</td></tr>
+                <tr><td>apiUrl</td><td>string</td><td>Backend-URL (z.B. <code>/api/timeseries-overview</code>)</td></tr>
+                <tr><td>onNew</td><td>() =&gt; void</td><td>Callback für "Neu"-Button</td></tr>
+                <tr><td>onDelete</td><td>(rows) =&gt; Promise</td><td>Callback für Mehrfach-Löschen</td></tr>
+                <tr><td>onRowDoubleClick</td><td>(row) =&gt; void</td><td>Doppelklick → Detail öffnen</td></tr>
+                <tr><td>columnOverrides</td><td>Object</td><td>Spalten umbenennen, ausblenden, formatieren</td></tr>
+                <tr><td>extraContextActions</td><td>Array</td><td>Zusätzliche Kontextmenü-Einträge</td></tr>
+            </tbody>
+        </table>
+
+        <h4>Verwendung</h4>
+        <ul>
+            <li>ZeitreihenPage, BusinessPartnerPage, BatchSchedulePage, BatchHistoryPage, WaehrungenPage</li>
+        </ul>
+
+        <h3>DetailPage-Template</h3>
+        <p>
+            Alle Detail-/Bearbeitungsseiten nutzen die <code>DetailPage</code>-Komponente. Sie liefert automatisch:
+            Toolbar (Neu/Speichern/Speichern &amp; Schließen/Löschen), Dirty-Guard (Warnung bei ungespeicherten
+            Änderungen), Validierung, Permission-Checks.
+        </p>
+
+        <h4>Props</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Prop</th>
+                    <th>Typ</th>
+                    <th>Beschreibung</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>pageKey</td><td>string</td><td>Für Permissions und Übersicht-Refresh</td></tr>
+                <tr><td>mode</td><td>'view' | 'edit' | 'new'</td><td>Aktueller Modus</td></tr>
+                <tr><td>tabId</td><td>string</td><td>Tab-Identifikator</td></tr>
+                <tr><td>dirty</td><td>boolean</td><td>Ungespeicherte Änderungen?</td></tr>
+                <tr><td>validate</td><td>() =&gt; ValidationResult</td><td>Validierungsfunktion</td></tr>
+                <tr><td>onSave</td><td>() =&gt; Promise</td><td>Speichern-Callback</td></tr>
+                <tr><td>onDelete</td><td>() =&gt; Promise</td><td>Löschen-Callback (optional)</td></tr>
+            </tbody>
+        </table>
+
+        <h4>Verwendung</h4>
+        <ul>
+            <li>BusinessPartnerDetailPage, CurrencyDetailPage, BatchScheduleDetailPage</li>
+        </ul>
+
+        <h3>Tab-System</h3>
+        <p>
+            Die Anwendung nutzt kein URL-basiertes Routing, sondern ein eigenes Tab-System (ähnlich wie eine IDE).
+            Tabs werden in <code>sessionStorage</code> gespeichert und überleben Browser-Refresh (F5).
+        </p>
+        <ul>
+            <li><code>openTab(type, params?)</code> — Neuen Tab öffnen (oder fokussieren bei Singleton)</li>
+            <li><code>closeTab(id)</code> — Tab schließen (mit Close-Guard bei ungespeicherten Änderungen)</li>
+            <li><code>updateTabLabel(id, label)</code> — Tab-Titel dynamisch ändern</li>
+            <li><code>getTabParams(tabId)</code> — Parameter auslesen (z.B. entityId, mode)</li>
+            <li><code>registerCloseGuard(tabId, guard)</code> — Warnung bei unsaved changes</li>
+            <li><strong>Singleton-Tabs</strong>: Dashboard, Zeitreihen-Übersicht etc. — nur eine Instanz</li>
+            <li><strong>Persistenz</strong>: sessionStorage (Key: "market-tabs"), überlebt F5, nicht Browser-Neustart</li>
+        </ul>
+
+        <h3>Design-System</h3>
+        <p>
+            Das Frontend nutzt CSS Custom Properties (Design-Tokens) statt CSS-Frameworks wie Tailwind.
+            Jede Komponente hat eine eigene CSS-Datei. Stylelint verhindert hardcodierte Farben/Fonts in Feature-CSS.
+        </p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Token-Gruppe</th>
+                    <th>Beispiele</th>
+                    <th>Beschreibung</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Farben</td><td><code>--color-primary</code>, <code>--color-surface</code>, <code>--color-text-*</code></td><td>Primärfarbe Blau (#2563eb), Oberflächen, Textfarben</td></tr>
+                <tr><td>Spacing</td><td><code>--space-xs</code> bis <code>--space-3xl</code></td><td>4px bis 32px</td></tr>
+                <tr><td>Typografie</td><td><code>--font-family</code>, <code>--font-size-*</code></td><td>Inter, 0.72rem bis 1.6rem</td></tr>
+                <tr><td>Radien</td><td><code>--radius-sm</code> bis <code>--radius-xl</code></td><td>4px bis 12px</td></tr>
+            </tbody>
+        </table>
     </section>
 
     <section id="security">
