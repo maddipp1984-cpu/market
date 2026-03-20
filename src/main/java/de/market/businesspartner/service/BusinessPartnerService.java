@@ -7,10 +7,10 @@ import de.market.businesspartner.repository.BusinessPartnerOverviewRepository;
 import de.market.businesspartner.repository.BusinessPartnerRepository;
 import de.market.businesspartner.rest.dto.BusinessPartnerDto;
 import de.market.businesspartner.rest.dto.ContactPersonDto;
+import de.market.shared.service.AbstractCrudService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
-public class BusinessPartnerService {
+public class BusinessPartnerService extends AbstractCrudService<BusinessPartnerDto, BusinessPartner, Long> {
 
     private final BusinessPartnerRepository repository;
     private final BusinessPartnerOverviewRepository overviewRepository;
@@ -28,7 +28,7 @@ public class BusinessPartnerService {
         this.overviewRepository = overviewRepository;
     }
 
-    public List<Map<String, Object>> findAllAsRows() throws SQLException {
+    public List<Map<String, Object>> findAllAsRows() {
         return overviewRepository.findAllAsRows();
     }
 
@@ -40,7 +40,7 @@ public class BusinessPartnerService {
     }
 
     public BusinessPartnerDto create(BusinessPartnerDto dto) {
-        validateRequired(dto);
+        validate(dto);
         if (repository.existsByShortName(dto.getShortName())) {
             throw new IllegalStateException("Kurzbezeichnung bereits vergeben: " + dto.getShortName());
         }
@@ -50,7 +50,7 @@ public class BusinessPartnerService {
     }
 
     public BusinessPartnerDto update(Long id, BusinessPartnerDto dto) {
-        validateRequired(dto);
+        validate(dto);
         BusinessPartner existing = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Geschaeftspartner nicht gefunden: id=" + id));
 
@@ -79,7 +79,8 @@ public class BusinessPartnerService {
         repository.deleteById(id);
     }
 
-    private BusinessPartnerDto toDto(BusinessPartner entity) {
+    @Override
+    protected BusinessPartnerDto toDto(BusinessPartner entity) {
         BusinessPartnerDto dto = new BusinessPartnerDto();
         dto.setId(entity.getId());
         dto.setShortName(entity.getShortName());
@@ -107,7 +108,8 @@ public class BusinessPartnerService {
         return dto;
     }
 
-    private BusinessPartner toEntity(BusinessPartnerDto dto) {
+    @Override
+    protected BusinessPartner toEntity(BusinessPartnerDto dto) {
         BusinessPartner entity = new BusinessPartner();
         entity.setShortName(dto.getShortName());
         entity.setName(dto.getName());
@@ -120,7 +122,8 @@ public class BusinessPartnerService {
         return entity;
     }
 
-    private void validateRequired(BusinessPartnerDto dto) {
+    @Override
+    protected void validate(BusinessPartnerDto dto) {
         if (dto.getShortName() == null || dto.getShortName().isBlank()) {
             throw new IllegalArgumentException("Kurzbezeichnung ist ein Pflichtfeld");
         }
