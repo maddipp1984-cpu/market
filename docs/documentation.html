@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zeitreihensystem — Technische Dokumentation</title>
+    <style>
+        /* ===== Reset & Base ===== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            color: #1e293b;
+            background: #ffffff;
+        }
+
+        /* ===== Sidebar Navigation ===== */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            background: #1e293b;
+            color: #cbd5e1;
+            overflow-y: auto;
+            padding: 24px 0;
+            z-index: 100;
+        }
+
+        nav h2 {
+            color: #f1f5f9;
+            font-size: 0.75em;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 16px 20px 8px;
+            margin: 0;
+            border: none;
+        }
+
+        nav h2:first-child {
+            padding-top: 0;
+        }
+
+        nav .nav-title {
+            color: #ffffff;
+            font-size: 1.1em;
+            font-weight: 700;
+            padding: 0 20px 16px;
+            border-bottom: 1px solid #334155;
+            margin-bottom: 8px;
+            text-transform: none;
+            letter-spacing: normal;
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 8px;
+        }
+
+        nav a {
+            display: block;
+            padding: 6px 20px;
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: color 0.15s, background 0.15s;
+        }
+
+        nav a:hover {
+            color: #ffffff;
+            background: #334155;
+        }
+
+        /* ===== Main Content ===== */
+        main {
+            margin-left: 300px;
+            max-width: 900px;
+            padding: 40px 32px;
+        }
+
+        /* ===== Headings ===== */
+        h1 {
+            font-size: 2em;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 12px;
+            margin-bottom: 24px;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 8px;
+            margin-top: 48px;
+            margin-bottom: 16px;
+            color: #1e40af;
+        }
+
+        h3 {
+            font-size: 1.2em;
+            margin-top: 32px;
+            margin-bottom: 12px;
+            color: #334155;
+        }
+
+        h4 {
+            font-size: 1.05em;
+            margin-top: 24px;
+            margin-bottom: 8px;
+            color: #475569;
+        }
+
+        p {
+            margin-bottom: 12px;
+        }
+
+        /* ===== Links ===== */
+        a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* ===== Tables ===== */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 16px 0;
+            font-size: 0.95em;
+        }
+
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 10px 14px;
+            text-align: left;
+        }
+
+        th {
+            background: #f1f5f9;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        /* ===== Code ===== */
+        code {
+            background: #f1f5f9;
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.9em;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            overflow-x: auto;
+            margin: 16px 0;
+            line-height: 1.5;
+        }
+
+        pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+            font-size: 0.88em;
+        }
+
+        /* ===== HTTP Method Badges ===== */
+        .badge-get, .badge-post, .badge-put, .badge-delete {
+            display: inline-block;
+            font-size: 0.75em;
+            font-weight: 700;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            padding: 2px 8px;
+            border-radius: 4px;
+            min-width: 60px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .badge-get    { background: #dcfce7; color: #166534; }
+        .badge-post   { background: #dbeafe; color: #1e40af; }
+        .badge-put    { background: #fef3c7; color: #92400e; }
+        .badge-delete { background: #fee2e2; color: #991b1b; }
+
+        /* ===== Info & Warning Boxes ===== */
+        .info-box {
+            border-left: 4px solid #2563eb;
+            background: #eff6ff;
+            padding: 16px 20px;
+            margin: 16px 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .warn-box {
+            border-left: 4px solid #d97706;
+            background: #fffbeb;
+            padding: 16px 20px;
+            margin: 16px 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        /* ===== Diagram Box ===== */
+        .diagram {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 16px 0;
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.85em;
+            white-space: pre;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+
+        /* ===== Lists ===== */
+        ul, ol {
+            margin: 8px 0 16px 24px;
+        }
+
+        li {
+            margin-bottom: 4px;
+        }
+
+        /* ===== Figures ===== */
+        figure {
+            margin: 24px 0;
+        }
+
+        figcaption {
+            font-size: 0.9em;
+            color: #64748b;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        /* ===== Section spacing ===== */
+        section {
+            margin-bottom: 32px;
+        }
+
+        section:first-child h1 {
+            margin-top: 0;
+        }
+
+        /* ===== Print Styles ===== */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+
+            main {
+                margin-left: 0;
+                max-width: 100%;
+                padding: 0;
+            }
+
+            body {
+                color: #000000;
+                background: #ffffff;
+                font-size: 11pt;
+            }
+
+            a {
+                color: #000000;
+                text-decoration: none;
+            }
+
+            h1 { border-bottom-color: #000000; }
+            h2 { color: #000000; }
+            h3 { color: #000000; }
+
+            h1, h2, h3 {
+                page-break-after: avoid;
+            }
+
+            table, figure, pre {
+                page-break-inside: avoid;
+            }
+
+            thead {
+                display: table-header-group;
+            }
+
+            .page-break {
+                page-break-before: always;
+            }
+
+            pre {
+                background: #f0f0f0;
+                color: #000000;
+                border: 1px solid #cccccc;
+            }
+
+            .info-box {
+                border-left-color: #000000;
+                background: #f5f5f5;
+            }
+
+            .warn-box {
+                border-left-color: #666666;
+                background: #f5f5f5;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== Sidebar Navigation ===== -->
+<nav class="no-print">
+    <div class="nav-title">Zeitreihensystem</div>
+
+    <h2>Technische Dokumentation</h2>
+    <ul>
+        <li><a href="#uebersicht">Projektübersicht</a></li>
+        <li><a href="#tech-stack">Tech-Stack</a></li>
+        <li><a href="#architektur">Architektur</a></li>
+        <li><a href="#datenbank">Datenbank-Design</a></li>
+        <li><a href="#backend-patterns">Backend-Patterns</a></li>
+        <li><a href="#frontend-patterns">Frontend-Patterns</a></li>
+        <li><a href="#security">Security-Modell</a></li>
+        <li><a href="#rest-api">REST-API-Referenz</a></li>
+        <li><a href="#shared-components">Shared Components</a></li>
+        <li><a href="#build">Build &amp; Deployment</a></li>
+    </ul>
+
+    <h2>Use Cases</h2>
+    <ul>
+        <li><a href="#uc-zeitreihen">Zeitreihen verwalten</a></li>
+        <li><a href="#uc-aggregation">Aggregation</a></li>
+        <li><a href="#uc-diagramme">Diagramme</a></li>
+        <li><a href="#uc-geschaeftspartner">Geschäftspartner</a></li>
+        <li><a href="#uc-waehrungen">Währungen</a></li>
+        <li><a href="#uc-batchplanung">Batchplanung</a></li>
+        <li><a href="#uc-benutzerverwaltung">Benutzerverwaltung</a></li>
+        <li><a href="#uc-sidebar">Sidebar-Navigation</a></li>
+        <li><a href="#uc-filter">Filter-System</a></li>
+    </ul>
+</nav>
+
+<!-- ===== Main Content ===== -->
+<main>
+
+    <!-- Technische Dokumentation -->
+
+    <section id="uebersicht">
+        <h1>Projektübersicht</h1>
+    </section>
+
+    <section id="tech-stack">
+        <h2>Tech-Stack</h2>
+    </section>
+
+    <section id="architektur">
+        <h2>Architektur</h2>
+    </section>
+
+    <section id="datenbank">
+        <h2>Datenbank-Design</h2>
+    </section>
+
+    <section id="backend-patterns">
+        <h2>Backend-Patterns</h2>
+    </section>
+
+    <section id="frontend-patterns">
+        <h2>Frontend-Patterns</h2>
+    </section>
+
+    <section id="security">
+        <h2>Security-Modell</h2>
+    </section>
+
+    <section id="rest-api">
+        <h2>REST-API-Referenz</h2>
+    </section>
+
+    <section id="shared-components">
+        <h2>Shared Components</h2>
+    </section>
+
+    <section id="build">
+        <h2>Build &amp; Deployment</h2>
+    </section>
+
+    <!-- Use Cases -->
+
+    <section id="uc-zeitreihen" class="page-break">
+        <h2>Zeitreihen verwalten</h2>
+    </section>
+
+    <section id="uc-aggregation">
+        <h2>Aggregation</h2>
+    </section>
+
+    <section id="uc-diagramme">
+        <h2>Diagramme</h2>
+    </section>
+
+    <section id="uc-geschaeftspartner">
+        <h2>Geschäftspartner</h2>
+    </section>
+
+    <section id="uc-waehrungen">
+        <h2>Währungen</h2>
+    </section>
+
+    <section id="uc-batchplanung">
+        <h2>Batchplanung</h2>
+    </section>
+
+    <section id="uc-benutzerverwaltung">
+        <h2>Benutzerverwaltung</h2>
+    </section>
+
+    <section id="uc-sidebar">
+        <h2>Sidebar-Navigation</h2>
+    </section>
+
+    <section id="uc-filter">
+        <h2>Filter-System</h2>
+    </section>
+
+</main>
+
+</body>
+</html>
