@@ -2,12 +2,18 @@
 
 ## Offen
 
-### QueryRegistry
-- [x] **Q1** — Migration `007_query_registry.sql` ausfuehren (Docker starten, dann Migration)
-- [ ] **Q2** — Bestehende SQL-Statements schrittweise in XML migrieren (Objects, Timeseries etc.)
+### QueryRegistry — ERLEDIGT (jOOQ-Migration)
+- [x] **Q1** — Migration `007_query_registry.sql` ausfuehren
+- [x] **Q2** — QueryRegistry/QueryLoader/XML-Queries durch jOOQ DSL ersetzt, ts_query per Migration 010 entfernt
 
-### Umbenennung
-- [x] **U1** — Projekt von "timeseries" auf "market" umbenennen (Package, Verzeichnis, Gradle, Docker, Git-Remote etc.)
+### Umbenennung — ERLEDIGT
+- [x] **U1** — Projekt von "timeseries" auf "market" umbenennen
+
+### DB-Unabhaengigkeit / Schema-Migrationen
+- [ ] **DB1** — Flyway einrichten (`spring-boot-starter-flyway`), bestehende Migrationen in `sql/migrations/` als Flyway-Migrationen uebernehmen
+- [ ] **DB2** — DB-spezifische Migrationsordner: `db/migration/postgresql/` und `db/migration/oracle/` fuer Dialekt-Unterschiede (Partitioning, Hypertables vs. Oracle Partitions)
+- [ ] **DB3** — OracleTimeSeriesProcedures implementieren (PL/SQL, TABLE-Types statt Arrays)
+- [ ] **DB4** — jOOQ Oracle-Lizenz evaluieren (Kosten, Bedingungen) wenn Oracle-Support benoetigt wird
 
 ### Projekt aufräumen
 - [ ] **P1** — Root aufräumen: Lose Skripte (`insert_*.sh`, Logs) in `scripts/` verschieben oder entfernen, klare Ordnerstruktur definieren
