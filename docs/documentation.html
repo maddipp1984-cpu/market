@@ -7,6 +7,7 @@
     <style>
         /* ===== Reset & Base ===== */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
 
         body {
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -1446,6 +1447,11 @@ Administration/        ← nur für Admins
         <h3>Technische Details</h3>
         <p>Filter werden über <code>POST /query</code> mit einem <code>FilterRequest</code> (Liste von <code>FilterCondition</code>-Objekten) an das Backend gesendet. Der <code>FilterQueryBuilder</code> validiert die Spalten gegen eine Whitelist und erzeugt parametrisierte SQL-WHERE-Klauseln.</p>
     </section>
+
+    <!-- Footer -->
+    <footer style="margin-top: 64px; padding-top: 24px; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 0.85em;">
+        <p>Zeitreihensystem — Projektdokumentation · Stand: März 2026</p>
+    </footer>
 
 </main>
 
