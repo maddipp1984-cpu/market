@@ -1,4 +1,4 @@
-package de.market.timeseries.model;
+package de.market.filterpreset.model;
 
 import java.time.OffsetDateTime;
 

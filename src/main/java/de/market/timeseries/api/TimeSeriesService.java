@@ -1,11 +1,11 @@
 package de.market.timeseries.api;
 
-import de.market.timeseries.repository.FilterPresetRepository;
+import de.market.filterpreset.repository.FilterPresetRepository;
 import de.market.timeseries.repository.HeaderRepository;
 import de.market.timeseries.repository.ObjectRepository;
 import de.market.timeseries.repository.TimeSeriesRepository;
 import de.market.timeseries.model.Currency;
-import de.market.timeseries.model.FilterPreset;
+import de.market.filterpreset.model.FilterPreset;
 import de.market.timeseries.model.ObjectType;
 import de.market.timeseries.model.TimeDimension;
 import de.market.timeseries.model.TimeSeriesHeader;

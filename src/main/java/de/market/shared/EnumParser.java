@@ -1,4 +1,4 @@
-package de.market.timeseries.rest;
+package de.market.shared;
 
 import java.util.Arrays;
 

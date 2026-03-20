@@ -1,10 +1,10 @@
-package de.market.timeseries.rest;
+package de.market.filterpreset.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.market.timeseries.api.TimeSeriesService;
-import de.market.timeseries.model.FilterPreset;
-import de.market.timeseries.rest.dto.CreateFilterPresetRequest;
-import de.market.timeseries.rest.dto.FilterPresetResponse;
+import de.market.filterpreset.model.FilterPreset;
+import de.market.filterpreset.rest.dto.CreateFilterPresetRequest;
+import de.market.filterpreset.rest.dto.FilterPresetResponse;
 import de.market.security.PermissionService;
 import de.market.security.SecurityUtils;
 

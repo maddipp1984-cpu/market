@@ -1,7 +1,7 @@
-package de.market.timeseries.rest.dto;
+package de.market.filterpreset.rest.dto;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.market.timeseries.model.FilterPreset;
+import de.market.filterpreset.model.FilterPreset;
 
 import java.time.OffsetDateTime;
 

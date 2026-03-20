@@ -1,4 +1,4 @@
-package de.market.timeseries.rest.dto;
+package de.market.filterpreset.rest.dto;
 
 public class CreateFilterPresetRequest {
 

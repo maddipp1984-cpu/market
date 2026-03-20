@@ -8,6 +8,7 @@ import de.market.shared.dto.ColumnMeta;
 import de.market.shared.dto.FilterRequest;
 import de.market.shared.dto.JooqFilterBuilder;
 import de.market.shared.dto.TableResponse;
+import de.market.shared.EnumParser;
 import de.market.timeseries.rest.dto.CreateObjectRequest;
 import de.market.timeseries.rest.dto.ObjectResponse;
 import de.market.timeseries.rest.dto.TimeSeriesHeaderResponse;

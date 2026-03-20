@@ -1,6 +1,6 @@
-package de.market.timeseries.repository;
+package de.market.filterpreset.repository;
 
-import de.market.timeseries.model.FilterPreset;
+import de.market.filterpreset.model.FilterPreset;
 
 import org.jooq.DSLContext;
 import org.jooq.JSONB;

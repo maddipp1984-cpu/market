@@ -14,6 +14,7 @@ import de.market.timeseries.rest.dto.TimeSeriesHeaderResponse;
 import de.market.timeseries.rest.dto.TimeSeriesValuesResponse;
 import de.market.timeseries.rest.dto.WriteSimpleValueRequest;
 import de.market.timeseries.rest.dto.WriteValuesRequest;
+import de.market.shared.EnumParser;
 
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
