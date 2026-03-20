@@ -4,16 +4,17 @@ import de.market.currency.model.CurrencyEntity;
 import de.market.currency.repository.CurrencyJpaRepository;
 import de.market.currency.repository.CurrencyOverviewRepository;
 import de.market.currency.rest.dto.CurrencyDto;
+import de.market.shared.service.AbstractCrudService;
+import org.jooq.Condition;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
 @Service
 @Transactional
-public class CurrencyService {
+public class CurrencyService extends AbstractCrudService<CurrencyDto, CurrencyEntity, Short> {
 
     private final CurrencyJpaRepository repository;
     private final CurrencyOverviewRepository overviewRepository;
@@ -24,13 +25,13 @@ public class CurrencyService {
     }
 
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> findAllAsRows() throws SQLException {
+    public List<Map<String, Object>> findAllAsRows() {
         return overviewRepository.findAllAsRows();
     }
 
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> findFiltered(String whereSql, List<Object> params) throws SQLException {
-        return overviewRepository.findFiltered(whereSql, params);
+    public List<Map<String, Object>> findFiltered(Condition condition) {
+        return overviewRepository.findFiltered(condition);
     }
 
     @Transactional(readOnly = true)
@@ -41,7 +42,7 @@ public class CurrencyService {
     }
 
     public CurrencyDto create(CurrencyDto dto) {
-        validateRequired(dto);
+        validate(dto);
         if (repository.existsByIsoCode(dto.getIsoCode())) {
             throw new IllegalStateException("ISO-Code bereits vergeben: " + dto.getIsoCode());
         }
@@ -51,7 +52,7 @@ public class CurrencyService {
     }
 
     public CurrencyDto update(Short id, CurrencyDto dto) {
-        validateRequired(dto);
+        validate(dto);
         CurrencyEntity existing = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Waehrung nicht gefunden: id=" + id));
 
@@ -76,7 +77,8 @@ public class CurrencyService {
         }
     }
 
-    private CurrencyDto toDto(CurrencyEntity entity) {
+    @Override
+    protected CurrencyDto toDto(CurrencyEntity entity) {
         CurrencyDto dto = new CurrencyDto();
         dto.setId(entity.getId());
         dto.setIsoCode(entity.getIsoCode());
@@ -84,14 +86,16 @@ public class CurrencyService {
         return dto;
     }
 
-    private CurrencyEntity toEntity(CurrencyDto dto) {
+    @Override
+    protected CurrencyEntity toEntity(CurrencyDto dto) {
         CurrencyEntity entity = new CurrencyEntity();
         entity.setIsoCode(dto.getIsoCode());
         entity.setDescription(dto.getDescription());
         return entity;
     }
 
-    private void validateRequired(CurrencyDto dto) {
+    @Override
+    protected void validate(CurrencyDto dto) {
         if (dto.getIsoCode() == null || dto.getIsoCode().isBlank()) {
             throw new IllegalArgumentException("ISO-Code ist ein Pflichtfeld");
         }
