@@ -5,18 +5,18 @@ import de.market.timeseries.model.ObjectType;
 import de.market.timeseries.model.TimeSeriesHeader;
 import de.market.timeseries.model.TsObject;
 import de.market.shared.dto.ColumnMeta;
-import de.market.shared.dto.FilterQueryBuilder;
 import de.market.shared.dto.FilterRequest;
+import de.market.shared.dto.JooqFilterBuilder;
 import de.market.shared.dto.TableResponse;
 import de.market.timeseries.rest.dto.CreateObjectRequest;
 import de.market.timeseries.rest.dto.ObjectResponse;
 import de.market.timeseries.rest.dto.TimeSeriesHeaderResponse;
 
 import jakarta.validation.Valid;
+import org.jooq.Condition;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,14 +47,14 @@ public class ObjectController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Long>> create(@Valid @RequestBody CreateObjectRequest req) throws SQLException {
+    public ResponseEntity<Map<String, Long>> create(@Valid @RequestBody CreateObjectRequest req) {
         ObjectType type = EnumParser.parse(ObjectType.class, req.getType(), "type");
         long objectId = service.createObject(type, req.getKey(), req.getDescription());
         return ResponseEntity.status(201).body(Map.of("objectId", objectId));
     }
 
     @GetMapping(params = {"!key", "!type"})
-    public ResponseEntity<TableResponse> getAll() throws SQLException {
+    public ResponseEntity<TableResponse> getAll() {
         List<Map<String, Object>> data = service.getAllObjects().stream()
                 .map(this::toRow)
                 .toList();
@@ -62,21 +62,21 @@ public class ObjectController {
     }
 
     @GetMapping("/{objectId}")
-    public ResponseEntity<ObjectResponse> getById(@PathVariable long objectId) throws SQLException {
+    public ResponseEntity<ObjectResponse> getById(@PathVariable long objectId) {
         return service.getObject(objectId)
                 .map(o -> ResponseEntity.ok(ObjectResponse.from(o)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping(params = "key")
-    public ResponseEntity<ObjectResponse> getByKey(@RequestParam String key) throws SQLException {
+    public ResponseEntity<ObjectResponse> getByKey(@RequestParam String key) {
         return service.getObject(key)
                 .map(o -> ResponseEntity.ok(ObjectResponse.from(o)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping(params = "type")
-    public ResponseEntity<List<ObjectResponse>> getByType(@RequestParam String type) throws SQLException {
+    public ResponseEntity<List<ObjectResponse>> getByType(@RequestParam String type) {
         ObjectType objectType = EnumParser.parse(ObjectType.class, type, "type");
         List<ObjectResponse> result = service.getObjectsByType(objectType).stream()
                 .map(ObjectResponse::from)
@@ -85,7 +85,7 @@ public class ObjectController {
     }
 
     @GetMapping("/{objectId}/timeseries")
-    public ResponseEntity<List<TimeSeriesHeaderResponse>> getTimeSeries(@PathVariable long objectId) throws SQLException {
+    public ResponseEntity<List<TimeSeriesHeaderResponse>> getTimeSeries(@PathVariable long objectId) {
         List<TimeSeriesHeaderResponse> result = service.getTimeSeriesByObject(objectId).stream()
                 .map(TimeSeriesHeaderResponse::from)
                 .toList();
@@ -93,13 +93,13 @@ public class ObjectController {
     }
 
     @PutMapping("/{objectId}/timeseries/{tsId}")
-    public ResponseEntity<Void> assign(@PathVariable long objectId, @PathVariable long tsId) throws SQLException {
+    public ResponseEntity<Void> assign(@PathVariable long objectId, @PathVariable long tsId) {
         service.assignToObject(tsId, objectId);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{objectId}/timeseries/{tsId}")
-    public ResponseEntity<Void> unassign(@PathVariable long objectId, @PathVariable long tsId) throws SQLException {
+    public ResponseEntity<Void> unassign(@PathVariable long objectId, @PathVariable long tsId) {
         TimeSeriesHeader header = service.getHeader(tsId)
                 .orElseThrow(() -> new IllegalArgumentException("Zeitreihe nicht gefunden: tsId=" + tsId));
         if (header.getObjectId() == null || header.getObjectId() != objectId) {
@@ -111,13 +111,13 @@ public class ObjectController {
     }
 
     @PostMapping("/query")
-    public ResponseEntity<TableResponse> query(@RequestBody FilterRequest request) throws SQLException {
+    public ResponseEntity<TableResponse> query(@RequestBody FilterRequest request) {
         List<TsObject> objects;
 
         if (request.getConditions() != null && !request.getConditions().isEmpty()) {
-            FilterQueryBuilder.WhereClause where = FilterQueryBuilder.build(
+            Condition condition = JooqFilterBuilder.build(
                     request.getConditions(), ALLOWED_SQL_COLUMNS);
-            objects = service.findObjectsFiltered(where.getSql(), where.getParams());
+            objects = service.findObjectsFiltered(condition);
         } else {
             objects = service.getAllObjects();
         }
@@ -127,7 +127,7 @@ public class ObjectController {
     }
 
     @DeleteMapping("/{objectId}")
-    public ResponseEntity<Void> delete(@PathVariable long objectId) throws SQLException {
+    public ResponseEntity<Void> delete(@PathVariable long objectId) {
         service.deleteObject(objectId);
         return ResponseEntity.noContent().build();
     }

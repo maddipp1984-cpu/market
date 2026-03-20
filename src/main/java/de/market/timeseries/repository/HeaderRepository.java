@@ -5,222 +5,113 @@ import de.market.timeseries.model.TimeDimension;
 import de.market.timeseries.model.TimeSeriesHeader;
 import de.market.timeseries.model.Unit;
 
+import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.springframework.stereotype.Repository;
 
-import javax.sql.DataSource;
-import java.sql.*;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import static de.market.jooq.generated.tables.TsHeader.TS_HEADER;
+import static org.jooq.impl.DSL.currentOffsetDateTime;
 
 @Repository
 public class HeaderRepository {
 
-    private final DataSource dataSource;
+    private final DSLContext dsl;
 
-    public HeaderRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
+    public HeaderRepository(DSLContext dsl) {
+        this.dsl = dsl;
     }
 
-    public long create(TimeSeriesHeader header) throws SQLException {
-        String sql = "INSERT INTO ts_header (ts_key, time_dim, unit_id, currency_id, object_id, description) " +
-                     "VALUES (?, ?, ?, ?, ?, ?) RETURNING ts_id";
+    public long create(TimeSeriesHeader header) {
+        Long id = dsl.insertInto(TS_HEADER)
+                .set(TS_HEADER.TS_KEY, header.getTsKey())
+                .set(TS_HEADER.TIME_DIM, (short) header.getTimeDimension().getCode())
+                .set(TS_HEADER.UNIT_ID, (short) header.getUnit().getCode())
+                .set(TS_HEADER.CURRENCY_ID, header.getCurrency() != null ? (short) header.getCurrency().getCode() : null)
+                .set(TS_HEADER.OBJECT_ID, header.getObjectId())
+                .set(TS_HEADER.DESCRIPTION, header.getDescription())
+                .returning(TS_HEADER.TS_ID)
+                .fetchOne()
+                .get(TS_HEADER.TS_ID);
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, header.getTsKey());
-            ps.setInt(2, header.getTimeDimension().getCode());
-            ps.setInt(3, header.getUnit().getCode());
-            if (header.getCurrency() != null) {
-                ps.setInt(4, header.getCurrency().getCode());
-            } else {
-                ps.setNull(4, Types.SMALLINT);
-            }
-            if (header.getObjectId() != null) {
-                ps.setLong(5, header.getObjectId());
-            } else {
-                ps.setNull(5, Types.BIGINT);
-            }
-            ps.setString(6, header.getDescription());
-
-            try (ResultSet rs = ps.executeQuery()) {
-                rs.next();
-                long id = rs.getLong(1);
-                header.setTsId(id);
-                return id;
-            }
-        }
+        header.setTsId(id);
+        return id;
     }
 
-    public Optional<TimeSeriesHeader> findById(long tsId) throws SQLException {
-        String sql = "SELECT ts_id, ts_key, time_dim, unit_id, currency_id, object_id, description, created_at, updated_at " +
-                     "FROM ts_header WHERE ts_id = ?";
-
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setLong(1, tsId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapRow(rs));
-                }
-                return Optional.empty();
-            }
-        }
+    public Optional<TimeSeriesHeader> findById(long tsId) {
+        return dsl.selectFrom(TS_HEADER)
+                .where(TS_HEADER.TS_ID.eq(tsId))
+                .fetchOptional(this::mapRow);
     }
 
-    public List<TimeSeriesHeader> findByIds(List<Long> tsIds) throws SQLException {
-        String sql = "SELECT ts_id, ts_key, time_dim, unit_id, currency_id, object_id, description, created_at, updated_at " +
-                     "FROM ts_header WHERE ts_id = ANY(?)";
-
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            java.sql.Array sqlIds = conn.createArrayOf("bigint", tsIds.toArray(new Long[0]));
-            try {
-                ps.setArray(1, sqlIds);
-                List<TimeSeriesHeader> result = new ArrayList<>();
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        result.add(mapRow(rs));
-                    }
-                }
-                return result;
-            } finally {
-                sqlIds.free();
-            }
-        }
+    public List<TimeSeriesHeader> findByIds(List<Long> tsIds) {
+        return dsl.selectFrom(TS_HEADER)
+                .where(TS_HEADER.TS_ID.in(tsIds))
+                .fetch(this::mapRow);
     }
 
-    public Optional<TimeSeriesHeader> findByKey(String tsKey) throws SQLException {
-        String sql = "SELECT ts_id, ts_key, time_dim, unit_id, currency_id, object_id, description, created_at, updated_at " +
-                     "FROM ts_header WHERE ts_key = ?";
-
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, tsKey);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapRow(rs));
-                }
-                return Optional.empty();
-            }
-        }
+    public Optional<TimeSeriesHeader> findByKey(String tsKey) {
+        return dsl.selectFrom(TS_HEADER)
+                .where(TS_HEADER.TS_KEY.eq(tsKey))
+                .fetchOptional(this::mapRow);
     }
 
-    public List<TimeSeriesHeader> findByDimension(TimeDimension dimension) throws SQLException {
-        String sql = "SELECT ts_id, ts_key, time_dim, unit_id, currency_id, object_id, description, created_at, updated_at " +
-                     "FROM ts_header WHERE time_dim = ?";
-
-        List<TimeSeriesHeader> result = new ArrayList<>();
-
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, dimension.getCode());
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    result.add(mapRow(rs));
-                }
-            }
-        }
-        return result;
+    public List<TimeSeriesHeader> findByDimension(TimeDimension dimension) {
+        return dsl.selectFrom(TS_HEADER)
+                .where(TS_HEADER.TIME_DIM.eq((short) dimension.getCode()))
+                .fetch(this::mapRow);
     }
 
-    public boolean update(TimeSeriesHeader header) throws SQLException {
-        String sql = "UPDATE ts_header SET ts_key = ?, unit_id = ?, currency_id = ?, object_id = ?, " +
-                     "description = ?, updated_at = NOW() WHERE ts_id = ?";
-
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, header.getTsKey());
-            ps.setInt(2, header.getUnit().getCode());
-            if (header.getCurrency() != null) {
-                ps.setInt(3, header.getCurrency().getCode());
-            } else {
-                ps.setNull(3, Types.SMALLINT);
-            }
-            if (header.getObjectId() != null) {
-                ps.setLong(4, header.getObjectId());
-            } else {
-                ps.setNull(4, Types.BIGINT);
-            }
-            ps.setString(5, header.getDescription());
-            ps.setLong(6, header.getTsId());
-
-            return ps.executeUpdate() > 0;
-        }
+    public boolean update(TimeSeriesHeader header) {
+        int rows = dsl.update(TS_HEADER)
+                .set(TS_HEADER.TS_KEY, header.getTsKey())
+                .set(TS_HEADER.UNIT_ID, (short) header.getUnit().getCode())
+                .set(TS_HEADER.CURRENCY_ID, header.getCurrency() != null ? (short) header.getCurrency().getCode() : null)
+                .set(TS_HEADER.OBJECT_ID, header.getObjectId())
+                .set(TS_HEADER.DESCRIPTION, header.getDescription())
+                .set(TS_HEADER.UPDATED_AT, currentOffsetDateTime())
+                .where(TS_HEADER.TS_ID.eq(header.getTsId()))
+                .execute();
+        return rows > 0;
     }
 
-    public boolean updateObjectId(long tsId, Long objectId) throws SQLException {
-        String sql = "UPDATE ts_header SET object_id = ? WHERE ts_id = ?";
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            if (objectId != null) {
-                ps.setLong(1, objectId);
-            } else {
-                ps.setNull(1, Types.BIGINT);
-            }
-            ps.setLong(2, tsId);
-            return ps.executeUpdate() > 0;
-        }
+    public boolean updateObjectId(long tsId, Long objectId) {
+        int rows = dsl.update(TS_HEADER)
+                .set(TS_HEADER.OBJECT_ID, objectId)
+                .where(TS_HEADER.TS_ID.eq(tsId))
+                .execute();
+        return rows > 0;
     }
 
-    public List<TimeSeriesHeader> findByObjectId(long objectId) throws SQLException {
-        String sql = "SELECT ts_id, ts_key, time_dim, unit_id, currency_id, object_id, description, created_at, updated_at " +
-                     "FROM ts_header WHERE object_id = ?";
-
-        List<TimeSeriesHeader> result = new ArrayList<>();
-
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setLong(1, objectId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    result.add(mapRow(rs));
-                }
-            }
-        }
-        return result;
+    public List<TimeSeriesHeader> findByObjectId(long objectId) {
+        return dsl.selectFrom(TS_HEADER)
+                .where(TS_HEADER.OBJECT_ID.eq(objectId))
+                .fetch(this::mapRow);
     }
 
-    public boolean delete(long tsId) throws SQLException {
-        String sql = "DELETE FROM ts_header WHERE ts_id = ?";
-
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setLong(1, tsId);
-            return ps.executeUpdate() > 0;
-        }
+    public boolean delete(long tsId) {
+        int rows = dsl.deleteFrom(TS_HEADER)
+                .where(TS_HEADER.TS_ID.eq(tsId))
+                .execute();
+        return rows > 0;
     }
 
-    private TimeSeriesHeader mapRow(ResultSet rs) throws SQLException {
+    private TimeSeriesHeader mapRow(Record r) {
         TimeSeriesHeader h = new TimeSeriesHeader();
-        h.setTsId(rs.getLong("ts_id"));
-        h.setTsKey(rs.getString("ts_key"));
-        h.setTimeDimension(TimeDimension.fromCode(rs.getInt("time_dim")));
-        h.setUnit(Unit.fromCode(rs.getInt("unit_id")));
-        int currencyId = rs.getInt("currency_id");
-        if (!rs.wasNull()) {
+        h.setTsId(r.get(TS_HEADER.TS_ID));
+        h.setTsKey(r.get(TS_HEADER.TS_KEY));
+        h.setTimeDimension(TimeDimension.fromCode(r.get(TS_HEADER.TIME_DIM)));
+        h.setUnit(Unit.fromCode(r.get(TS_HEADER.UNIT_ID)));
+        Short currencyId = r.get(TS_HEADER.CURRENCY_ID);
+        if (currencyId != null) {
             h.setCurrency(Currency.fromCode(currencyId));
         }
-        long objectId = rs.getLong("object_id");
-        if (!rs.wasNull()) {
-            h.setObjectId(objectId);
-        }
-        h.setDescription(rs.getString("description"));
-        h.setCreatedAt(rs.getObject("created_at", OffsetDateTime.class));
-        h.setUpdatedAt(rs.getObject("updated_at", OffsetDateTime.class));
+        h.setObjectId(r.get(TS_HEADER.OBJECT_ID));
+        h.setDescription(r.get(TS_HEADER.DESCRIPTION));
+        h.setCreatedAt(r.get(TS_HEADER.CREATED_AT));
+        h.setUpdatedAt(r.get(TS_HEADER.UPDATED_AT));
         return h;
     }
 }

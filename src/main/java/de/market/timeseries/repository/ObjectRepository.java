@@ -1,173 +1,97 @@
 package de.market.timeseries.repository;
 
 import de.market.timeseries.model.ObjectType;
-import de.market.timeseries.model.TsObject;
 
+import org.jooq.Condition;
+import org.jooq.DSLContext;
+import org.jooq.Record;
 import org.springframework.stereotype.Repository;
 
-import javax.sql.DataSource;
-import java.sql.*;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import static de.market.jooq.generated.tables.TsObject.TS_OBJECT;
+import static org.jooq.impl.DSL.currentOffsetDateTime;
 
 @Repository
 public class ObjectRepository {
 
-    private final DataSource dataSource;
+    private final DSLContext dsl;
 
-    public ObjectRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
+    public ObjectRepository(DSLContext dsl) {
+        this.dsl = dsl;
     }
 
-    public long create(TsObject object) throws SQLException {
-        String sql = "INSERT INTO ts_object (type_id, object_key, description) " +
-                     "VALUES (?, ?, ?) RETURNING object_id";
+    public long create(de.market.timeseries.model.TsObject object) {
+        Long id = dsl.insertInto(TS_OBJECT)
+                .set(TS_OBJECT.TYPE_ID, (short) object.getObjectType().getCode())
+                .set(TS_OBJECT.OBJECT_KEY, object.getObjectKey())
+                .set(TS_OBJECT.DESCRIPTION, object.getDescription())
+                .returning(TS_OBJECT.OBJECT_ID)
+                .fetchOne()
+                .get(TS_OBJECT.OBJECT_ID);
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, object.getObjectType().getCode());
-            ps.setString(2, object.getObjectKey());
-            ps.setString(3, object.getDescription());
-
-            try (ResultSet rs = ps.executeQuery()) {
-                rs.next();
-                long id = rs.getLong(1);
-                object.setObjectId(id);
-                return id;
-            }
-        }
+        object.setObjectId(id);
+        return id;
     }
 
-    public Optional<TsObject> findById(long objectId) throws SQLException {
-        String sql = "SELECT object_id, type_id, object_key, description, created_at, updated_at " +
-                     "FROM ts_object WHERE object_id = ?";
-
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setLong(1, objectId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapRow(rs));
-                }
-                return Optional.empty();
-            }
-        }
+    public Optional<de.market.timeseries.model.TsObject> findById(long objectId) {
+        return dsl.selectFrom(TS_OBJECT)
+                .where(TS_OBJECT.OBJECT_ID.eq(objectId))
+                .fetchOptional(this::mapRow);
     }
 
-    public Optional<TsObject> findByKey(String objectKey) throws SQLException {
-        String sql = "SELECT object_id, type_id, object_key, description, created_at, updated_at " +
-                     "FROM ts_object WHERE object_key = ?";
-
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, objectKey);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapRow(rs));
-                }
-                return Optional.empty();
-            }
-        }
+    public Optional<de.market.timeseries.model.TsObject> findByKey(String objectKey) {
+        return dsl.selectFrom(TS_OBJECT)
+                .where(TS_OBJECT.OBJECT_KEY.eq(objectKey))
+                .fetchOptional(this::mapRow);
     }
 
-    public List<TsObject> findAll() throws SQLException {
-        String sql = "SELECT object_id, type_id, object_key, description, created_at, updated_at " +
-                     "FROM ts_object ORDER BY object_key";
-
-        List<TsObject> result = new ArrayList<>();
-
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                result.add(mapRow(rs));
-            }
-        }
-        return result;
+    public List<de.market.timeseries.model.TsObject> findAll() {
+        return dsl.selectFrom(TS_OBJECT)
+                .orderBy(TS_OBJECT.OBJECT_KEY)
+                .fetch(this::mapRow);
     }
 
-    public List<TsObject> findByType(ObjectType type) throws SQLException {
-        String sql = "SELECT object_id, type_id, object_key, description, created_at, updated_at " +
-                     "FROM ts_object WHERE type_id = ?";
-
-        List<TsObject> result = new ArrayList<>();
-
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, type.getCode());
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    result.add(mapRow(rs));
-                }
-            }
-        }
-        return result;
+    public List<de.market.timeseries.model.TsObject> findByType(ObjectType type) {
+        return dsl.selectFrom(TS_OBJECT)
+                .where(TS_OBJECT.TYPE_ID.eq((short) type.getCode()))
+                .fetch(this::mapRow);
     }
 
-    public boolean update(TsObject object) throws SQLException {
-        String sql = "UPDATE ts_object SET type_id = ?, object_key = ?, description = ?, " +
-                     "updated_at = NOW() WHERE object_id = ?";
-
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, object.getObjectType().getCode());
-            ps.setString(2, object.getObjectKey());
-            ps.setString(3, object.getDescription());
-            ps.setLong(4, object.getObjectId());
-
-            return ps.executeUpdate() > 0;
-        }
+    public boolean update(de.market.timeseries.model.TsObject object) {
+        int rows = dsl.update(TS_OBJECT)
+                .set(TS_OBJECT.TYPE_ID, (short) object.getObjectType().getCode())
+                .set(TS_OBJECT.OBJECT_KEY, object.getObjectKey())
+                .set(TS_OBJECT.DESCRIPTION, object.getDescription())
+                .set(TS_OBJECT.UPDATED_AT, currentOffsetDateTime())
+                .where(TS_OBJECT.OBJECT_ID.eq(object.getObjectId()))
+                .execute();
+        return rows > 0;
     }
 
-    public boolean delete(long objectId) throws SQLException {
-        String sql = "DELETE FROM ts_object WHERE object_id = ?";
-
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setLong(1, objectId);
-            return ps.executeUpdate() > 0;
-        }
+    public boolean delete(long objectId) {
+        int rows = dsl.deleteFrom(TS_OBJECT)
+                .where(TS_OBJECT.OBJECT_ID.eq(objectId))
+                .execute();
+        return rows > 0;
     }
 
-    public List<TsObject> findFiltered(String whereClause, List<Object> params) throws SQLException {
-        String sql = "SELECT object_id, type_id, object_key, description, created_at, updated_at " +
-                     "FROM ts_object o WHERE " + whereClause + " ORDER BY o.object_key";
-
-        List<TsObject> result = new ArrayList<>();
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
-            }
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    result.add(mapRow(rs));
-                }
-            }
-        }
-        return result;
+    public List<de.market.timeseries.model.TsObject> findFiltered(Condition condition) {
+        return dsl.selectFrom(TS_OBJECT)
+                .where(condition)
+                .orderBy(TS_OBJECT.OBJECT_KEY)
+                .fetch(this::mapRow);
     }
 
-    private TsObject mapRow(ResultSet rs) throws SQLException {
-        TsObject obj = new TsObject();
-        obj.setObjectId(rs.getLong("object_id"));
-        obj.setObjectType(ObjectType.fromCode(rs.getInt("type_id")));
-        obj.setObjectKey(rs.getString("object_key"));
-        obj.setDescription(rs.getString("description"));
-        obj.setCreatedAt(rs.getObject("created_at", OffsetDateTime.class));
-        obj.setUpdatedAt(rs.getObject("updated_at", OffsetDateTime.class));
+    private de.market.timeseries.model.TsObject mapRow(Record r) {
+        de.market.timeseries.model.TsObject obj = new de.market.timeseries.model.TsObject();
+        obj.setObjectId(r.get(TS_OBJECT.OBJECT_ID));
+        obj.setObjectType(ObjectType.fromCode(r.get(TS_OBJECT.TYPE_ID)));
+        obj.setObjectKey(r.get(TS_OBJECT.OBJECT_KEY));
+        obj.setDescription(r.get(TS_OBJECT.DESCRIPTION));
+        obj.setCreatedAt(r.get(TS_OBJECT.CREATED_AT));
+        obj.setUpdatedAt(r.get(TS_OBJECT.UPDATED_AT));
         return obj;
     }
 }

@@ -37,7 +37,7 @@ public class TimeSeriesController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Long>> create(@Valid @RequestBody CreateTimeSeriesRequest req) throws SQLException {
+    public ResponseEntity<Map<String, Long>> create(@Valid @RequestBody CreateTimeSeriesRequest req) {
         TimeDimension dim = EnumParser.parse(TimeDimension.class, req.getDimension(), "dimension");
         Unit unit = EnumParser.parse(Unit.class, req.getUnit(), "unit");
         Currency currency = req.getCurrency() != null
@@ -54,14 +54,14 @@ public class TimeSeriesController {
     }
 
     @GetMapping("/{tsId}")
-    public ResponseEntity<TimeSeriesHeaderResponse> getById(@PathVariable long tsId) throws SQLException {
+    public ResponseEntity<TimeSeriesHeaderResponse> getById(@PathVariable long tsId) {
         return service.getHeader(tsId)
                 .map(h -> ResponseEntity.ok(TimeSeriesHeaderResponse.from(h)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping(params = "key")
-    public ResponseEntity<TimeSeriesHeaderResponse> getByKey(@RequestParam String key) throws SQLException {
+    public ResponseEntity<TimeSeriesHeaderResponse> getByKey(@RequestParam String key) {
         return service.getHeader(key)
                 .map(h -> ResponseEntity.ok(TimeSeriesHeaderResponse.from(h)))
                 .orElse(ResponseEntity.notFound().build());

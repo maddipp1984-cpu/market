@@ -13,6 +13,7 @@ import de.market.timeseries.model.TimeSeriesSlice;
 import de.market.timeseries.model.TsObject;
 import de.market.timeseries.model.Unit;
 
+import org.jooq.Condition;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
@@ -41,30 +42,30 @@ public class TimeSeriesService {
     // Header-Operationen
     // ================================================================
 
-    public long createTimeSeries(String key, TimeDimension dimension, Unit unit) throws SQLException {
+    public long createTimeSeries(String key, TimeDimension dimension, Unit unit) {
         TimeSeriesHeader header = new TimeSeriesHeader(key, dimension, unit);
         return headerRepo.create(header);
     }
 
     public long createTimeSeries(String key, TimeDimension dimension, Unit unit,
-                                 String description) throws SQLException {
+                                 String description) {
         TimeSeriesHeader header = new TimeSeriesHeader(key, dimension, unit);
         header.setDescription(description);
         return headerRepo.create(header);
     }
 
     public long createTimeSeries(String key, TimeDimension dimension, Unit unit,
-                                 Currency currency, String description) throws SQLException {
+                                 Currency currency, String description) {
         TimeSeriesHeader header = new TimeSeriesHeader(key, dimension, unit, currency);
         header.setDescription(description);
         return headerRepo.create(header);
     }
 
-    public Optional<TimeSeriesHeader> getHeader(long tsId) throws SQLException {
+    public Optional<TimeSeriesHeader> getHeader(long tsId) {
         return headerRepo.findById(tsId);
     }
 
-    public Optional<TimeSeriesHeader> getHeader(String tsKey) throws SQLException {
+    public Optional<TimeSeriesHeader> getHeader(String tsKey) {
         return headerRepo.findByKey(tsKey);
     }
 
@@ -167,56 +168,49 @@ public class TimeSeriesService {
     // Objekt-Operationen
     // ================================================================
 
-    public List<TsObject> getAllObjects() throws SQLException {
+    public List<TsObject> getAllObjects() {
         return objectRepo.findAll();
     }
 
-    public long createObject(ObjectType type, String key, String description) throws SQLException {
-
+    public long createObject(ObjectType type, String key, String description) {
         TsObject obj = new TsObject(type, key, description);
         return objectRepo.create(obj);
     }
 
-    public Optional<TsObject> getObject(long objectId) throws SQLException {
-
+    public Optional<TsObject> getObject(long objectId) {
         return objectRepo.findById(objectId);
     }
 
-    public Optional<TsObject> getObject(String objectKey) throws SQLException {
-
+    public Optional<TsObject> getObject(String objectKey) {
         return objectRepo.findByKey(objectKey);
     }
 
-    public List<TsObject> getObjectsByType(ObjectType type) throws SQLException {
-
+    public List<TsObject> getObjectsByType(ObjectType type) {
         return objectRepo.findByType(type);
     }
 
-    public List<TimeSeriesHeader> getTimeSeriesByObject(long objectId) throws SQLException {
+    public List<TimeSeriesHeader> getTimeSeriesByObject(long objectId) {
         return headerRepo.findByObjectId(objectId);
     }
 
-    public void assignToObject(long tsId, long objectId) throws SQLException {
-
+    public void assignToObject(long tsId, long objectId) {
         requireObject(objectId);
         requireHeader(tsId);  // prüft nur Existenz
         headerRepo.updateObjectId(tsId, objectId);
     }
 
-    public void removeFromObject(long tsId) throws SQLException {
+    public void removeFromObject(long tsId) {
         requireHeader(tsId);  // prüft nur Existenz
         headerRepo.updateObjectId(tsId, null);
     }
 
-    public void updateObject(TsObject object) throws SQLException {
-
+    public void updateObject(TsObject object) {
         if (!objectRepo.update(object)) {
             throw new IllegalArgumentException("Objekt nicht gefunden: objectId=" + object.getObjectId());
         }
     }
 
-    public boolean deleteObject(long objectId) throws SQLException {
-
+    public boolean deleteObject(long objectId) {
         List<TimeSeriesHeader> assigned = headerRepo.findByObjectId(objectId);
         if (!assigned.isEmpty()) {
             throw new IllegalStateException("Objekt hat noch " + assigned.size()
@@ -225,8 +219,8 @@ public class TimeSeriesService {
         return objectRepo.delete(objectId);
     }
 
-    public List<TsObject> findObjectsFiltered(String whereClause, List<Object> params) throws SQLException {
-        return objectRepo.findFiltered(whereClause, params);
+    public List<TsObject> findObjectsFiltered(Condition condition) {
+        return objectRepo.findFiltered(condition);
     }
 
     // ================================================================
@@ -281,12 +275,12 @@ public class TimeSeriesService {
     // Hilfsmethoden
     // ================================================================
 
-    private TimeSeriesHeader requireHeader(long tsId) throws SQLException {
+    private TimeSeriesHeader requireHeader(long tsId) {
         return headerRepo.findById(tsId)
                 .orElseThrow(() -> new IllegalArgumentException("Zeitreihe nicht gefunden: tsId=" + tsId));
     }
 
-    private TsObject requireObject(long objectId) throws SQLException {
+    private TsObject requireObject(long objectId) {
         return objectRepo.findById(objectId)
                 .orElseThrow(() -> new IllegalArgumentException("Objekt nicht gefunden: objectId=" + objectId));
     }
