@@ -9,6 +9,8 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import org.jooq.exception.DataAccessException;
+
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -34,6 +36,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<Map<String, String>> handleConflict(IllegalStateException ex) {
         return ResponseEntity.status(409).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<Map<String, String>> handleDataAccessException(DataAccessException ex) {
+        log.error("Datenbankfehler (jOOQ)", ex);
+        return ResponseEntity.internalServerError().body(Map.of(
+                "error", "Interner Datenbankfehler"
+        ));
     }
 
     @ExceptionHandler(SQLException.class)

@@ -16,7 +16,6 @@ import de.market.timeseries.model.Unit;
 import org.jooq.Condition;
 import org.springframework.stereotype.Service;
 
-import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -76,7 +75,7 @@ public class TimeSeriesService {
     /**
      * Schreibt einen Tag. DST wird serverseitig validiert.
      */
-    public void writeDay(long tsId, LocalDate date, double[] values) throws SQLException {
+    public void writeDay(long tsId, LocalDate date, double[] values) {
         TimeSeriesHeader h = requireHeader(tsId);
         tsRepo.writeDay(tsId, h.getTimeDimension(), date, values);
     }
@@ -85,7 +84,7 @@ public class TimeSeriesService {
      * Schreibt ein ganzes Jahr (EIN DB-Aufruf).
      * @return Anzahl geschriebener Tage (365 oder 366)
      */
-    public int writeYear(long tsId, int year, double[] values) throws SQLException {
+    public int writeYear(long tsId, int year, double[] values) {
         TimeSeriesHeader h = requireHeader(tsId);
         return tsRepo.writeYear(tsId, h.getTimeDimension(), year, values);
     }
@@ -93,7 +92,7 @@ public class TimeSeriesService {
     /**
      * Schreibt einen Einzelwert für Tag/Monat/Jahr (Upsert).
      */
-    public void writeSimple(long tsId, LocalDate date, double value) throws SQLException {
+    public void writeSimple(long tsId, LocalDate date, double value) {
         TimeSeriesHeader h = requireHeader(tsId);
         tsRepo.writeSimple(tsId, h.getTimeDimension(), date, value);
     }
@@ -101,7 +100,7 @@ public class TimeSeriesService {
     /**
      * Schreibt einen Einzelwert für ein Jahr (Upsert).
      */
-    public void writeSimple(long tsId, int year, double value) throws SQLException {
+    public void writeSimple(long tsId, int year, double value) {
         TimeSeriesHeader h = requireHeader(tsId);
         tsRepo.writeSimple(tsId, h.getTimeDimension(), LocalDate.of(year, 1, 1), value);
     }
@@ -117,7 +116,7 @@ public class TimeSeriesService {
      * @param start Beginn (inklusiv, mit Uhrzeit)
      * @param end   Ende (exklusiv, mit Uhrzeit)
      */
-    public TimeSeriesSlice read(long tsId, LocalDateTime start, LocalDateTime end) throws SQLException {
+    public TimeSeriesSlice read(long tsId, LocalDateTime start, LocalDateTime end) {
         TimeSeriesHeader h = requireHeader(tsId);
         TimeDimension dim = h.getTimeDimension();
         if (dim == TimeDimension.QUARTER_HOUR || dim == TimeDimension.HOUR) {
@@ -133,7 +132,7 @@ public class TimeSeriesService {
     /**
      * Löscht eine Zeitreihe komplett (Werte + Header).
      */
-    public void deleteTimeSeries(long tsId) throws SQLException {
+    public void deleteTimeSeries(long tsId) {
         TimeSeriesHeader h = requireHeader(tsId);
         tsRepo.delete(tsId, h.getTimeDimension());
         headerRepo.delete(tsId);
@@ -142,7 +141,7 @@ public class TimeSeriesService {
     /**
      * Löscht alle Werte einer Zeitreihe (Header bleibt erhalten).
      */
-    public int deleteValues(long tsId) throws SQLException {
+    public int deleteValues(long tsId) {
         TimeSeriesHeader h = requireHeader(tsId);
         return tsRepo.delete(tsId, h.getTimeDimension());
     }
@@ -154,12 +153,12 @@ public class TimeSeriesService {
      * @param to   Ende (exklusiv)
      * @return Anzahl gelöschter Zeilen/Tage
      */
-    public int delete(long tsId, LocalDate from, LocalDate to) throws SQLException {
+    public int delete(long tsId, LocalDate from, LocalDate to) {
         TimeSeriesHeader h = requireHeader(tsId);
         return tsRepo.delete(tsId, h.getTimeDimension(), from, to);
     }
 
-    public long count(long tsId) throws SQLException {
+    public long count(long tsId) {
         TimeSeriesHeader h = requireHeader(tsId);
         return tsRepo.count(tsId, h.getTimeDimension());
     }

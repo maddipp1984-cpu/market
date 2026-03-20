@@ -19,7 +19,6 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -69,7 +68,7 @@ public class TimeSeriesController {
 
     @PostMapping("/{tsId}/values")
     public ResponseEntity<Void> writeDay(@PathVariable long tsId,
-                                         @Valid @RequestBody WriteValuesRequest req) throws SQLException {
+                                         @Valid @RequestBody WriteValuesRequest req)  {
         service.writeDay(tsId, req.getDate(), req.getValues());
         return ResponseEntity.noContent().build();
     }
@@ -77,26 +76,26 @@ public class TimeSeriesController {
     @GetMapping("/{tsId}/values")
     public ResponseEntity<TimeSeriesValuesResponse> read(@PathVariable long tsId,
                                                           @RequestParam LocalDateTime start,
-                                                          @RequestParam LocalDateTime end) throws SQLException {
+                                                          @RequestParam LocalDateTime end)  {
         TimeSeriesSlice slice = service.read(tsId, start, end);
         return ResponseEntity.ok(TimeSeriesValuesResponse.from(slice));
     }
 
     @PostMapping("/{tsId}/value")
     public ResponseEntity<Void> writeSimple(@PathVariable long tsId,
-                                             @Valid @RequestBody WriteSimpleValueRequest req) throws SQLException {
+                                             @Valid @RequestBody WriteSimpleValueRequest req)  {
         service.writeSimple(tsId, req.getDate(), req.getValue());
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{tsId}")
-    public ResponseEntity<Void> delete(@PathVariable long tsId) throws SQLException {
+    public ResponseEntity<Void> delete(@PathVariable long tsId)  {
         service.deleteTimeSeries(tsId);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/aggregate")
-    public ResponseEntity<AggregateResponse> aggregate(@RequestBody AggregateRequest req) throws SQLException {
+    public ResponseEntity<AggregateResponse> aggregate(@RequestBody AggregateRequest req)  {
         AggregationService.AggregationResult result =
                 aggregationService.aggregate(req.getTsIds(), req.getStart(), req.getEnd());
 
@@ -113,13 +112,13 @@ public class TimeSeriesController {
     }
 
     @DeleteMapping("/{tsId}/values")
-    public ResponseEntity<Map<String, Integer>> deleteValues(@PathVariable long tsId) throws SQLException {
+    public ResponseEntity<Map<String, Integer>> deleteValues(@PathVariable long tsId)  {
         int deleted = service.deleteValues(tsId);
         return ResponseEntity.ok(Map.of("deleted", deleted));
     }
 
     @GetMapping("/{tsId}/count")
-    public ResponseEntity<Map<String, Long>> count(@PathVariable long tsId) throws SQLException {
+    public ResponseEntity<Map<String, Long>> count(@PathVariable long tsId)  {
         long count = service.count(tsId);
         return ResponseEntity.ok(Map.of("count", count));
     }

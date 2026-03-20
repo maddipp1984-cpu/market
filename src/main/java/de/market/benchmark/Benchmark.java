@@ -5,6 +5,9 @@ import com.zaxxer.hikari.HikariDataSource;
 import de.market.timeseries.repository.TimeSeriesRepository;
 import de.market.timeseries.model.TimeDimension;
 import de.market.timeseries.model.TimeSeriesSlice;
+import org.jooq.DSLContext;
+import org.jooq.SQLDialect;
+import org.jooq.impl.DSL;
 
 import java.sql.*;
 import java.time.LocalDate;
@@ -36,7 +39,8 @@ public class Benchmark {
         config.setPoolName("bench-pool");
 
         try (HikariDataSource ds = new HikariDataSource(config)) {
-            TimeSeriesRepository tsRepo = new TimeSeriesRepository(ds);
+            DSLContext dsl = DSL.using(ds, SQLDialect.POSTGRES);
+            TimeSeriesRepository tsRepo = new TimeSeriesRepository(dsl);
 
             List<Long> allIds = loadIdsByPrefix(ds, prefix);
             if (allIds.isEmpty()) {

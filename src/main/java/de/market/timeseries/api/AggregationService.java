@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 
 import de.market.timeseries.client.DimensionConverter;
 
-import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -62,8 +61,7 @@ public class AggregationService {
             TimeSeriesSlice sumSlice
     ) {}
 
-    public AggregationResult aggregate(List<Long> tsIds, LocalDateTime start, LocalDateTime end)
-            throws SQLException {
+    public AggregationResult aggregate(List<Long> tsIds, LocalDateTime start, LocalDateTime end) {
         if (tsIds == null || tsIds.size() < 2) {
             throw new IllegalArgumentException("Mindestens 2 Zeitreihen erforderlich");
         }
@@ -152,7 +150,7 @@ public class AggregationService {
                         groupSum = DimensionConverter.disaggregate(groupSum, targetDim, AggregationFunction.SUM);
                     }
                     return groupSum;
-                } catch (SQLException e) {
+                } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             }, aggregationExecutor));
@@ -165,8 +163,6 @@ public class AggregationService {
                     .map(CompletableFuture::join)
                     .collect(Collectors.toList());
         } catch (Exception e) {
-            Throwable cause = e.getCause();
-            if (cause instanceof SQLException) throw (SQLException) cause;
             throw new RuntimeException(e);
         }
 

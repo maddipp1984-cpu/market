@@ -8,7 +8,6 @@ import de.market.timeseries.model.Unit;
 
 import org.springframework.stereotype.Component;
 
-import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -32,7 +31,7 @@ public class TimeSeriesClient {
      * Liest eine Zeitreihe in ihrer nativen Dimension.
      */
     public TimeSeriesSlice read(long tsId, LocalDateTime start, LocalDateTime end)
-            throws SQLException {
+             {
         return service.read(tsId, start, end);
     }
 
@@ -40,7 +39,7 @@ public class TimeSeriesClient {
      * Liest eine Zeitreihe und konvertiert in die Zieldimension (Default: SUM).
      */
     public TimeSeriesSlice read(long tsId, LocalDateTime start, LocalDateTime end,
-                                TimeDimension targetDimension) throws SQLException {
+                                TimeDimension targetDimension)  {
         return read(tsId, start, end, targetDimension, DEFAULT_FUNCTION);
     }
 
@@ -53,7 +52,7 @@ public class TimeSeriesClient {
      * @param targetUnit Ziel-Unit
      */
     public TimeSeriesSlice read(long tsId, LocalDateTime start, LocalDateTime end,
-                                Unit targetUnit) throws SQLException {
+                                Unit targetUnit)  {
         return read(tsId, start, end, null, DEFAULT_FUNCTION, targetUnit);
     }
 
@@ -68,7 +67,7 @@ public class TimeSeriesClient {
      */
     public TimeSeriesSlice read(long tsId, LocalDateTime start, LocalDateTime end,
                                 TimeDimension targetDimension,
-                                AggregationFunction function) throws SQLException {
+                                AggregationFunction function)  {
         return read(tsId, start, end, targetDimension, function, null);
     }
 
@@ -89,7 +88,7 @@ public class TimeSeriesClient {
     public TimeSeriesSlice read(long tsId, LocalDateTime start, LocalDateTime end,
                                 TimeDimension targetDimension,
                                 AggregationFunction function,
-                                Unit targetUnit) throws SQLException {
+                                Unit targetUnit)  {
         TimeSeriesHeader header = service.getHeader(tsId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Zeitreihe nicht gefunden: tsId=" + tsId));
@@ -148,7 +147,7 @@ public class TimeSeriesClient {
      * <p>Der Entwickler muss nicht wissen, in welcher Dimension die Zeitreihe
      * in der Datenbank vorliegt — das System entscheidet selbstständig.</p>
      */
-    public void write(long tsId, TimeSeriesSlice slice) throws SQLException {
+    public void write(long tsId, TimeSeriesSlice slice)  {
         TimeSeriesHeader header = service.getHeader(tsId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Zeitreihe nicht gefunden: tsId=" + tsId));
@@ -176,7 +175,7 @@ public class TimeSeriesClient {
     /**
      * Schreibt ein Slice in der nativen DB-Dimension.
      */
-    private void writeSlice(long tsId, TimeSeriesSlice slice) throws SQLException {
+    private void writeSlice(long tsId, TimeSeriesSlice slice)  {
         if (slice.getDimension().useTimestamptz()) {
             writeSubdaily(tsId, slice);
         } else {
@@ -188,7 +187,7 @@ public class TimeSeriesClient {
      * Schreibt subdaily-Daten (QH/H) tageweise über writeDay.
      * DST-aware: Anzahl Werte pro Tag variiert (92/96/100 für QH, 23/24/25 für H).
      */
-    private void writeSubdaily(long tsId, TimeSeriesSlice slice) throws SQLException {
+    private void writeSubdaily(long tsId, TimeSeriesSlice slice)  {
         double[] values = slice.getValues();
         LocalDate startDate = slice.getStart().toLocalDate();
         TimeDimension dim = slice.getDimension();
@@ -214,7 +213,7 @@ public class TimeSeriesClient {
     /**
      * Schreibt DAY/MONTH/YEAR-Daten einzeln über writeSimple.
      */
-    private void writeSimpleSlice(long tsId, TimeSeriesSlice slice) throws SQLException {
+    private void writeSimpleSlice(long tsId, TimeSeriesSlice slice)  {
         double[] values = slice.getValues();
         TimeDimension dim = slice.getDimension();
         LocalDate startDate = slice.getStart().toLocalDate();
