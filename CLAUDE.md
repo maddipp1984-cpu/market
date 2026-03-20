@@ -2,15 +2,16 @@
 
 ## Übersicht
 Performantes Zeitreihensystem für >10 Mio Zeitreihen mit TimescaleDB (PostgreSQL-Extension).
-Spring Boot 3.4.x Anwendung mit dualem Persistenz-Ansatz: Raw JDBC für Zeitreihen, JPA/Hibernate für Stammdaten.
+Spring Boot 3.4.x Anwendung mit dreifachem Persistenz-Ansatz: jOOQ für Abfragen/Übersichten, JPA/Hibernate für Stammdaten-CRUD, Raw JDBC (via `dsl.connection()`) für Stored Procedures/Arrays.
 
 ## Tech-Stack
 - **Java 17** (LTS), Gradle mit Spring Boot Plugin
-- **Spring Boot 3.4.1** (starter-web, starter-jdbc, starter-quartz)
+- **Spring Boot 3.4.1** (starter-web, starter-jooq, starter-data-jpa, starter-quartz)
+- **jOOQ** für alle DB-Zugriffe (Codegen aus Schema, `DSLContext` als Spring Bean)
+- **JPA/Hibernate** nur für Stammdaten-CRUD-Einzeloperationen (findById, create, update, delete), `ddl-auto=validate`, `open-in-view=false`
 - **TimescaleDB** (PostgreSQL-Extension)
-- **Raw JDBC** für Timeseries-Zugriff (Performance) und **alle Übersichts-Abfragen** (auch Stammdaten)
-- **JPA/Hibernate** für Stammdaten-CRUD-Einzeloperationen (findById, create, update, delete), `ddl-auto=validate`, `open-in-view=false`
-- **Regel**: Übersichtsseiten (Tabellen mit vielen Zeilen) nutzen IMMER Raw JDBC via `DataSource`, niemals JPA `findAll()`
+- **Regel**: Übersichtsseiten nutzen jOOQ `fetchMaps()`, Detailmasken nutzen JPA
+- **Regel**: Stored Procedures und Array-Parameter nutzen `dsl.connection()` für direkten Connection-Zugriff
 - **HikariCP** (via Spring auto-config)
 
 ## Zeitdimensionen
@@ -31,19 +32,33 @@ Spring Boot 3.4.x Anwendung mit dualem Persistenz-Ansatz: Raw JDBC für Zeitreih
 - **TimescaleDB Hypertables** für 15min, 1h, Tag, Monat (nicht für Jahr)
 - **Hash-Partitionierung** auf `ts_id` für schnellen Einzelreihen-Zugriff
 
-### Spring Boot Architektur & Schichten
+### Modul-Architektur
 - **`de.market`** als Basis-Package — `@SpringBootApplication` in `MarketApplication`
-- **`shared.dto`** — Gemeinsame DTOs (TableResponse, ColumnMeta, Filter*)
-- **`shared.query`** — QueryRegistry, QueryLoader, QueryController
-- **`timeseries.rest`** — REST-Controller + DTOs + GlobalExceptionHandler
-- **`timeseries.api`** — `@Service` TimeSeriesService (Fassade)
-- **`timeseries.repository`** — `@Repository` mit Raw JDBC über `DataSource`
-- **`timeseries.client`** — `@Component` TimeSeriesClient (Entwickler-API mit Konvertierung)
-- **`timeseries.model`** — POJOs + Enums (keine Spring-Annotationen)
-- **`currency`** — Währungs-CRUD (JPA Entity auf `ts_currency`, REST `/api/currencies`)
-- **`scheduling`** — Batch-Job-System (Quartz Scheduler, REST `/api/batch-jobs`)
-- **`timeseries.security`** — Auth & Berechtigungen (Keycloak-Integration, RBAC mit Gruppen/Permissions/Field-Restrictions)
+- **`shared`** — Gemeinsame Infrastruktur (DTOs, Services, Utilities, GlobalExceptionHandler)
+- **`security`** — Auth & Berechtigungen (Keycloak, RBAC, Admin-API)
+- **`config`** — Anwendungskonfiguration (Sidebar)
+- **`timeseries`** — Kern: Zeitreihen-CRUD, Aggregation, Übersichten
+- **`currency`** — Stammdaten-Modul: Währungen (JPA)
+- **`businesspartner`** — Stammdaten-Modul: Geschäftspartner (JPA)
+- **`filterpreset`** — Seitenübergreifende Filter-Presets (jOOQ, JSONB)
+- **`scheduling`** — Batch-Job-System (Quartz)
+- **`benchmark`** — Standalone Lese-Benchmark
 - **Schichten-Regel**: `REST-Controller → Service → Repository`
+- **Neue Module** folgen dem Pattern: `modul/model/`, `modul/repository/`, `modul/service/`, `modul/rest/dto/`
+
+### Persistenz-Schichten
+
+| Schicht | Tool | Verwendung |
+|---------|------|------------|
+| Stammdaten-CRUD (Detailmasken) | JPA/Hibernate | BusinessPartner, Currency, BatchSchedule |
+| Übersichten + Abfragen | jOOQ DSL | Alle Repositories mit `DSLContext` |
+| Stored Procedures + Arrays | Raw JDBC via `dsl.connection()` | TimeSeriesRepository (Write/Read/Aggregation) |
+| Codegen | jOOQ Codegen (Gradle Plugin) | `src/generated/java/de/market/jooq/generated/` |
+
+### Stammdaten-Services
+- Alle Stammdaten-Services erben von `AbstractCrudService<D, E, ID>` (in `shared.service`)
+- Erzwingt `validate(D dto)`, `toDto(E entity)`, `toEntity(D dto)` als abstrakte Methoden
+- Neue Stammdaten-Module müssen dieses Pattern übernehmen
 
 ### REST-API
 | Methode | Pfad | Beschreibung |
@@ -74,6 +89,11 @@ Spring Boot 3.4.x Anwendung mit dualem Persistenz-Ansatz: Raw JDBC für Zeitreih
 | PUT | `/api/currencies/{id}` | Währung aktualisieren |
 | DELETE | `/api/currencies/{id}` | Währung löschen |
 | POST | `/api/currencies/query` | Währungen filtern |
+| GET | `/api/filter-presets?pageKey=...` | Filter-Presets laden |
+| POST | `/api/filter-presets` | Preset anlegen |
+| PUT | `/api/filter-presets/{id}` | Preset aktualisieren |
+| DELETE | `/api/filter-presets/{id}` | Preset löschen |
+| PUT | `/api/filter-presets/{id}/default` | Als Standard setzen |
 | GET | `/api/batch-jobs/catalog` | Job-Katalog (verfügbare Job-Typen) |
 | GET | `/api/batch-schedules` | Schedule-Übersicht (TableResponse) |
 | GET | `/api/batch-schedules/{id}` | Schedule lesen |
@@ -101,10 +121,11 @@ Spring Boot 3.4.x Anwendung mit dualem Persistenz-Ansatz: Raw JDBC für Zeitreih
 | PUT | `/api/admin/groups/{id}/field-restrictions` | Feld-Restriktionen setzen |
 | GET | `/api/admin/resources` | Verfügbare Ressourcen-Definitionen |
 
-### Exception Handling (GlobalExceptionHandler)
+### Exception Handling (shared.rest.GlobalExceptionHandler)
 - `IllegalArgumentException` → 400 Bad Request
 - `IllegalStateException` → 409 Conflict
-- `SQLException` → 500 Internal Server Error
+- `DataAccessException` (jOOQ) → 500 Internal Server Error
+- `SQLException` → 500 Internal Server Error (Fallback)
 
 ### DST-Handling
 - `TIMESTAMPTZ` speichert intern UTC → jeder Zeitpunkt eindeutig
@@ -134,29 +155,77 @@ src/main/java/de/market/
             ColumnMeta.java                -- Spalten-Metadaten
             FilterCondition.java           -- Filter-Bedingung
             FilterRequest.java             -- Filter-Request
-            FilterQueryBuilder.java        -- WHERE-Clause-Builder
-        query/
-            QueryRegistry.java             -- @Component, SQL aus DB laden
-            QueryLoader.java               -- @Component, XML→DB Sync
-            QueryController.java           -- @RestController /api/admin/queries
-    currency/                              -- Stammdaten-Modul (JPA)
+            JooqFilterBuilder.java         -- jOOQ Condition-Builder (typsicher)
+        service/
+            AbstractCrudService.java       -- Basis für Stammdaten-Services
+        rest/
+            GlobalExceptionHandler.java    -- @RestControllerAdvice
+        EnumParser.java                    -- Utility: String→Enum Parsing
+    security/                              -- Auth & Berechtigungen (eigenständiges Modul)
+        SecurityConfig.java                -- @Configuration, Spring Security + Keycloak
+        KeycloakAdminClient.java           -- Keycloak Admin REST API Client
+        AdminController.java               -- @RestController /api/admin
+        PermissionController.java          -- @RestController /api/permissions
+        PermissionService.java             -- @Service, RBAC-Logik
+        UserRegistrationFilter.java        -- Auto-Registrierung bei erstem Login
+        UserSessionLogFilter.java          -- Session-Logging
+        SecurityUtils.java                 -- Hilfsmethoden (aktueller User etc.)
+        AuthUser.java                      -- POJO: Benutzer
+        AuthGroup.java                     -- POJO: Gruppe
+        AuthPermission.java                -- POJO: Berechtigung
+        AuthFieldRestriction.java          -- POJO: Feld-Restriktion
+        AuthResource.java                  -- POJO: Ressourcen-Definition
+        EffectivePermission.java           -- Berechnete Berechtigungen
+        AuthUserRepository.java            -- @Repository (jOOQ)
+        AuthGroupRepository.java           -- @Repository (jOOQ)
+        AuthPermissionRepository.java      -- @Repository (jOOQ)
+        AuthResourceRepository.java        -- @Repository (jOOQ)
+    config/
+        ConfigController.java              -- @RestController /api/config (Sidebar)
+    currency/                              -- Stammdaten-Modul (JPA + jOOQ)
         model/
             CurrencyEntity.java            -- @Entity auf ts_currency
         repository/
-            CurrencyJpaRepository.java     -- JpaRepository
-            CurrencyOverviewRepository.java -- Raw JDBC für Übersicht
+            CurrencyJpaRepository.java     -- JpaRepository (Einzel-CRUD)
+            CurrencyOverviewRepository.java -- jOOQ für Übersicht
         service/
-            CurrencyService.java           -- @Service, Validierung, DTO-Mapping
+            CurrencyService.java           -- @Service extends AbstractCrudService
         rest/
             CurrencyController.java        -- @RestController /api/currencies
             dto/
                 CurrencyDto.java           -- Request/Response DTO
-    timeseries/
+    businesspartner/                       -- Stammdaten-Modul (JPA + jOOQ)
+        model/
+            BusinessPartner.java           -- @Entity, @OneToMany cascade ALL
+            ContactPerson.java             -- @Entity, @ElementCollection Funktionen
+            ContactFunction.java           -- Enum: ABRECHNUNG, BK_VERANTWORTLICHER
+        repository/
+            BusinessPartnerRepository.java -- JpaRepository (Einzel-CRUD)
+            BusinessPartnerOverviewRepository.java -- jOOQ für Übersicht
+        service/
+            BusinessPartnerService.java    -- @Service extends AbstractCrudService
+        rest/
+            BusinessPartnerController.java -- @RestController /api/business-partners
+            dto/
+                BusinessPartnerDto.java    -- Request/Response DTO
+                ContactPersonDto.java      -- Ansprechpartner DTO
+    filterpreset/                          -- Filter-Presets (seitenübergreifend, jOOQ + JSONB)
+        model/
+            FilterPreset.java              -- POJO
+        repository/
+            FilterPresetRepository.java    -- @Repository (jOOQ, JSONB)
+        rest/
+            FilterPresetController.java    -- @RestController /api/filter-presets
+            dto/
+                CreateFilterPresetRequest.java
+                FilterPresetResponse.java
+    timeseries/                            -- Kern: Zeitreihen (jOOQ + Stored Procedures)
         api/
             TimeSeriesService.java         -- @Service, öffentliche Fassade
+            AggregationService.java        -- @Service, Summierung/Konvertierung
         client/
             TimeSeriesClient.java          -- @Component, Entwickler-API mit Konvertierung
-            DimensionConverter.java         -- Aggregation/Disaggregation
+            DimensionConverter.java        -- Aggregation/Disaggregation
             UnitConverter.java             -- Unit-Konvertierung
             AggregationFunction.java       -- Enum: SUM, AVG, MIN, MAX
         model/
@@ -166,33 +235,18 @@ src/main/java/de/market/
             ObjectType.java                -- Enum: Objekttypen
             TsObject.java                  -- Übergeordnetes Objekt
             Unit.java                      -- Enum: physikalische Einheiten
-            Currency.java                  -- Enum: Währungen (Legacy, wird durch CurrencyEntity ersetzt)
+            Currency.java                  -- Enum: Währungen (Legacy)
         repository/
-            HeaderRepository.java          -- @Repository, CRUD ts_header
-            ObjectRepository.java          -- @Repository, CRUD ts_object
-            TimeSeriesRepository.java      -- @Repository, Lesen/Schreiben/Löschen + readSumSubdaily/readSumSimple
-            TimeSeriesOverviewRepository.java -- Raw JDBC für Übersicht (QueryRegistry)
+            HeaderRepository.java          -- @Repository (jOOQ), CRUD ts_header
+            ObjectRepository.java          -- @Repository (jOOQ), CRUD ts_object
+            TimeSeriesRepository.java      -- @Repository (jOOQ + dsl.connection()), Lesen/Schreiben/Löschen
+            TimeSeriesOverviewRepository.java -- @Repository (jOOQ), Übersicht
         rest/
             TimeSeriesController.java      -- @RestController /api/timeseries + /aggregate
             TimeSeriesOverviewController.java -- @RestController /api/timeseries-overview
             ObjectController.java          -- @RestController /api/objects
-            GlobalExceptionHandler.java    -- @RestControllerAdvice
-            dto/                           -- Request/Response DTOs (inkl. AggregateRequest/Response)
-    businesspartner/                       -- Stammdaten-Modul (JPA)
-        model/
-            BusinessPartner.java           -- @Entity, @OneToMany cascade ALL
-            ContactPerson.java             -- @Entity, @ElementCollection Funktionen
-            ContactFunction.java           -- Enum: ABRECHNUNG, BK_VERANTWORTLICHER
-        repository/
-            BusinessPartnerRepository.java -- JpaRepository (single repo, cascade)
-        service/
-            BusinessPartnerService.java    -- @Service, Validierung, DTO-Mapping
-        rest/
-            BusinessPartnerController.java -- @RestController /api/business-partners
-            dto/
-                BusinessPartnerDto.java    -- Request/Response DTO
-                ContactPersonDto.java      -- Ansprechpartner DTO
-    scheduling/                           -- Batch-Job-System (Quartz, Template→Instanz)
+            dto/                           -- Request/Response DTOs
+    scheduling/                            -- Batch-Job-System (Quartz + jOOQ)
         config/
             QuartzConfig.java              -- @Configuration, SchedulerFactoryBean
             AutowiringSpringBeanJobFactory.java -- Autowiring in Quartz-Jobs
@@ -202,39 +256,32 @@ src/main/java/de/market/
             JobResult.java                 -- Record: recordsAffected + message
             JobParameterType.java          -- Enum: STRING, INTEGER, BOOLEAN, DATE, ENUM, PATTERN
             JobParameter.java              -- Parameter-Definition für Job-Typen
-            BatchScheduleEntity.java       -- @Entity auf batch_schedule (n Planungen pro Job-Typ)
+            BatchScheduleEntity.java       -- @Entity auf batch_schedule
         repository/
             BatchScheduleJpaRepository.java -- JpaRepository (Einzel-CRUD)
-            ScheduleOverviewRepository.java -- Raw JDBC für Übersicht
-            JobExecutionLogRepository.java -- Raw JDBC für Historie
+            ScheduleOverviewRepository.java -- jOOQ für Übersicht
+            JobExecutionLogRepository.java -- jOOQ für Historie
         service/
             SchedulingService.java         -- @Service, Katalog + Schedule-CRUD + Quartz
-            JobRegistry.java               -- @Component, Startup-Sync (nur Validierung)
+            JobRegistry.java               -- @Component, Startup-Sync
         rest/
             SchedulingController.java      -- @RestController /api/batch-schedules + /api/batch-history
             dto/
                 BatchScheduleDto.java      -- Schedule Request/Response DTO
-                JobCatalogDto.java         -- Job-Katalog DTO (mit Parameter-Definitionen)
+                JobCatalogDto.java         -- Job-Katalog DTO
         jobs/
             AbstractBatchJob.java          -- Abstrakte Basisklasse (mit Parameter-System)
-            QuartzJobAdapter.java          -- Quartz→AbstractBatchJob Bridge (mit Parameter-Übergabe)
-            CleanupOrphanedHeadersJob.java -- Demo-Job (mit excludePattern + retentionDays)
-    timeseries/
-        security/
-            SecurityConfig.java            -- @Configuration, Spring Security + Keycloak
-            KeycloakAdminClient.java        -- Keycloak Admin REST API Client
-            AdminController.java            -- @RestController /api/admin (Users, Groups, Permissions)
-            PermissionController.java       -- @RestController /api/permissions
-            PermissionService.java          -- @Service, RBAC-Logik
-            UserRegistrationFilter.java     -- Auto-Registrierung bei erstem Login
-            UserSessionLogFilter.java       -- Session-Logging
-            AuthUser/Group/Permission/Resource -- @Entity JPA-Modelle
-            EffectivePermission.java        -- Berechnete Berechtigungen (Read/Write/Delete + Field-Restrictions)
-            SecurityUtils.java             -- Hilfsmethoden (aktueller User etc.)
+            QuartzJobAdapter.java          -- Quartz→AbstractBatchJob Bridge
+            CleanupOrphanedHeadersJob.java -- Demo-Job
     benchmark/
         Benchmark.java                     -- Standalone Lese-Benchmark
+src/generated/java/de/market/jooq/generated/ -- jOOQ Codegen (aus DB-Schema)
+    tables/                                -- Table-Referenzen
+    tables/records/                        -- Record-Typen
+    routines/                              -- Stored Procedures
+    Keys.java, Indexes.java, Public.java   -- Schema-Metadaten
 src/main/resources/
-    application.properties                 -- Spring-Config (DB, HikariCP)
+    application.properties                 -- Spring-Config (DB, HikariCP, jOOQ-Dialekt)
 sql/
     schema.sql                         -- Komplettes DB-Schema
     procedures/                        -- Stored Procedures
@@ -257,6 +304,7 @@ benchmarks/
 ./gradlew build                        # Kompilieren + Tests
 ./gradlew bootRun                      # Spring Boot starten (Port 8080)
 ./gradlew bootJar                      # Fat-JAR erstellen
+./gradlew generateJooq                 # jOOQ Codegen (nach Schema-Änderungen)
 ./gradlew benchmark                    # Standalone Benchmark
 
 # DB-Config via Umgebungsvariablen oder application.properties
@@ -264,6 +312,14 @@ TS_JDBC_URL=jdbc:postgresql://localhost:5432/timeseries
 TS_DB_USER=postgres
 TS_DB_PASSWORD=postgres
 ```
+
+## jOOQ
+- **Codegen**: Gradle Plugin `nu.studer.jooq`, generiert nach `src/generated/java/`
+- **Dialekt**: `spring.jooq.sql-dialect=POSTGRES` (für Oracle: `ORACLE`)
+- **Spring-Integration**: `spring-boot-starter-jooq` liefert `DSLContext`-Bean + Transaction-Integration
+- **Generierte Klassen**: Werden committed (kein DB-Container für Build nötig)
+- **Filter**: `JooqFilterBuilder.build(conditions, allowedColumns)` → jOOQ `Condition`
+- **Stored Procedures**: Aufrufe via `dsl.connection(conn -> { ... })` für direkten Connection-Zugriff
 
 ## Benchmark
 - **Code:** `src/main/java/de/market/benchmark/Benchmark.java`
@@ -274,7 +330,8 @@ TS_DB_PASSWORD=postgres
 - Nur Lese-Benchmarks gegen existierende PERF_TEST-Daten (kein Schreiben/Cleanup)
 
 ## Dependencies (via Spring Boot BOM)
-- Spring Boot 3.4.1 (Web, JDBC, Quartz)
+- Spring Boot 3.4.1 (Web, jOOQ, JPA, JDBC, Quartz, Security, OAuth2)
+- jOOQ (Version via Spring Boot BOM)
 - PostgreSQL JDBC (Version via BOM)
 - HikariCP (Version via BOM)
 - SLF4J + Logback (via Spring Boot)
@@ -291,8 +348,11 @@ TS_DB_PASSWORD=postgres
 ## Gradle-Konfiguration
 - `gradle.properties`: `org.gradle.java.home` zeigt auf JDK 21 (unter `~/.jdks/jdk-21.0.10+7`)
 - Spring Boot Plugin baut Fat-JAR (kein Shadow-Plugin mehr)
+- jOOQ Codegen Plugin: `nu.studer.jooq` v9.0
 
 ## Gotchas
 - **Git Bash + Docker**: `MSYS_NO_PATHCONV=1` vor `docker exec` setzen, sonst werden Unix-Pfade in Windows-Pfade konvertiert
 - **TreeView (Headless Tree)**: `useTree` reagiert nicht auf Datenänderungen — `tree.rebuildTree()` aufrufen, nicht remounten
 - **Sidebar-Fallback**: `sidebarTree.ts` (Frontend) muss manuell mit `sidebar.xml` (Backend) synchron gehalten werden
+- **jOOQ Codegen**: Nach Schema-Änderungen `./gradlew generateJooq` ausführen und generierte Klassen committen
+- **Stored Procedures in TimeSeriesRepository**: Nutzen `dsl.connection()` für Array-Parameter — nicht auf jOOQ DSL umstellbar (PostgreSQL-spezifisch)
