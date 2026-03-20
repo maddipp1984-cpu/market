@@ -1147,15 +1147,129 @@ docker exec -i timescaledb psql -U postgres -d timeseries &lt; sql/migrations/00
     <!-- Use Cases -->
 
     <section id="uc-zeitreihen" class="page-break">
-        <h2>Zeitreihen verwalten</h2>
+        <h2>Use Case: Zeitreihen verwalten</h2>
+
+        <h3>Übersicht</h3>
+        <p>Die Zeitreihen-Übersicht zeigt alle Zeitreihen mit Metadaten in einer virtualisierten Tabelle. Sie nutzt das OverviewPage-Template.</p>
+
+        <p><strong>Angezeigte Spalten:</strong></p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Spalte</th>
+                    <th>Beschreibung</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>ID</td><td>Interne Datenbank-ID</td></tr>
+                <tr><td>Key</td><td>Eindeutiger Schlüssel (z.B. <code>LOAD_PROFILE_001</code>)</td></tr>
+                <tr><td>Dimension</td><td>Zeitdimension (15min, 1h, Tag, Monat, Jahr)</td></tr>
+                <tr><td>Einheit</td><td>Physikalische Einheit (kW, MWh, EUR, etc.)</td></tr>
+                <tr><td>Währung</td><td>Währung (falls relevant)</td></tr>
+                <tr><td>Objekt</td><td>Zugeordnetes übergeordnetes Objekt</td></tr>
+                <tr><td>Beschreibung</td><td>Freitextbeschreibung</td></tr>
+                <tr><td>Erster Wert</td><td>Datum des frühesten Datenpunkts</td></tr>
+                <tr><td>Letzter Wert</td><td>Datum des letzten Datenpunkts</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Aktionen</h3>
+        <ul>
+            <li><strong>Filtern</strong> — FilterBuilder öffnen, Bedingungen definieren (z.B. Key LIKE "LOAD%", Dimension = "15min"), als Preset speichern</li>
+            <li><strong>Mehrfachauswahl</strong> — Checkboxen in der Tabelle, dann Kontextmenü oder Toolbar-Aktionen</li>
+            <li><strong>Im Editor öffnen</strong> — Doppelklick oder Kontextaktion: Öffnet die Zeitreihe(n) im Zeitreihen-Editor (neuer Tab)</li>
+            <li><strong>Summieren</strong> — Kontextaktion bei Mehrfachauswahl: Berechnet On-the-fly Summe und öffnet im Editor (read-only)</li>
+        </ul>
+
+        <h3>Zeitreihen-Editor</h3>
+        <p>Der Zeitreihen-Editor ist die zentrale Arbeitsmaske. Er unterstützt das Laden mehrerer Zeitreihen gleichzeitig, inline Bearbeitung, Zeitraumwahl und Diagramm-Ansicht.</p>
+
+        <ul>
+            <li><strong>Zeitraumwahl</strong> — Start/Ende Datepicker, automatisch aus Laufzeit der Zeitreihe(n) vorbelegt</li>
+            <li><strong>Multi-Zeitreihen</strong> — Mehrere Zeitreihen mit unterschiedlichen Laufzeiten werden nebeneinander angezeigt. Fehlende Datenpunkte werden mit NaN aufgefüllt (kein Fehler)</li>
+            <li><strong>Inline-Editing</strong> — Werte direkt in der Tabelle bearbeiten. Geänderte Zellen werden farblich hervorgehoben (Amber)</li>
+            <li><strong>Dirty-Tracking</strong> — Ungespeicherte Änderungen werden verfolgt. Close-Guard warnt vor Datenverlust</li>
+            <li><strong>Speichern</strong> — Schreibt geänderte Tage parallel zum Backend (ein Request pro geändertem Tag pro Zeitreihe)</li>
+            <li><strong>Footer-Statistiken</strong> — Min, Max, Avg, Sum für jede Spalte in der Tabelle</li>
+        </ul>
+
+        <h3>Werte-Tabelle</h3>
+        <p>Die Werte-Tabelle (ValuesTable) ist eine virtualisierte, inline-editierbare Tabelle. Für 15min-Zeitreihen zeigt sie bis zu 96 Werte pro Tag, für Stunden-Zeitreihen 24.</p>
+
+        <div class="info-box">
+            <strong>DST-Bewusstsein:</strong> Am Tag der Zeitumstellung zeigt die Tabelle 92 (Sommerzeit) bzw. 100 (Winterzeit) Viertelstundenwerte an. Die Timestamps werden korrekt berechnet.
+        </div>
     </section>
 
-    <section id="uc-aggregation">
-        <h2>Aggregation</h2>
+    <section id="uc-aggregation" class="page-break">
+        <h2>Use Case: Aggregation (Summierung)</h2>
+
+        <h3>Auslösung</h3>
+        <p>In der Zeitreihen-Übersicht können mehrere Zeitreihen ausgewählt und über die Kontextaktion "Summieren" aggregiert werden.</p>
+
+        <h3>Ablauf</h3>
+        <div class="diagram">
+Mehrfachauswahl in Übersicht
+    │
+    ▼
+POST /api/timeseries/aggregate
+    { tsIds: [1, 2, 3], start: "2024-01-01", end: "2024-12-31" }
+    │
+    ├── Gleiche Dimension + Einheit?
+    │   └── Ja → SQL-Shortcut (Stored Procedure ts_sum_*)
+    │
+    ├── Verschiedene Dimensionen?
+    │   └── Disaggregation auf kleinste gemeinsame Dimension
+    │
+    ├── Verschiedene Einheiten?
+    │   └── Automatische Unit-Konvertierung
+    │
+    └── Parallele Reads (ExecutorService, 10 Threads)
+    │
+    ▼
+Synthetische Summen-Zeitreihe im Editor (read-only)
+        </div>
+
+        <h3>Cross-Dimension-Aggregation</h3>
+        <p>Wenn Zeitreihen unterschiedliche Dimensionen haben (z.B. 15min + Tag), werden alle auf die kleinste gemeinsame Dimension disaggregiert. Beispiel: Ein Tageswert wird auf 96 Viertelstundenwerte aufgeteilt.</p>
+
+        <h3>Performance-Optimierungen</h3>
+        <ul>
+            <li><strong>SQL-Shortcut</strong> — Bei gleicher Dimension + Einheit: Stored Procedures (<code>ts_sum_15min</code>, <code>ts_sum_1h</code>) summieren komplett in der Datenbank</li>
+            <li><strong>Parallele Reads</strong> — Dedizierter ExecutorService (nicht ForkJoinPool!), 10 Threads</li>
+            <li><strong>Bulk-Header</strong> — <code>HeaderRepository.findByIds()</code> statt N Einzelabfragen</li>
+            <li><strong>ANY(array) vermeiden</strong> — Parallele Einzelabfragen sind schneller als <code>ANY(array)</code> bei Hypertables mit Hash-Partitionierung</li>
+        </ul>
     </section>
 
     <section id="uc-diagramme">
-        <h2>Diagramme</h2>
+        <h2>Use Case: Diagramme</h2>
+
+        <p>Der Zeitreihen-Editor bietet eine integrierte Diagramm-Ansicht mit drei Chart-Bibliotheken zum Vergleich.</p>
+
+        <h3>Verfügbare Bibliotheken</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Bibliothek</th>
+                    <th>Technologie</th>
+                    <th>Stärken</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Recharts</td><td>React + D3</td><td>Interaktive Tooltips, Legenden, Animationen</td></tr>
+                <tr><td>Chart.js</td><td>Canvas</td><td>Schnell, Zoom-Plugin verfügbar</td></tr>
+                <tr><td>Lightweight Charts</td><td>Canvas (TradingView)</td><td>Ultra-schnell, optimiert für Finanzdaten, exzellentes Zoom/Pan</td></tr>
+            </tbody>
+        </table>
+
+        <p>Die Bibliothek wird per Dropdown im Editor umgeschaltet. Die Auswahl "Kein Diagramm" blendet den Chart-Bereich aus.</p>
+
+        <h3>Downsampling</h3>
+        <p>Bei großen Datenmengen (&gt;5.000 Datenpunkte) wird automatisch gedownsampled. Die Funktion <code>downsampleForChart()</code> in <code>chartUtils.ts</code> wählt jeden N-ten Punkt aus, um die Performance zu gewährleisten.</p>
+
+        <h3>Farben</h3>
+        <p>10 vordefinierte Serien-Farben (Blau, Rot, Grün, Orange, Violett, Cyan, Pink, Lime, Dunkelorange, Indigo) sorgen für gute Unterscheidbarkeit bei Multi-Zeitreihen-Diagrammen.</p>
     </section>
 
     <section id="uc-geschaeftspartner">
