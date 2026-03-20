@@ -1,18 +1,15 @@
 package de.market.timeseries.repository;
 
+import de.market.shared.repository.AbstractOverviewRepository;
 import org.jooq.CommonTableExpression;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record3;
-import org.jooq.Result;
 import org.jooq.TableField;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Date;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,18 +25,18 @@ import static de.market.jooq.generated.tables.TsValues_1h.TS_VALUES_1H;
 import static org.jooq.impl.DSL.*;
 
 @Repository
-public class TimeSeriesOverviewRepository {
-
-    private final DSLContext dsl;
+public class TimeSeriesOverviewRepository extends AbstractOverviewRepository {
 
     public TimeSeriesOverviewRepository(DSLContext dsl) {
-        this.dsl = dsl;
+        super(dsl);
     }
 
+    @Override
     public List<Map<String, Object>> findAllAsRows() {
         return buildAndFetch(noCondition());
     }
 
+    @Override
     public List<Map<String, Object>> findFiltered(Condition condition) {
         return buildAndFetch(condition);
     }
