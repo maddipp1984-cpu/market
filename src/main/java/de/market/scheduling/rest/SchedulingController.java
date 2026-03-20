@@ -9,7 +9,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
@@ -94,7 +93,7 @@ public class SchedulingController {
 
     @GetMapping("/api/batch-history")
     public ResponseEntity<TableResponse> getFullHistory(
-            @RequestParam(defaultValue = "100") int limit) throws SQLException {
+            @RequestParam(defaultValue = "100") int limit) {
         List<Map<String, Object>> data = service.getFullHistory(limit);
         return ResponseEntity.ok(new TableResponse(HISTORY_COLUMNS, data));
     }
@@ -102,7 +101,7 @@ public class SchedulingController {
     @GetMapping("/api/batch-schedules/{id}/history")
     public ResponseEntity<List<Map<String, Object>>> getScheduleHistory(
             @PathVariable int id,
-            @RequestParam(defaultValue = "50") int limit) throws SQLException {
+            @RequestParam(defaultValue = "50") int limit) {
         return ResponseEntity.ok(service.getHistory(id, limit));
     }
 

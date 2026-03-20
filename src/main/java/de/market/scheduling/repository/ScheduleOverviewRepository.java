@@ -1,58 +1,74 @@
 package de.market.scheduling.repository;
 
+import org.jooq.DSLContext;
+import org.jooq.Field;
 import org.springframework.stereotype.Repository;
 
-import javax.sql.DataSource;
-import java.sql.*;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static de.market.jooq.generated.tables.BatchJobExecutionLog.BATCH_JOB_EXECUTION_LOG;
+import static de.market.jooq.generated.tables.BatchSchedule.BATCH_SCHEDULE;
+import static org.jooq.impl.DSL.*;
+
 @Repository
 public class ScheduleOverviewRepository {
 
-    private final DataSource dataSource;
+    private final DSLContext dsl;
 
-    public ScheduleOverviewRepository(DataSource dataSource) {
-        this.dataSource = dataSource;
+    public ScheduleOverviewRepository(DSLContext dsl) {
+        this.dsl = dsl;
     }
 
     public List<Map<String, Object>> findAllAsRows() {
-        String sql = """
-            SELECT s.id, s.job_key AS "jobKey", s.name,
-                   s.schedule_type AS "scheduleType",
-                   s.enabled, s.cron_expression AS "cronExpression",
-                   s.interval_seconds AS "intervalSeconds",
-                   (SELECT MAX(e.start_time) FROM batch_job_execution_log e WHERE e.schedule_id = s.id) AS "lastRun",
-                   (SELECT e2.status FROM batch_job_execution_log e2
-                    WHERE e2.schedule_id = s.id ORDER BY e2.start_time DESC LIMIT 1) AS "lastStatus"
-            FROM batch_schedule s
-            ORDER BY s.name
-            """;
+        var e = BATCH_JOB_EXECUTION_LOG.as("e");
+        var e2 = BATCH_JOB_EXECUTION_LOG.as("e2");
+        var s = BATCH_SCHEDULE.as("s");
 
-        List<Map<String, Object>> rows = new ArrayList<>();
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                Map<String, Object> row = new LinkedHashMap<>();
-                row.put("id", rs.getInt("id"));
-                row.put("jobKey", rs.getString("jobKey"));
-                row.put("name", rs.getString("name"));
-                row.put("scheduleType", rs.getString("scheduleType"));
-                row.put("enabled", rs.getBoolean("enabled"));
-                row.put("cronExpression", rs.getString("cronExpression"));
-                row.put("intervalSeconds", rs.getObject("intervalSeconds"));
-                OffsetDateTime lastRun = rs.getObject("lastRun", OffsetDateTime.class);
-                row.put("lastRun", lastRun != null ? lastRun.toString() : null);
-                row.put("lastStatus", rs.getString("lastStatus"));
-                rows.add(row);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Fehler beim Laden der Batch-Schedules", e);
-        }
-        return rows;
+        Field<OffsetDateTime> lastRun = field(
+                select(max(e.START_TIME))
+                        .from(e)
+                        .where(e.SCHEDULE_ID.eq(s.ID))
+        ).as("lastRun");
+
+        Field<String> lastStatus = field(
+                select(e2.STATUS)
+                        .from(e2)
+                        .where(e2.SCHEDULE_ID.eq(s.ID))
+                        .orderBy(e2.START_TIME.desc())
+                        .limit(1)
+        ).as("lastStatus");
+
+        return dsl
+                .select(
+                        s.ID.as("id"),
+                        s.JOB_KEY.as("jobKey"),
+                        s.NAME.as("name"),
+                        s.SCHEDULE_TYPE.as("scheduleType"),
+                        s.ENABLED.as("enabled"),
+                        s.CRON_EXPRESSION.as("cronExpression"),
+                        s.INTERVAL_SECONDS.as("intervalSeconds"),
+                        lastRun,
+                        lastStatus
+                )
+                .from(s)
+                .orderBy(s.NAME)
+                .fetch()
+                .map(r -> {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("id", r.get("id"));
+                    row.put("jobKey", r.get("jobKey"));
+                    row.put("name", r.get("name"));
+                    row.put("scheduleType", r.get("scheduleType"));
+                    row.put("enabled", r.get("enabled"));
+                    row.put("cronExpression", r.get("cronExpression"));
+                    row.put("intervalSeconds", r.get("intervalSeconds"));
+                    Object lr = r.get("lastRun");
+                    row.put("lastRun", lr != null ? lr.toString() : null);
+                    row.put("lastStatus", r.get("lastStatus"));
+                    return row;
+                });
     }
 }

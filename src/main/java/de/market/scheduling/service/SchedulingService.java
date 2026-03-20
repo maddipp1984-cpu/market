@@ -19,7 +19,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -223,7 +222,7 @@ public class SchedulingService {
     // --- Historie ---
 
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> getHistory(int scheduleId, int limit) throws SQLException {
+    public List<Map<String, Object>> getHistory(int scheduleId, int limit) {
         if (!scheduleRepository.existsById(scheduleId)) {
             throw new IllegalArgumentException("Schedule nicht gefunden: id=" + scheduleId);
         }
@@ -232,7 +231,7 @@ public class SchedulingService {
     }
 
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> getFullHistory(int limit) throws SQLException {
+    public List<Map<String, Object>> getFullHistory(int limit) {
         int effectiveLimit = Math.max(1, Math.min(limit, 500));
         return executionLogRepository.findAllAsRows(effectiveLimit);
     }
@@ -257,12 +256,7 @@ public class SchedulingService {
     }
 
     public String getLogContentByExecutionId(long executionId) {
-        String logFilePath;
-        try {
-            logFilePath = executionLogRepository.findLogFileByExecutionId(executionId);
-        } catch (java.sql.SQLException e) {
-            return "Fehler beim DB-Zugriff: " + e.getMessage();
-        }
+        String logFilePath = executionLogRepository.findLogFileByExecutionId(executionId);
         if (logFilePath == null) {
             return "Logfile nicht gefunden fuer executionId=" + executionId;
         }
