@@ -276,6 +276,15 @@ src/main/java/de/market/
             AbstractBatchJob.java          -- Abstrakte Basisklasse (mit Parameter-System)
             QuartzJobAdapter.java          -- Quartz→AbstractBatchJob Bridge
             CleanupOrphanedHeadersJob.java -- Demo-Job
+    publicapi/                             -- Public REST-API für Drittsysteme
+        PublicApiProperties.java           -- @ConfigurationProperties (Credentials)
+        PublicApiSecurityConfig.java       -- @Configuration, Basic Auth FilterChain
+        PublicApiExceptionHandler.java     -- @RestControllerAdvice (eigenes Error-Format)
+        counterpart/
+            CounterpartController.java     -- @RestController /public-api/counterparts
+            dto/
+                CreateCounterpartRequest.java
+                CounterpartResponse.java
     benchmark/
         Benchmark.java                     -- Standalone Lese-Benchmark
 src/generated/java/de/market/jooq/generated/ -- jOOQ Codegen (aus DB-Schema)

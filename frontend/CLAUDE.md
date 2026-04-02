@@ -220,6 +220,9 @@ Bevor eine UI-Komponente in einer Page gebaut wird, IMMER zuerst in `src/shared/
 | Sidebar-Baum | GET | `/api/config/sidebar` |
 | Geschaeftspartner CRUD | GET/POST/PUT/DELETE | `/api/business-partners` |
 | Waehrungen CRUD | GET/POST/PUT/DELETE | `/api/currencies` |
+| Reihenarten CRUD | GET/POST/PUT/DELETE | `/api/series-types` |
+| Warengruppen CRUD | GET/POST/PUT/DELETE | `/api/commodity-groups` |
+| Filter-Presets | GET/POST/PUT/DELETE | `/api/filter-presets` |
 | Batch-Schedules CRUD | GET/POST/PUT/DELETE | `/api/batch-schedules` |
 | Batch-Historie | GET | `/api/batch-history` |
 | Job-Katalog | GET | `/api/batch-jobs/catalog` |
