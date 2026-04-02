@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-04-02 — Systemfirma-Konzept (System Company)
+- **DB-Migration** (`012_system_rank.sql`): Neue nullable Spalte `system_rank SMALLINT UNIQUE` in `business_partner`
+- **SystemCompanyService**: Startup-Cache per `@PostConstruct`, laedt Systemfirmen sortiert nach Rang, bietet `getPrimary()`, `getAll()`, `isSystemCompany()`
+- **GP-Uebersicht**: `system_rank` als Spalte mit Badge-Formatierung (Rang 1 = "Fuehrend", 2+ = "Tochter (N)")
+- Keine GUI-Pflege — Konfiguration per SQL, Anzeige read-only
+
 ## 2026-04-02 — Reihenart-Modul (Series Type)
 - **DB-Migration** (`011_series_type.sql`): Neue Tabelle `ts_series_type` (code UNIQUE, name, category CHECK 1/2), FK `series_type_id` in `ts_header` (nullable)
 - **Backend**: SeriesCategory Enum (FINANCIAL/PHYSICAL), SeriesTypeEntity (JPA), JpaRepository, jOOQ OverviewRepository mit CASE/WHEN fuer Kategorie-Labels, Service extends AbstractCrudService, REST-Controller `/api/series-types`
