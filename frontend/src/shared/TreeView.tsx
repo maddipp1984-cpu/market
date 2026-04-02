@@ -83,13 +83,16 @@ export function TreeView({ data, variant = 'light', defaultExpanded, paddingBase
     item.getProps().onClick?.(e as never);
 
     if (item.isFolder()) {
-      if (item.isExpanded()) {
-        item.collapse();
-      } else {
-        item.expand();
-      }
       if (selectOnClick) {
+        // Folder mit selectOnClick: Klick selektiert nur, Doppelklick klappt zu/auf
         onSelect?.(item.getItemData());
+      } else {
+        // Folder ohne selectOnClick (z.B. Sidebar): Klick klappt zu/auf
+        if (item.isExpanded()) {
+          item.collapse();
+        } else {
+          item.expand();
+        }
       }
     } else if (selectOnClick) {
       onSelect?.(item.getItemData());
@@ -97,7 +100,13 @@ export function TreeView({ data, variant = 'light', defaultExpanded, paddingBase
   }, [selectOnClick, onSelect]);
 
   const handleItemDblClick = useCallback((item: ItemInstance<TreeNode>) => {
-    if (!item.isFolder()) {
+    if (item.isFolder()) {
+      if (item.isExpanded()) {
+        item.collapse();
+      } else {
+        item.expand();
+      }
+    } else {
       onSelect?.(item.getItemData());
     }
   }, [onSelect]);
