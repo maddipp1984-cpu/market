@@ -175,11 +175,13 @@ src/main/java/de/market/
             BusinessPartner.java           -- @Entity, @OneToMany cascade ALL
             ContactPerson.java             -- @Entity, @ElementCollection Funktionen
             ContactFunction.java           -- Enum: ABRECHNUNG, BK_VERANTWORTLICHER
+            SystemCompanyEntry.java        -- Record: Systemfirma-Cache-Eintrag
         repository/
             BusinessPartnerRepository.java -- JpaRepository (Einzel-CRUD)
-            BusinessPartnerOverviewRepository.java -- jOOQ für Übersicht
+            BusinessPartnerOverviewRepository.java -- jOOQ für Übersicht (inkl. system_rank)
         service/
             BusinessPartnerService.java    -- @Service extends AbstractCrudService
+            SystemCompanyService.java      -- @Service, Startup-Cache für Systemfirmen (@PostConstruct)
         rest/
             BusinessPartnerController.java -- @RestController /api/business-partners
             dto/
