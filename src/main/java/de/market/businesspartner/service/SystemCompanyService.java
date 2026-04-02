@@ -29,7 +29,7 @@ public class SystemCompanyService {
         reload();
     }
 
-    void reload() {
+    public void reload() {
         cache = dsl
                 .select(
                         BUSINESS_PARTNER.ID,
@@ -47,9 +47,8 @@ public class SystemCompanyService {
                         r.get(BUSINESS_PARTNER.SYSTEM_RANK)
                 ));
         log.info("Systemfirmen geladen: {} Eintraege", cache.size());
-        if (!cache.isEmpty()) {
-            log.info("Fuehrende Systemfirma: {} ({})", cache.get(0).shortName(), cache.get(0).name());
-        }
+        getPrimary().ifPresent(p ->
+                log.info("Fuehrende Systemfirma: {} ({})", p.shortName(), p.name()));
     }
 
     public Optional<SystemCompanyEntry> getPrimary() {

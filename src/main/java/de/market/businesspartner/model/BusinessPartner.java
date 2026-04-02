@@ -21,6 +21,9 @@ public class BusinessPartner {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @Column(name = "system_rank", insertable = false, updatable = false)
+    private Short systemRank;
+
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "partner_id", nullable = false)
     private List<ContactPerson> contacts = new ArrayList<>();
