@@ -69,3 +69,9 @@
   gap: var(--space-sm);
   margin-top: var(--space-sm);
 }
+
+/* Kein Padding wenn TreeNavigation als Kind vorhanden */
+.detail-page-content--no-padding {
+  padding: 0;
+  gap: 0;
+}
