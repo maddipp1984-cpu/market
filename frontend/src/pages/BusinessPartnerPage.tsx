@@ -3,7 +3,17 @@ import { OverviewPage } from '../shared/overview-page/OverviewPage';
 import { useTabContext } from '../shell/TabContext';
 import { deleteBusinessPartner } from '../api/client';
 
-const columnOverrides = { id: { hidden: true } };
+const columnOverrides = {
+  id: { hidden: true },
+  systemRank: {
+    header: 'Systemfirma',
+    format: (value: unknown) => {
+      if (value == null) return '';
+      const rank = value as number;
+      return rank === 1 ? 'Fuehrend' : `Tochter (${rank})`;
+    },
+  },
+};
 
 export function BusinessPartnerPage({ tabId }: { tabId: string }) {
   const { openTab } = useTabContext();

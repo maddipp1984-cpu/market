@@ -18,7 +18,8 @@ public class BusinessPartnerController {
     private static final List<ColumnMeta> COLUMNS = List.of(
             new ColumnMeta("id", "ID", "bp.id", "NUMBER"),
             new ColumnMeta("shortName", "Kurzbezeichnung", "bp.short_name", "TEXT"),
-            new ColumnMeta("name", "Name", "bp.name", "TEXT")
+            new ColumnMeta("name", "Name", "bp.name", "TEXT"),
+            new ColumnMeta("systemRank", "Systemfirma", "bp.system_rank", "NUMBER")
     );
 
     private final BusinessPartnerService service;

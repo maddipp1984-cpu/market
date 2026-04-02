@@ -23,7 +23,8 @@ public class BusinessPartnerOverviewRepository extends AbstractOverviewRepositor
                 .select(
                         BUSINESS_PARTNER.ID.as("id"),
                         BUSINESS_PARTNER.SHORT_NAME.as("shortName"),
-                        BUSINESS_PARTNER.NAME.as("name")
+                        BUSINESS_PARTNER.NAME.as("name"),
+                        BUSINESS_PARTNER.SYSTEM_RANK.as("systemRank")
                 )
                 .from(BUSINESS_PARTNER)
                 .orderBy(BUSINESS_PARTNER.SHORT_NAME)
@@ -36,7 +37,8 @@ public class BusinessPartnerOverviewRepository extends AbstractOverviewRepositor
                 .select(
                         BUSINESS_PARTNER.ID.as("id"),
                         BUSINESS_PARTNER.SHORT_NAME.as("shortName"),
-                        BUSINESS_PARTNER.NAME.as("name")
+                        BUSINESS_PARTNER.NAME.as("name"),
+                        BUSINESS_PARTNER.SYSTEM_RANK.as("systemRank")
                 )
                 .from(BUSINESS_PARTNER)
                 .where(condition)
