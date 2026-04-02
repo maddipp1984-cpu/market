@@ -1,25 +1,28 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { DetailPage, type DetailMode, type ValidationResult } from '../../shared/detail-page/DetailPage';
-import { Card } from '../../shared/Card';
-import { FormField } from '../../shared/FormField';
-import { Button } from '../../shared/Button';
-import { ContactPersonCard } from './ContactPersonCard';
+import { TreeNavigation } from '../../shared/tree-navigation/TreeNavigation';
+import { StammdatenFrame } from './frames/StammdatenFrame';
+import { AnsprechpartnerFrame } from './frames/AnsprechpartnerFrame';
 import { useTabContext } from '../../shell/TabContext';
 import { useMessageBar } from '../../shell/MessageBarContext';
 import { fetchBusinessPartner, saveBusinessPartner, deleteBusinessPartner } from '../../api/client';
-import type { BusinessPartnerDto, ContactPersonDto } from '../../api/types';
+import type { BusinessPartnerDto } from '../../api/types';
+import type { TreeNodeDef, FrameProps } from '../../shared/tree-navigation/types';
 
-const emptyContact = (): ContactPersonDto => ({
-  id: null,
-  firstName: '',
-  lastName: '',
-  email: null,
-  phone: null,
-  street: null,
-  zipCode: null,
-  city: null,
-  functions: [],
-});
+const treeNodes: TreeNodeDef[] = [
+  {
+    id: 'stammdaten',
+    label: 'Stammdaten',
+    children: [
+      { id: 'ansprechpartner', label: 'Ansprechpartner' },
+    ],
+  },
+];
+
+const frames: Record<string, React.ComponentType<FrameProps<BusinessPartnerDto>>> = {
+  stammdaten: StammdatenFrame,
+  ansprechpartner: AnsprechpartnerFrame,
+};
 
 export function BusinessPartnerDetailPage({ tabId }: { tabId: string }) {
   const { getTabParams, openTab, updateTabLabel } = useTabContext();
@@ -27,7 +30,6 @@ export function BusinessPartnerDetailPage({ tabId }: { tabId: string }) {
   const params = getTabParams(tabId);
   const mode = (params?.mode as DetailMode) ?? 'view';
   const entityId = params?.entityId as number | undefined;
-  const contactKeyCounter = useRef(0);
 
   const [data, setData] = useState<BusinessPartnerDto>({
     id: null,
@@ -36,11 +38,9 @@ export function BusinessPartnerDetailPage({ tabId }: { tabId: string }) {
     notes: null,
     contacts: [],
   });
-  const [contactKeys, setContactKeys] = useState<string[]>([]);
   const [dirty, setDirty] = useState(false);
   const [loading, setLoading] = useState(mode !== 'new');
-
-  const nextKey = () => `ck-${contactKeyCounter.current++}`;
+  const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     if (mode === 'new' || !entityId) return;
@@ -49,7 +49,6 @@ export function BusinessPartnerDetailPage({ tabId }: { tabId: string }) {
     fetchBusinessPartner(entityId).then(result => {
       if (cancelled) return;
       setData(result);
-      setContactKeys(result.contacts.map(() => nextKey()));
       updateTabLabel(tabId, `GP: ${result.shortName}`);
       setLoading(false);
     }).catch((err) => {
@@ -59,58 +58,47 @@ export function BusinessPartnerDetailPage({ tabId }: { tabId: string }) {
     return () => { cancelled = true; };
   }, [entityId, mode, tabId, updateTabLabel]);
 
-  const updateField = useCallback((field: keyof BusinessPartnerDto, value: unknown) => {
-    setData(prev => ({ ...prev, [field]: value }));
-    setDirty(true);
-  }, []);
-
-  const updateContact = useCallback((index: number, updated: ContactPersonDto) => {
-    setData(prev => {
-      const contacts = [...prev.contacts];
-      contacts[index] = updated;
-      return { ...prev, contacts };
-    });
-    setDirty(true);
-  }, []);
-
-  const removeContact = useCallback((index: number) => {
-    setData(prev => ({
-      ...prev,
-      contacts: prev.contacts.filter((_, i) => i !== index),
-    }));
-    setContactKeys(prev => prev.filter((_, i) => i !== index));
-    setDirty(true);
-  }, []);
-
-  const addContact = useCallback(() => {
-    setData(prev => ({
-      ...prev,
-      contacts: [...prev.contacts, emptyContact()],
-    }));
-    setContactKeys(prev => [...prev, nextKey()]);
+  const handleDataChange = useCallback((updated: BusinessPartnerDto) => {
+    setData(updated);
     setDirty(true);
   }, []);
 
   const validate = useCallback((): ValidationResult => {
-    const errors: { field: string; message: string }[] = [];
-    if (!data.name.trim()) errors.push({ field: 'name', message: 'Name' });
-    if (!data.shortName.trim()) errors.push({ field: 'shortName', message: 'Kurzbezeichnung' });
+    const errors: Record<string, string[]> = {};
+
+    if (!data.shortName.trim()) {
+      errors['stammdaten'] = [...(errors['stammdaten'] || []), 'Kurzbezeichnung'];
+    }
+    if (!data.name.trim()) {
+      errors['stammdaten'] = [...(errors['stammdaten'] || []), 'Name'];
+    }
+
     data.contacts.forEach((c, i) => {
-      if (!c.firstName.trim()) errors.push({ field: `contact-${i}-firstName`, message: `Ansprechpartner ${i + 1}: Vorname` });
-      if (!c.lastName.trim()) errors.push({ field: `contact-${i}-lastName`, message: `Ansprechpartner ${i + 1}: Nachname` });
+      if (!c.firstName.trim()) {
+        errors['ansprechpartner'] = [...(errors['ansprechpartner'] || []), `Ansprechpartner ${i + 1}: Vorname`];
+      }
+      if (!c.lastName.trim()) {
+        errors['ansprechpartner'] = [...(errors['ansprechpartner'] || []), `Ansprechpartner ${i + 1}: Nachname`];
+      }
     });
-    return { valid: errors.length === 0, errors };
+
+    setValidationErrors(errors);
+
+    const allErrors = Object.entries(errors).flatMap(([, msgs]) =>
+      msgs.map(m => ({ field: '', message: m }))
+    );
+    return { valid: allErrors.length === 0, errors: allErrors };
   }, [data]);
 
   const handleSave = useCallback(async () => {
     const saved = await saveBusinessPartner(data);
     setData(saved);
-    setContactKeys(saved.contacts.map(() => nextKey()));
     updateTabLabel(tabId, `GP: ${saved.shortName}`);
   }, [data, tabId, updateTabLabel]);
 
   const handleSaveSuccess = useCallback(() => {
     setDirty(false);
+    setValidationErrors({});
   }, []);
 
   const handleDelete = entityId ? async () => {
@@ -120,8 +108,6 @@ export function BusinessPartnerDetailPage({ tabId }: { tabId: string }) {
   const handleNew = useCallback(() => {
     openTab('business-partner-detail', { mode: 'new' });
   }, [openTab]);
-
-  const isDisabled = mode === 'view';
 
   if (loading) {
     return <div style={{ padding: 'var(--space-xl)', color: 'var(--color-text-secondary)' }}>Lade...</div>;
@@ -138,64 +124,16 @@ export function BusinessPartnerDetailPage({ tabId }: { tabId: string }) {
       onSaveSuccess={handleSaveSuccess}
       onDelete={handleDelete}
       onNew={handleNew}
+      contentClassName="detail-page-content--no-padding"
     >
-      <Card>
-        <div style={{ padding: 'var(--space-md)', display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-          <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
-            <FormField label="Kurzbezeichnung">
-              <input
-                value={data.shortName}
-                onChange={e => updateField('shortName', e.target.value)}
-                disabled={isDisabled}
-                maxLength={50}
-              />
-            </FormField>
-            <div style={{ flex: 1 }}>
-              <FormField label="Name">
-                <input
-                  value={data.name}
-                  onChange={e => updateField('name', e.target.value)}
-                  disabled={isDisabled}
-                />
-              </FormField>
-            </div>
-          </div>
-          <FormField label="Notizen">
-            <textarea
-              value={data.notes ?? ''}
-              onChange={e => updateField('notes', e.target.value || null)}
-              disabled={isDisabled}
-              rows={3}
-              style={{ resize: 'vertical' }}
-            />
-          </FormField>
-        </div>
-      </Card>
-
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-sm)' }}>
-          <h3 style={{ margin: 0, fontSize: 'var(--font-size-md)' }}>Ansprechpartner</h3>
-          {!isDisabled && (
-            <Button variant="ghost" onClick={addContact}>+ Ansprechpartner hinzufuegen</Button>
-          )}
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-          {data.contacts.map((contact, index) => (
-            <ContactPersonCard
-              key={contactKeys[index] ?? `fallback-${index}`}
-              contact={contact}
-              disabled={isDisabled}
-              onChange={updated => updateContact(index, updated)}
-              onRemove={() => removeContact(index)}
-            />
-          ))}
-          {data.contacts.length === 0 && (
-            <div style={{ padding: 'var(--space-md)', color: 'var(--color-text-secondary)', textAlign: 'center' }}>
-              Keine Ansprechpartner vorhanden
-            </div>
-          )}
-        </div>
-      </div>
+      <TreeNavigation<BusinessPartnerDto>
+        nodes={treeNodes}
+        frames={frames}
+        data={data}
+        onChange={handleDataChange}
+        disabled={mode === 'view'}
+        validationErrors={validationErrors}
+      />
     </DetailPage>
   );
 }
