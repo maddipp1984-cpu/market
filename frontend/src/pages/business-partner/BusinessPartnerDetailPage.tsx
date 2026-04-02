@@ -61,6 +61,7 @@ export function BusinessPartnerDetailPage({ tabId }: { tabId: string }) {
   const handleDataChange = useCallback((updated: BusinessPartnerDto) => {
     setData(updated);
     setDirty(true);
+    setValidationErrors({});
   }, []);
 
   const validate = useCallback((): ValidationResult => {

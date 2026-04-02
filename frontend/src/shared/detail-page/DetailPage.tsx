@@ -162,7 +162,7 @@ export function DetailPage({
           {extraActions}
       </div>
 
-      <div className={`detail-page-content ${contentClassName ?? ''}`}>
+      <div className={['detail-page-content', contentClassName].filter(Boolean).join(' ')}>
         {children}
       </div>
 

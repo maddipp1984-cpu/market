@@ -1,5 +1,6 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { TreeView, type TreeNode } from '../TreeView';
+import type { ItemInstance } from '@headless-tree/core';
 import type { TreeNavigationProps, TreeNodeDef } from './types';
 import './TreeNavigation.css';
 
@@ -26,13 +27,24 @@ function collectAllIds(nodes: TreeNodeDef[]): string[] {
   return ids;
 }
 
-function collectFrameIds(nodes: TreeNodeDef[]): string[] {
-  const ids: string[] = [];
-  for (const node of nodes) {
-    if (node.hasFrame !== false) ids.push(node.id);
-    if (node.children) ids.push(...collectFrameIds(node.children));
+function buildNodeMaps(nodes: TreeNodeDef[]) {
+  const noFrameIds = new Set<string>();
+  const frameIds: string[] = [];
+  const nodeDefMap = new Map<string, TreeNodeDef>();
+
+  function walk(defs: TreeNodeDef[]) {
+    for (const def of defs) {
+      nodeDefMap.set(def.id, def);
+      if (def.hasFrame === false) {
+        noFrameIds.add(def.id);
+      } else {
+        frameIds.push(def.id);
+      }
+      if (def.children) walk(def.children);
+    }
   }
-  return ids;
+  walk(nodes);
+  return { noFrameIds, frameIds, nodeDefMap };
 }
 
 function toTreeNodes(defs: TreeNodeDef[]): TreeNode[] {
@@ -58,33 +70,12 @@ export function TreeNavigation<T>({
   );
   const [panelWidth, setPanelWidth] = useState(defaultWidth);
   const [dragging, setDragging] = useState(false);
-  const noFrameIds = useMemo(() => {
-    const set = new Set<string>();
-    function walk(defs: TreeNodeDef[]) {
-      for (const def of defs) {
-        if (def.hasFrame === false) set.add(def.id);
-        if (def.children) walk(def.children);
-      }
-    }
-    walk(nodes);
-    return set;
-  }, [nodes]);
+  const draggingRef = useRef(false);
+  const panelWidthRef = useRef(defaultWidth);
 
+  const { noFrameIds, frameIds, nodeDefMap } = useMemo(() => buildNodeMaps(nodes), [nodes]);
   const treeData = useMemo(() => toTreeNodes(nodes), [nodes]);
   const defaultExpanded = useMemo(() => collectAllIds(nodes), [nodes]);
-  const frameIds = useMemo(() => collectFrameIds(nodes), [nodes]);
-
-  const nodeDefMap = useMemo(() => {
-    const map = new Map<string, TreeNodeDef>();
-    function walk(defs: TreeNodeDef[]) {
-      for (const def of defs) {
-        map.set(def.id, def);
-        if (def.children) walk(def.children);
-      }
-    }
-    walk(nodes);
-    return map;
-  }, [nodes]);
 
   const handleSelect = useCallback((node: TreeNode) => {
     if (!noFrameIds.has(node.id)) {
@@ -93,18 +84,22 @@ export function TreeNavigation<T>({
   }, [noFrameIds]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (draggingRef.current) return;
     e.preventDefault();
+    draggingRef.current = true;
     setDragging(true);
     const startX = e.clientX;
-    const startWidth = panelWidth;
+    const startWidth = panelWidthRef.current;
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const delta = moveEvent.clientX - startX;
       const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth + delta));
+      panelWidthRef.current = newWidth;
       setPanelWidth(newWidth);
     };
 
     const handleMouseUp = () => {
+      draggingRef.current = false;
       setDragging(false);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
@@ -112,9 +107,9 @@ export function TreeNavigation<T>({
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  }, [panelWidth]);
+  }, []);
 
-  const treeRenderNode = useCallback((node: TreeNode, _item: import('@headless-tree/core').ItemInstance<TreeNode>) => {
+  const treeRenderNode = useCallback((node: TreeNode, _item: ItemInstance<TreeNode>) => {
     const def = nodeDefMap.get(node.id);
     const hasErrors = !!(validationErrors && validationErrors[node.id]?.length);
 
@@ -146,6 +141,9 @@ export function TreeNavigation<T>({
 
       <div
         className={`tree-navigation-resize-handle ${dragging ? 'tree-navigation-resize-handle--active' : ''}`}
+        role="separator"
+        aria-label="Baumbreite anpassen"
+        tabIndex={0}
         onMouseDown={handleMouseDown}
       >
         <div className="tree-navigation-resize-handle-indicator" />

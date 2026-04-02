@@ -88,6 +88,9 @@ export function TreeView({ data, variant = 'light', defaultExpanded, paddingBase
       } else {
         item.expand();
       }
+      if (selectOnClick) {
+        onSelect?.(item.getItemData());
+      }
     } else if (selectOnClick) {
       onSelect?.(item.getItemData());
     }
