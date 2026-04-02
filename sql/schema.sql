@@ -111,6 +111,8 @@ CREATE TABLE ts_header (
     description   TEXT,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    first_date    DATE,
+    last_date     DATE,
 
     CONSTRAINT chk_time_dim CHECK (time_dim IN (1, 2, 3, 4, 5)),
     CONSTRAINT fk_unit FOREIGN KEY (unit_id) REFERENCES ts_unit (unit_id),
@@ -134,7 +136,6 @@ CREATE TABLE ts_values_15min (
 );
 
 SELECT create_hypertable('ts_values_15min', by_range('ts_date', INTERVAL '1 year'));
-SELECT add_dimension('ts_values_15min', by_hash('ts_id', 8));
 CREATE UNIQUE INDEX idx_15min_pk ON ts_values_15min (ts_id, ts_date);
 
 ALTER TABLE ts_values_15min SET (
@@ -154,7 +155,6 @@ CREATE TABLE ts_values_1h (
 );
 
 SELECT create_hypertable('ts_values_1h', by_range('ts_date', INTERVAL '1 year'));
-SELECT add_dimension('ts_values_1h', by_hash('ts_id', 4));
 CREATE UNIQUE INDEX idx_1h_pk ON ts_values_1h (ts_id, ts_date);
 
 ALTER TABLE ts_values_1h SET (
@@ -174,7 +174,6 @@ CREATE TABLE ts_values_day (
 );
 
 SELECT create_hypertable('ts_values_day', by_range('ts_date', INTERVAL '1 year'));
-SELECT add_dimension('ts_values_day', by_hash('ts_id', 4));
 CREATE UNIQUE INDEX idx_day_pk ON ts_values_day (ts_id, ts_date);
 
 ALTER TABLE ts_values_day SET (

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-04-02 — TimescaleDB-Optimierung (TS1+TS2)
+- Hash-Partitionierung von 3 Hypertables entfernt (15min, 1h, day) — Single-Node braucht kein Hash
+- first_date/last_date Spalten in ts_header, gepflegt durch Write- und Delete-Procedures + writeSimple()
+- Overview-Query: UNION ALL CTE ueber 5 Tabellen durch direkten Header-Zugriff ersetzt
+
 ## 2026-04-02 — TreeNavigation-Komponente
 - Wiederverwendbare `TreeNavigation` in `shared/tree-navigation/` (TreePanel + ResizeHandle + FramePanel)
 - Geschaeftspartner-Detailmaske auf TreeNavigation umgebaut (Stammdaten + Ansprechpartner als separate Frames)

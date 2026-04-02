@@ -36,8 +36,8 @@
 - [ ] **AUTH14** — E2E-Test: Neuer User, Gruppe, Rechte, Sichtbarkeit, Schreiben, Loeschen
 
 ### TimescaleDB-Optimierung
-- [ ] **TS1** — Hash-Partitionierung entfernen (`by_hash('ts_id', 8)`) — auf Single-Node kontraproduktiv, erzeugt 8x mehr Chunks ohne Nutzen, verhindert optimales Chunk-Pruning bei `ANY(array)`-Queries
-- [ ] **TS2** — `first_date`/`last_date` Spalten in `ts_header` aufnehmen, beim Schreiben in `PostgresTimeSeriesProcedures` mitpflegen, Overview-CTE (`TimeSeriesOverviewRepository`) auf Header-Spalten umstellen statt UNION ALL ueber alle Werte-Tabellen
+- [x] **TS1** — Hash-Partitionierung entfernt (Migration 014)
+- [x] **TS2** — first_date/last_date in ts_header, Overview-Query vereinfacht (Migration 015)
 
 ### Aggregation Performance-Benchmark
 - [ ] **PERF1** — Benchmark fuer alle Aggregations-Ansaetze mit verschiedenen Szenarien (10/100/1k/10k/100k ZR × 3 Tage/1 Monat/1 Jahr/5 Jahre):

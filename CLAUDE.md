@@ -112,7 +112,8 @@ Alle Endpoints folgen dem Pattern `/api/{modul}` mit Standard-CRUD (GET, POST, P
 - **HikariCP**: Pool-Size 30 (PostgreSQL max_connections=100)
 - **Aggregation gleiche Dim+Unit**: PL/pgSQL Stored Procedures (`ts_sum_15min`, `ts_sum_1h`) — Summierung komplett in DB
 - **Aggregation Cross-Dim/Unit**: Parallele Java-Reads mit dediziertem ExecutorService (nicht ForkJoinPool!)
-- **Hypertable Hash-Partitionierung**: `ANY(array)` ist langsamer als parallele Einzelabfragen für QH/H
+- **Hypertable Range-Only**: Hash-Partitionierung entfernt (Single-Node), nur Range auf ts_date
+- **Overview-Performance**: first_date/last_date direkt in ts_header statt UNION ALL CTE
 - **Bulk-Header**: `HeaderRepository.findByIds()` statt N Einzelabfragen bei Aggregation
 - **VirtualTable**: TanStack Virtual für Übersichtsseiten (nur sichtbare Zeilen im DOM)
 
