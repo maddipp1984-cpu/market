@@ -51,6 +51,7 @@ import de.market.jooq.generated.tables.TsRead_15min;
 import de.market.jooq.generated.tables.TsRead_15minRaw;
 import de.market.jooq.generated.tables.TsRead_1h;
 import de.market.jooq.generated.tables.TsRead_1hRaw;
+import de.market.jooq.generated.tables.TsSeriesType;
 import de.market.jooq.generated.tables.TsSum_15min;
 import de.market.jooq.generated.tables.TsSum_1h;
 import de.market.jooq.generated.tables.TsUnit;
@@ -1484,6 +1485,11 @@ public class Public extends SchemaImpl {
     }
 
     /**
+     * Reihenarten: Klassifikation von Zeitreihen
+     */
+    public final TsSeriesType TS_SERIES_TYPE = TsSeriesType.TS_SERIES_TYPE;
+
+    /**
      * The table <code>public.ts_sum_15min</code>.
      */
     public final TsSum_15min TS_SUM_15MIN = TsSum_15min.TS_SUM_15MIN;
@@ -1678,6 +1684,7 @@ public class Public extends SchemaImpl {
             TsRead_15minRaw.TS_READ_15MIN_RAW,
             TsRead_1h.TS_READ_1H,
             TsRead_1hRaw.TS_READ_1H_RAW,
+            TsSeriesType.TS_SERIES_TYPE,
             TsSum_15min.TS_SUM_15MIN,
             TsSum_1h.TS_SUM_1H,
             TsUnit.TS_UNIT,

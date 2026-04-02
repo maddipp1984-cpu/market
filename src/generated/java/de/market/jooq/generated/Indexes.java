@@ -43,6 +43,7 @@ public class Indexes {
     public static final Index IDX_EXEC_LOG_JOB_ID = Internal.createIndex(DSL.name("idx_exec_log_job_id"), BatchJobExecutionLog.BATCH_JOB_EXECUTION_LOG, new OrderField[] { BatchJobExecutionLog.BATCH_JOB_EXECUTION_LOG.SCHEDULE_ID }, false);
     public static final Index IDX_EXEC_LOG_START = Internal.createIndex(DSL.name("idx_exec_log_start"), BatchJobExecutionLog.BATCH_JOB_EXECUTION_LOG, new OrderField[] { BatchJobExecutionLog.BATCH_JOB_EXECUTION_LOG.START_TIME.desc() }, false);
     public static final Index IDX_HEADER_OBJECT = Internal.createIndex(DSL.name("idx_header_object"), TsHeader.TS_HEADER, new OrderField[] { TsHeader.TS_HEADER.OBJECT_ID }, false);
+    public static final Index IDX_HEADER_SERIES_TYPE = Internal.createIndex(DSL.name("idx_header_series_type"), TsHeader.TS_HEADER, new OrderField[] { TsHeader.TS_HEADER.SERIES_TYPE_ID }, false);
     public static final Index IDX_HEADER_TIME_DIM = Internal.createIndex(DSL.name("idx_header_time_dim"), TsHeader.TS_HEADER, new OrderField[] { TsHeader.TS_HEADER.TIME_DIM }, false);
     public static final Index IDX_MONTH_PK = Internal.createIndex(DSL.name("idx_month_pk"), TsValuesMonth.TS_VALUES_MONTH, new OrderField[] { TsValuesMonth.TS_VALUES_MONTH.TS_ID, TsValuesMonth.TS_VALUES_MONTH.TS_DATE }, true);
     public static final Index IDX_OBJECT_TYPE = Internal.createIndex(DSL.name("idx_object_type"), TsObject.TS_OBJECT, new OrderField[] { TsObject.TS_OBJECT.TYPE_ID }, false);

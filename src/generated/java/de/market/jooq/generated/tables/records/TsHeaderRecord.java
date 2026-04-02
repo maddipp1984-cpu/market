@@ -150,6 +150,20 @@ public class TsHeaderRecord extends UpdatableRecordImpl<TsHeaderRecord> {
         return (OffsetDateTime) get(8);
     }
 
+    /**
+     * Setter for <code>public.ts_header.series_type_id</code>.
+     */
+    public void setSeriesTypeId(Short value) {
+        set(9, value);
+    }
+
+    /**
+     * Getter for <code>public.ts_header.series_type_id</code>.
+     */
+    public Short getSeriesTypeId() {
+        return (Short) get(9);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -173,7 +187,7 @@ public class TsHeaderRecord extends UpdatableRecordImpl<TsHeaderRecord> {
     /**
      * Create a detached, initialised TsHeaderRecord
      */
-    public TsHeaderRecord(Long tsId, String tsKey, Short timeDim, Short unitId, Short currencyId, Long objectId, String description, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
+    public TsHeaderRecord(Long tsId, String tsKey, Short timeDim, Short unitId, Short currencyId, Long objectId, String description, OffsetDateTime createdAt, OffsetDateTime updatedAt, Short seriesTypeId) {
         super(TsHeader.TS_HEADER);
 
         setTsId(tsId);
@@ -185,6 +199,7 @@ public class TsHeaderRecord extends UpdatableRecordImpl<TsHeaderRecord> {
         setDescription(description);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
+        setSeriesTypeId(seriesTypeId);
         resetChangedOnNotNull();
     }
 }

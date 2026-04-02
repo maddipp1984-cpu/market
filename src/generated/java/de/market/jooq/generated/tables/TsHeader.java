@@ -9,6 +9,7 @@ import de.market.jooq.generated.Keys;
 import de.market.jooq.generated.Public;
 import de.market.jooq.generated.tables.TsCurrency.TsCurrencyPath;
 import de.market.jooq.generated.tables.TsObject.TsObjectPath;
+import de.market.jooq.generated.tables.TsSeriesType.TsSeriesTypePath;
 import de.market.jooq.generated.tables.TsUnit.TsUnitPath;
 import de.market.jooq.generated.tables.TsValuesDay.TsValuesDayPath;
 import de.market.jooq.generated.tables.TsValuesMonth.TsValuesMonthPath;
@@ -116,6 +117,11 @@ public class TsHeader extends TableImpl<TsHeaderRecord> {
      */
     public final TableField<TsHeaderRecord, OffsetDateTime> UPDATED_AT = createField(DSL.name("updated_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6).nullable(false).defaultValue(DSL.field(DSL.raw("now()"), SQLDataType.TIMESTAMPWITHTIMEZONE)), this, "");
 
+    /**
+     * The column <code>public.ts_header.series_type_id</code>.
+     */
+    public final TableField<TsHeaderRecord, Short> SERIES_TYPE_ID = createField(DSL.name("series_type_id"), SQLDataType.SMALLINT, this, "");
+
     private TsHeader(Name alias, Table<TsHeaderRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -183,7 +189,7 @@ public class TsHeader extends TableImpl<TsHeaderRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IDX_HEADER_OBJECT, Indexes.IDX_HEADER_TIME_DIM);
+        return Arrays.asList(Indexes.IDX_HEADER_OBJECT, Indexes.IDX_HEADER_SERIES_TYPE, Indexes.IDX_HEADER_TIME_DIM);
     }
 
     @Override
@@ -203,7 +209,7 @@ public class TsHeader extends TableImpl<TsHeaderRecord> {
 
     @Override
     public List<ForeignKey<TsHeaderRecord, ?>> getReferences() {
-        return Arrays.asList(Keys.TS_HEADER__FK_CURRENCY, Keys.TS_HEADER__FK_HEADER_OBJECT, Keys.TS_HEADER__FK_UNIT);
+        return Arrays.asList(Keys.TS_HEADER__FK_CURRENCY, Keys.TS_HEADER__FK_HEADER_OBJECT, Keys.TS_HEADER__FK_UNIT, Keys.TS_HEADER__TS_HEADER_SERIES_TYPE_ID_FKEY);
     }
 
     private transient TsCurrencyPath _tsCurrency;
@@ -240,6 +246,19 @@ public class TsHeader extends TableImpl<TsHeaderRecord> {
             _tsUnit = new TsUnitPath(this, Keys.TS_HEADER__FK_UNIT, null);
 
         return _tsUnit;
+    }
+
+    private transient TsSeriesTypePath _tsSeriesType;
+
+    /**
+     * Get the implicit join path to the <code>public.ts_series_type</code>
+     * table.
+     */
+    public TsSeriesTypePath tsSeriesType() {
+        if (_tsSeriesType == null)
+            _tsSeriesType = new TsSeriesTypePath(this, Keys.TS_HEADER__TS_HEADER_SERIES_TYPE_ID_FKEY, null);
+
+        return _tsSeriesType;
     }
 
     private transient TsValues_15minPath _tsValues_15min;
