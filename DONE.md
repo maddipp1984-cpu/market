@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-04-02 — Reihenart-Modul (Series Type)
+- **DB-Migration** (`011_series_type.sql`): Neue Tabelle `ts_series_type` (code UNIQUE, name, category CHECK 1/2), FK `series_type_id` in `ts_header` (nullable)
+- **Backend**: SeriesCategory Enum (FINANCIAL/PHYSICAL), SeriesTypeEntity (JPA), JpaRepository, jOOQ OverviewRepository mit CASE/WHEN fuer Kategorie-Labels, Service extends AbstractCrudService, REST-Controller `/api/series-types`
+- **Frontend**: ReihenartenPage (OverviewPage-Template), ReihenartDetailPage (DetailPage-Template mit Kategorie-Combobox), API-Client, Tab-Registrierung + Sidebar
+- **Review-Fix**: ColumnMeta Kategorie-Typ von TEXT auf NUMBER korrigiert (Filter auf SMALLINT-Spalte)
+
 ## 2026-03-07 — Geschaeftspartner CRUD (erstes JPA-Modul)
 - **JPA neben Raw JDBC**: `spring-boot-starter-data-jpa` hinzugefuegt, `ddl-auto=validate`, `open-in-view=false`
 - **DB-Migration** (`006_business_partner.sql`): 3 Tabellen (business_partner, contact_person, contact_person_function)

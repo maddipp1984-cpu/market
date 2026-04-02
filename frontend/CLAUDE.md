@@ -48,6 +48,13 @@ frontend/
       DataPage.tsx + DataPage.css     -- Standard-Template fuer Daten-Masken
       detail-page/
         DetailPage.tsx + DetailPage.css  -- Template fuer Detailmasken (Toolbar, Modi, Validierung, Dirty-Guard)
+      overview-page/                    -- Template fuer Uebersichtsseiten
+        OverviewPage.tsx + .css         -- Hauptkomponente (Toolbar, Loading, Footer)
+        VirtualTable.tsx + .css         -- Virtualisierte Tabelle (TanStack Virtual)
+        FilterBuilder.tsx + .css        -- Dynamischer Filter-Builder
+        ContextMenu.tsx + .css          -- Rechtsklick-Kontextmenue
+        useFilterPresets.ts             -- Hook: Filter-Presets laden/speichern
+        icons.tsx                       -- SVG-Icons fuer Toolbar-Aktionen
       FilterBar.tsx + FilterBar.css   -- Horizontale Filterzeile mit Actions
       FormField.tsx + FormField.css   -- Label + Input/Select (compact-Variante)
       PageLayout.tsx + PageLayout.css -- Seiten-Layout (optionaler maxWidth, Titel)
@@ -90,11 +97,14 @@ frontend/
       ObjectsPage.tsx                 -- Objekt-Verwaltung (Platzhalter)
       ObjekttypenPage.tsx             -- Objekttypen (Platzhalter)
       EinheitenPage.tsx               -- Einheiten (Platzhalter)
-      WaehrungenPage.tsx              -- Waehrungen (Platzhalter)
+      WaehrungenPage.tsx              -- Waehrungen (OverviewPage-Template)
+      ReihenartenPage.tsx             -- Reihenarten (OverviewPage-Template)
       ZeitreihenPage.tsx              -- Zeitreihen-Uebersicht
       ObjektNeuPage.tsx               -- Objekt anlegen
       currency/
         CurrencyDetailPage.tsx        -- Waehrungs-Detail (DetailPage-Template)
+      reihenart/
+        ReihenartDetailPage.tsx       -- Reihenart-Detail (DetailPage-Template, Kategorie-Combobox)
       scheduling/
         BatchSchedulePage.tsx         -- Schedule-Uebersicht
         BatchScheduleDetailPage.tsx   -- Schedule-Detail (mit CSS)
