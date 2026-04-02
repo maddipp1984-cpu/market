@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-04-02 — TreeNavigation-Komponente
+- Wiederverwendbare `TreeNavigation` in `shared/tree-navigation/` (TreePanel + ResizeHandle + FramePanel)
+- Geschaeftspartner-Detailmaske auf TreeNavigation umgebaut (Stammdaten + Ansprechpartner als separate Frames)
+- DetailPage um `contentClassName`-Prop erweitert
+
 ## 2026-04-02 — Public API fuer Drittsysteme
 - **Zweite SecurityFilterChain**: `/public-api/**` mit Basic Auth (`@Order(1)`), getrennt von Keycloak-Chain (`@Order(2)`, `/api/**`)
 - **Credentials**: `market.public-api.username/password` in `application.properties`

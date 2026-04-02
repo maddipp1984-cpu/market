@@ -48,6 +48,9 @@ frontend/
       DataPage.tsx + DataPage.css     -- Standard-Template fuer Daten-Masken
       detail-page/
         DetailPage.tsx + DetailPage.css  -- Template fuer Detailmasken (Toolbar, Modi, Validierung, Dirty-Guard)
+      tree-navigation/
+        TreeNavigation.tsx + .css       -- Baum-Navigation fuer Detailmasken (TreePanel + ResizeHandle + FramePanel)
+        types.ts                        -- TreeNodeDef, FrameProps<T>, TreeNavigationProps<T>
       overview-page/                    -- Template fuer Uebersichtsseiten
         OverviewPage.tsx + .css         -- Hauptkomponente (Toolbar, Loading, Footer)
         VirtualTable.tsx + .css         -- Virtualisierte Tabelle (TanStack Virtual)
@@ -146,6 +149,7 @@ frontend/
 - **Sonstige Seiten** (Einstellungen, Info) nutzen `<PageLayout>`
 - **Formularfelder** nutzen `<FormField>` (mit `compact` fuer Filter-Bars)
 - **Filter-Zeilen** nutzen `<FilterBar>` (mit `actions`-Prop fuer Buttons rechts)
+- **Baum-Detailmasken** (Detailansicht mit Baum-Navigation links + Frame-Bereich rechts) nutzen `<TreeNavigation>` (`shared/tree-navigation/`) innerhalb von `<DetailPage>`. Definiert `TreeNodeDef[]` fuer den Baum und eine `frames`-Map (knotenId → Frame-Komponente). Alle Frames teilen ein DTO. Validierungsfehler werden per `validationErrors`-Prop als rote Punkte am Knoten angezeigt. ResizeHandle erlaubt variable Baum-Breite. `DetailPage` bekommt `contentClassName="detail-page-content--no-padding"`.
 
 ### Konvention: Feature-Ordner
 Jedes Feature bekommt einen eigenen Ordner mit Unterstruktur (`data/`, `table/`, etc.). Zusammengehoerige Dateien (Komponente, Hook, Hilfsfunktionen, CSS) liegen beieinander. Shared Code (API, Typen, UI-Komponenten) bleibt auf oberster Ebene.
