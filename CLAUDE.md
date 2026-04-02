@@ -39,6 +39,7 @@ Spring Boot 3.4.x Anwendung mit dreifachem Persistenz-Ansatz: jOOQ für Abfragen
 - **`config`** — Anwendungskonfiguration (Sidebar)
 - **`timeseries`** — Kern: Zeitreihen-CRUD, Aggregation, Übersichten
 - **`currency`** — Stammdaten-Modul: Währungen (JPA)
+- **`seriestype`** — Stammdaten-Modul: Reihenarten (JPA, Kategorie: Finanziell/Physikalisch)
 - **`businesspartner`** — Stammdaten-Modul: Geschäftspartner (JPA)
 - **`filterpreset`** — Seitenübergreifende Filter-Presets (jOOQ, JSONB)
 - **`scheduling`** — Batch-Job-System (Quartz)
@@ -50,7 +51,7 @@ Spring Boot 3.4.x Anwendung mit dreifachem Persistenz-Ansatz: jOOQ für Abfragen
 
 | Schicht | Tool | Verwendung |
 |---------|------|------------|
-| Stammdaten-CRUD (Detailmasken) | JPA/Hibernate | BusinessPartner, Currency, BatchSchedule |
+| Stammdaten-CRUD (Detailmasken) | JPA/Hibernate | BusinessPartner, Currency, SeriesType, BatchSchedule |
 | Übersichten + Abfragen | jOOQ DSL | Alle Repositories mit `DSLContext` |
 | Stored Procedures + Arrays | Raw JDBC via `dsl.connection()` | TimeSeriesRepository (Write/Read/Aggregation) |
 | Codegen | jOOQ Codegen (Gradle Plugin) | `src/generated/java/de/market/jooq/generated/` |
@@ -61,65 +62,25 @@ Spring Boot 3.4.x Anwendung mit dreifachem Persistenz-Ansatz: jOOQ für Abfragen
 - Neue Stammdaten-Module müssen dieses Pattern übernehmen
 
 ### REST-API
-| Methode | Pfad | Beschreibung |
-|---------|------|-------------|
-| POST | `/api/timeseries` | Zeitreihe anlegen |
-| GET | `/api/timeseries/{tsId}` | Header lesen |
-| GET | `/api/timeseries?key=...` | Header per Key |
-| POST | `/api/timeseries/{tsId}/values` | Tag schreiben (QH/H Array) |
-| POST | `/api/timeseries/{tsId}/value` | Einzelwert schreiben (Tag/Monat/Jahr) |
-| GET | `/api/timeseries/{tsId}/values?start=...&end=...` | Werte lesen |
-| DELETE | `/api/timeseries/{tsId}` | Zeitreihe löschen |
-| POST | `/api/timeseries/aggregate` | Zeitreihen summieren (Cross-Dim/Unit) |
-| GET | `/api/timeseries-overview` | Zeitreihen-Übersicht (TableResponse) |
-| POST | `/api/timeseries-overview/query` | Zeitreihen filtern |
-| POST | `/api/objects` | Objekt anlegen |
-| GET | `/api/objects/{objectId}` | Objekt lesen |
-| PUT | `/api/objects/{objectId}/timeseries/{tsId}` | Zuordnung |
-| DELETE | `/api/objects/{objectId}` | Objekt löschen |
-| GET | `/api/config/sidebar` | Sidebar-Baumstruktur (aus XML) |
-| GET | `/api/business-partners` | GP-Liste (TableResponse) |
-| GET | `/api/business-partners/{id}` | GP lesen (mit Ansprechpartnern) |
-| POST | `/api/business-partners` | GP anlegen |
-| PUT | `/api/business-partners/{id}` | GP aktualisieren |
-| DELETE | `/api/business-partners/{id}` | GP löschen |
-| GET | `/api/currencies` | Währungsliste (TableResponse) |
-| GET | `/api/currencies/{id}` | Währung lesen |
-| POST | `/api/currencies` | Währung anlegen |
-| PUT | `/api/currencies/{id}` | Währung aktualisieren |
-| DELETE | `/api/currencies/{id}` | Währung löschen |
-| POST | `/api/currencies/query` | Währungen filtern |
-| GET | `/api/filter-presets?pageKey=...` | Filter-Presets laden |
-| POST | `/api/filter-presets` | Preset anlegen |
-| PUT | `/api/filter-presets/{id}` | Preset aktualisieren |
-| DELETE | `/api/filter-presets/{id}` | Preset löschen |
-| PUT | `/api/filter-presets/{id}/default` | Als Standard setzen |
-| GET | `/api/batch-jobs/catalog` | Job-Katalog (verfügbare Job-Typen) |
-| GET | `/api/batch-schedules` | Schedule-Übersicht (TableResponse) |
-| GET | `/api/batch-schedules/{id}` | Schedule lesen |
-| POST | `/api/batch-schedules` | Schedule anlegen |
-| PUT | `/api/batch-schedules/{id}` | Schedule aktualisieren |
-| DELETE | `/api/batch-schedules/{id}` | Schedule löschen |
-| POST | `/api/batch-schedules/{id}/trigger` | Manuell auslösen (opt. Parameter) |
-| GET | `/api/batch-history` | Alle Ausführungen (TableResponse) |
-| GET | `/api/batch-history/{execId}/log` | Logfile-Inhalt |
-| GET | `/api/permissions/me` | Eigene effektive Berechtigungen |
-| GET | `/api/admin/users` | Benutzerliste (Keycloak) |
-| POST | `/api/admin/users` | Benutzer anlegen |
-| PUT | `/api/admin/users/{id}/admin` | Admin-Status setzen |
-| PUT | `/api/admin/users/{id}/enabled` | Benutzer aktivieren/deaktivieren |
-| PUT | `/api/admin/users/{id}/password` | Passwort setzen |
-| GET | `/api/admin/users/{id}/effective` | Effektive Berechtigungen eines Users |
-| GET | `/api/admin/groups` | Gruppen-Liste |
-| GET | `/api/admin/groups/{id}` | Gruppe lesen (mit Mitgliedern + Permissions) |
-| POST | `/api/admin/groups` | Gruppe anlegen |
-| PUT | `/api/admin/groups/{id}` | Gruppe aktualisieren |
-| DELETE | `/api/admin/groups/{id}` | Gruppe löschen |
-| POST | `/api/admin/groups/{id}/members` | Mitglied hinzufügen |
-| DELETE | `/api/admin/groups/{id}/members/{userId}` | Mitglied entfernen |
-| PUT | `/api/admin/groups/{id}/permissions` | Gruppen-Berechtigungen setzen |
-| PUT | `/api/admin/groups/{id}/field-restrictions` | Feld-Restriktionen setzen |
-| GET | `/api/admin/resources` | Verfügbare Ressourcen-Definitionen |
+Alle Endpoints folgen dem Pattern `/api/{modul}` mit Standard-CRUD (GET, POST, PUT, DELETE).
+
+| Modul | Basis-Pfad | Besonderheiten |
+|-------|-----------|----------------|
+| Zeitreihen | `/api/timeseries` | `/{tsId}/values` (Array), `/{tsId}/value` (Einzelwert), `/aggregate` |
+| Zeitreihen-Übersicht | `/api/timeseries-overview` | `/query` (POST mit Filter) |
+| Objekte | `/api/objects` | `/{objectId}/timeseries/{tsId}` (Zuordnung) |
+| Geschäftspartner | `/api/business-partners` | Standard-CRUD |
+| Währungen | `/api/currencies` | `/query` (POST mit Filter) |
+| Reihenarten | `/api/series-types` | `/query` (POST mit Filter), Kategorie: 1=Finanziell, 2=Physikalisch |
+| Filter-Presets | `/api/filter-presets` | `/{id}/default` (PUT) |
+| Batch-Schedules | `/api/batch-schedules` | `/{id}/trigger` (POST, manuell auslösen) |
+| Batch-Historie | `/api/batch-history` | `/{execId}/log` (Logfile) |
+| Job-Katalog | `/api/batch-jobs/catalog` | Nur GET (verfügbare Job-Typen) |
+| Config | `/api/config/sidebar` | Sidebar-Baumstruktur (aus XML) |
+| Berechtigungen | `/api/permissions/me` | Eigene effektive Berechtigungen |
+| Admin (Users) | `/api/admin/users` | `/{id}/admin`, `/{id}/enabled`, `/{id}/password`, `/{id}/effective` |
+| Admin (Groups) | `/api/admin/groups` | `/{id}/members`, `/{id}/permissions`, `/{id}/field-restrictions` |
+| Admin (Resources) | `/api/admin/resources` | Nur GET (Ressourcen-Definitionen) |
 
 ### Exception Handling (shared.rest.GlobalExceptionHandler)
 - `IllegalArgumentException` → 400 Bad Request
@@ -158,6 +119,8 @@ src/main/java/de/market/
             JooqFilterBuilder.java         -- jOOQ Condition-Builder (typsicher)
         service/
             AbstractCrudService.java       -- Basis für Stammdaten-Services
+        repository/
+            AbstractOverviewRepository.java -- Basis für Übersichts-Repositories (jOOQ)
         rest/
             GlobalExceptionHandler.java    -- @RestControllerAdvice
         EnumParser.java                    -- Utility: String→Enum Parsing
@@ -194,6 +157,19 @@ src/main/java/de/market/
             CurrencyController.java        -- @RestController /api/currencies
             dto/
                 CurrencyDto.java           -- Request/Response DTO
+    seriestype/                            -- Stammdaten-Modul: Reihenarten (JPA + jOOQ)
+        model/
+            SeriesTypeEntity.java          -- @Entity auf ts_series_type
+            SeriesCategory.java            -- Enum: FINANCIAL, PHYSICAL
+        repository/
+            SeriesTypeJpaRepository.java   -- JpaRepository (Einzel-CRUD)
+            SeriesTypeOverviewRepository.java -- jOOQ für Übersicht (Kategorie-Label per CASE)
+        service/
+            SeriesTypeService.java         -- @Service extends AbstractCrudService
+        rest/
+            SeriesTypeController.java      -- @RestController /api/series-types
+            dto/
+                SeriesTypeDto.java         -- Request/Response DTO
     businesspartner/                       -- Stammdaten-Modul (JPA + jOOQ)
         model/
             BusinessPartner.java           -- @Entity, @OneToMany cascade ALL
@@ -342,13 +318,10 @@ TS_DB_PASSWORD=postgres
 - SLF4J + Logback (via Spring Boot)
 - JUnit 5 + Mockito (via spring-boot-starter-test)
 
-## Frontend-Features
-- **Tab-Persistenz**: Offene Tabs werden in `sessionStorage` gespeichert, überleben Browser-Refresh (F5)
-- **Diagramme**: 3 Chart-Bibliotheken zum Vergleich (Recharts, Chart.js, Lightweight Charts), umschaltbar per Dropdown
-- **Chart-Downsampling**: Gemeinsame Utility `chart/chartUtils.ts` (max 5000 Punkte), Typen/Farben in `chart/chartTypes.ts`
-- **Zeitreihen-Übersicht**: OverviewPage mit Mehrfachauswahl → Editor öffnen oder Summieren
-- **Aggregation**: Kontextaktion "Summieren" öffnet Editor mit on-the-fly summierter Zeitreihe (read-only)
-- **Multi-Zeitreihen**: Unterschiedliche Laufzeiten werden mit NaN aufgefüllt (kein Fehler mehr)
+## Frontend
+Siehe `frontend/CLAUDE.md` für vollständige Frontend-Dokumentation (React 18, Tab-System, Templates, Konventionen).
+
+Wichtigste Features: Tab-Persistenz (sessionStorage), 3 Chart-Bibliotheken (umschaltbar), OverviewPage mit Mehrfachauswahl + Aggregation, VirtualTable für 100k+ Zeilen.
 
 ## Gradle-Konfiguration
 - `gradle.properties`: `org.gradle.java.home` zeigt auf JDK 21 (unter `~/.jdks/jdk-21.0.10+7`)
