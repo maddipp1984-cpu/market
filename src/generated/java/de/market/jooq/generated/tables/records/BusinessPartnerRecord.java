@@ -74,6 +74,22 @@ public class BusinessPartnerRecord extends UpdatableRecordImpl<BusinessPartnerRe
         return (String) get(3);
     }
 
+    /**
+     * Setter for <code>public.business_partner.system_rank</code>.
+     * Systemfirma-Rang: 1=fuehrend, 2+=Tochter, NULL=normaler Partner
+     */
+    public void setSystemRank(Short value) {
+        set(4, value);
+    }
+
+    /**
+     * Getter for <code>public.business_partner.system_rank</code>.
+     * Systemfirma-Rang: 1=fuehrend, 2+=Tochter, NULL=normaler Partner
+     */
+    public Short getSystemRank() {
+        return (Short) get(4);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -97,13 +113,14 @@ public class BusinessPartnerRecord extends UpdatableRecordImpl<BusinessPartnerRe
     /**
      * Create a detached, initialised BusinessPartnerRecord
      */
-    public BusinessPartnerRecord(Long id, String shortName, String name, String notes) {
+    public BusinessPartnerRecord(Long id, String shortName, String name, String notes, Short systemRank) {
         super(BusinessPartner.BUSINESS_PARTNER);
 
         setId(id);
         setShortName(shortName);
         setName(name);
         setNotes(notes);
+        setSystemRank(systemRank);
         resetChangedOnNotNull();
     }
 }

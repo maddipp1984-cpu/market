@@ -77,6 +77,12 @@ public class BusinessPartner extends TableImpl<BusinessPartnerRecord> {
      */
     public final TableField<BusinessPartnerRecord, String> NOTES = createField(DSL.name("notes"), SQLDataType.CLOB, this, "");
 
+    /**
+     * The column <code>public.business_partner.system_rank</code>.
+     * Systemfirma-Rang: 1=fuehrend, 2+=Tochter, NULL=normaler Partner
+     */
+    public final TableField<BusinessPartnerRecord, Short> SYSTEM_RANK = createField(DSL.name("system_rank"), SQLDataType.SMALLINT, this, "Systemfirma-Rang: 1=fuehrend, 2+=Tochter, NULL=normaler Partner");
+
     private BusinessPartner(Name alias, Table<BusinessPartnerRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -154,7 +160,7 @@ public class BusinessPartner extends TableImpl<BusinessPartnerRecord> {
 
     @Override
     public List<UniqueKey<BusinessPartnerRecord>> getUniqueKeys() {
-        return Arrays.asList(Keys.BUSINESS_PARTNER_SHORT_NAME_KEY);
+        return Arrays.asList(Keys.BUSINESS_PARTNER_SHORT_NAME_KEY, Keys.BUSINESS_PARTNER_SYSTEM_RANK_KEY);
     }
 
     private transient ContactPersonPath _contactPerson;
