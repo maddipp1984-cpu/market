@@ -33,6 +33,7 @@ interface DetailPageProps {
   onDelete?: () => Promise<void>;
   onNew?: () => void;
   extraActions?: ReactNode;
+  contentClassName?: string;
   children: ReactNode;
 }
 
@@ -47,6 +48,7 @@ export function DetailPage({
   onDelete,
   onNew,
   extraActions,
+  contentClassName,
   children,
 }: DetailPageProps) {
   const { closeTab, registerCloseGuard, markOverviewStale } = useTabContext();
@@ -160,7 +162,7 @@ export function DetailPage({
           {extraActions}
       </div>
 
-      <div className="detail-page-content">
+      <div className={`detail-page-content ${contentClassName ?? ''}`}>
         {children}
       </div>
 
