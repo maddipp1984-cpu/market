@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-04-02 — Warengruppe-Modul (Commodity Group)
+- **DB-Migration** (`013_commodity_group.sql`): Neue Tabelle `ts_commodity_group` (name TEXT UNIQUE)
+- **Backend**: CommodityGroupEntity (JPA), JpaRepository, jOOQ OverviewRepository, Service extends AbstractCrudService, REST-Controller `/api/commodity-groups`
+- **Frontend**: WarengruppenPage (OverviewPage-Template), WarengruppeDetailPage (DetailPage-Template), API-Client, Tab-Registrierung + Sidebar
+
 ## 2026-04-02 — Systemfirma-Konzept (System Company)
 - **DB-Migration** (`012_system_rank.sql`): Neue nullable Spalte `system_rank SMALLINT UNIQUE` in `business_partner`
 - **SystemCompanyService**: Startup-Cache per `@PostConstruct`, laedt Systemfirmen sortiert nach Rang, bietet `getPrimary()`, `getAll()`, `isSystemCompany()`

@@ -99,12 +99,15 @@ frontend/
       EinheitenPage.tsx               -- Einheiten (Platzhalter)
       WaehrungenPage.tsx              -- Waehrungen (OverviewPage-Template)
       ReihenartenPage.tsx             -- Reihenarten (OverviewPage-Template)
+      WarengruppenPage.tsx            -- Warengruppen (OverviewPage-Template)
       ZeitreihenPage.tsx              -- Zeitreihen-Uebersicht
       ObjektNeuPage.tsx               -- Objekt anlegen
       currency/
         CurrencyDetailPage.tsx        -- Waehrungs-Detail (DetailPage-Template)
       reihenart/
         ReihenartDetailPage.tsx       -- Reihenart-Detail (DetailPage-Template, Kategorie-Combobox)
+      warengruppe/
+        WarengruppeDetailPage.tsx     -- Warengruppe-Detail (DetailPage-Template)
       scheduling/
         BatchSchedulePage.tsx         -- Schedule-Uebersicht
         BatchScheduleDetailPage.tsx   -- Schedule-Detail (mit CSS)

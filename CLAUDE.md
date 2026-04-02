@@ -51,7 +51,7 @@ Spring Boot 3.4.x Anwendung mit dreifachem Persistenz-Ansatz: jOOQ für Abfragen
 
 | Schicht | Tool | Verwendung |
 |---------|------|------------|
-| Stammdaten-CRUD (Detailmasken) | JPA/Hibernate | BusinessPartner, Currency, SeriesType, BatchSchedule |
+| Stammdaten-CRUD (Detailmasken) | JPA/Hibernate | BusinessPartner, Currency, SeriesType, CommodityGroup, BatchSchedule |
 | Übersichten + Abfragen | jOOQ DSL | Alle Repositories mit `DSLContext` |
 | Stored Procedures + Arrays | Raw JDBC via `dsl.connection()` | TimeSeriesRepository (Write/Read/Aggregation) |
 | Codegen | jOOQ Codegen (Gradle Plugin) | `src/generated/java/de/market/jooq/generated/` |
@@ -72,6 +72,7 @@ Alle Endpoints folgen dem Pattern `/api/{modul}` mit Standard-CRUD (GET, POST, P
 | Geschäftspartner | `/api/business-partners` | Standard-CRUD |
 | Währungen | `/api/currencies` | `/query` (POST mit Filter) |
 | Reihenarten | `/api/series-types` | `/query` (POST mit Filter), Kategorie: 1=Finanziell, 2=Physikalisch |
+| Warengruppen | `/api/commodity-groups` | `/query` (POST mit Filter) |
 | Filter-Presets | `/api/filter-presets` | `/{id}/default` (PUT) |
 | Batch-Schedules | `/api/batch-schedules` | `/{id}/trigger` (POST, manuell auslösen) |
 | Batch-Historie | `/api/batch-history` | `/{execId}/log` (Logfile) |
@@ -170,6 +171,18 @@ src/main/java/de/market/
             SeriesTypeController.java      -- @RestController /api/series-types
             dto/
                 SeriesTypeDto.java         -- Request/Response DTO
+    commoditygroup/                        -- Stammdaten-Modul: Warengruppen (JPA + jOOQ)
+        model/
+            CommodityGroupEntity.java      -- @Entity auf ts_commodity_group
+        repository/
+            CommodityGroupJpaRepository.java -- JpaRepository (Einzel-CRUD)
+            CommodityGroupOverviewRepository.java -- jOOQ für Übersicht
+        service/
+            CommodityGroupService.java     -- @Service extends AbstractCrudService
+        rest/
+            CommodityGroupController.java  -- @RestController /api/commodity-groups
+            dto/
+                CommodityGroupDto.java     -- Request/Response DTO
     businesspartner/                       -- Stammdaten-Modul (JPA + jOOQ)
         model/
             BusinessPartner.java           -- @Entity, @OneToMany cascade ALL
