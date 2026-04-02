@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { TreeView, type TreeNode } from '../TreeView';
 import type { TreeNavigationProps, TreeNodeDef } from './types';
 import './TreeNavigation.css';
@@ -58,8 +58,6 @@ export function TreeNavigation<T>({
   );
   const [panelWidth, setPanelWidth] = useState(defaultWidth);
   const [dragging, setDragging] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
   const noFrameIds = useMemo(() => {
     const set = new Set<string>();
     function walk(defs: TreeNodeDef[]) {
@@ -133,7 +131,7 @@ export function TreeNavigation<T>({
   }, [nodeDefMap, validationErrors, renderNode]);
 
   return (
-    <div className="tree-navigation" ref={containerRef}>
+    <div className="tree-navigation">
       <div className="tree-navigation-panel" style={{ width: panelWidth }}>
         <TreeView
           data={treeData}
