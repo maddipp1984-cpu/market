@@ -44,6 +44,7 @@ Spring Boot 3.4.x Anwendung mit dreifachem Persistenz-Ansatz: jOOQ für Abfragen
 - **`businesspartner`** — Stammdaten-Modul: Geschäftspartner (JPA)
 - **`filterpreset`** — Seitenübergreifende Filter-Presets (jOOQ, JSONB)
 - **`scheduling`** — Batch-Job-System (Quartz)
+- **`publicapi`** — Public REST-API für Drittsysteme (Basic Auth, eigene DTOs)
 - **`benchmark`** — Standalone Lese-Benchmark
 - **Schichten-Regel**: `REST-Controller → Service → Repository`
 - **Neue Module** folgen dem Pattern: `modul/model/`, `modul/repository/`, `modul/service/`, `modul/rest/dto/`
@@ -83,6 +84,7 @@ Alle Endpoints folgen dem Pattern `/api/{modul}` mit Standard-CRUD (GET, POST, P
 | Admin (Users) | `/api/admin/users` | `/{id}/admin`, `/{id}/enabled`, `/{id}/password`, `/{id}/effective` |
 | Admin (Groups) | `/api/admin/groups` | `/{id}/members`, `/{id}/permissions`, `/{id}/field-restrictions` |
 | Admin (Resources) | `/api/admin/resources` | Nur GET (Ressourcen-Definitionen) |
+| **Public API** | `/public-api/counterparts` | POST (Basic Auth, für Drittsysteme) |
 
 ### Exception Handling (shared.rest.GlobalExceptionHandler)
 - `IllegalArgumentException` → 400 Bad Request

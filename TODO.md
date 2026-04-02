@@ -35,6 +35,10 @@
 - [ ] **AUTH13** — Frontend: Field-Restriction-Guards im TimeSeriesEditor
 - [ ] **AUTH14** — E2E-Test: Neuer User, Gruppe, Rechte, Sichtbarkeit, Schreiben, Loeschen
 
+### TimescaleDB-Optimierung
+- [ ] **TS1** — Hash-Partitionierung entfernen (`by_hash('ts_id', 8)`) — auf Single-Node kontraproduktiv, erzeugt 8x mehr Chunks ohne Nutzen, verhindert optimales Chunk-Pruning bei `ANY(array)`-Queries
+- [ ] **TS2** — `first_date`/`last_date` Spalten in `ts_header` aufnehmen, beim Schreiben in `PostgresTimeSeriesProcedures` mitpflegen, Overview-CTE (`TimeSeriesOverviewRepository`) auf Header-Spalten umstellen statt UNION ALL ueber alle Werte-Tabellen
+
 ### Aggregation Performance-Benchmark
 - [ ] **PERF1** — Benchmark fuer alle Aggregations-Ansaetze mit verschiedenen Szenarien (10/100/1k/10k/100k ZR × 3 Tage/1 Monat/1 Jahr/5 Jahre):
   - a) Stored Procedure (`ts_sum_15min`) — LATERAL unnest in DB
@@ -80,9 +84,9 @@
 - [x] **J3** — Frontend: Stammdaten-Seite (CRUD-Maske) mit DetailPage-Template
 
 ### Public API (Drittsysteme)
-- [ ] **P1** — Externe REST-API unter `/public-api/...` einrichten: Eigene Controller, eigene DTOs, Basic Auth (HTTPS)
-- [ ] **P2** — SecurityConfig erweitern: `/public-api/**` mit Basic Auth, getrennt von Keycloak-Auth fuer `/api/**`
-- [ ] **P3** — Erster externer Endpoint: `POST /public-api/business-partners` (GP anlegen fuer Drittsysteme)
+- [x] **P1** — Externe REST-API unter `/public-api/...` einrichten: Eigene Controller, eigene DTOs, Basic Auth (HTTPS)
+- [x] **P2** — SecurityConfig erweitern: `/public-api/**` mit Basic Auth, getrennt von Keycloak-Auth fuer `/api/**`
+- [x] **P3** — Erster externer Endpoint: `POST /public-api/counterparts` (GP anlegen fuer Drittsysteme)
 
 ### Scheduling / Batchplanung
 - [x] **SCH1** — Backend: Quartz Scheduler, JobRegistry, AbstractBatchJob, REST-API, Demo-Job

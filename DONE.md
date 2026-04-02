@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-04-02 — Public API fuer Drittsysteme
+- **Zweite SecurityFilterChain**: `/public-api/**` mit Basic Auth (`@Order(1)`), getrennt von Keycloak-Chain (`@Order(2)`, `/api/**`)
+- **Credentials**: `market.public-api.username/password` in `application.properties`
+- **Erster Endpoint**: `POST /public-api/counterparts` (Geschaeftspartner anlegen), eigene DTOs (CreateCounterpartRequest, CounterpartResponse), delegiert an bestehenden BusinessPartnerService
+- **Eigener ExceptionHandler**: Konsistentes Error-Format (`error`, `message`, `status`) fuer Public API
+
 ## 2026-04-02 — Warengruppe-Modul (Commodity Group)
 - **DB-Migration** (`013_commodity_group.sql`): Neue Tabelle `ts_commodity_group` (name TEXT UNIQUE)
 - **Backend**: CommodityGroupEntity (JPA), JpaRepository, jOOQ OverviewRepository, Service extends AbstractCrudService, REST-Controller `/api/commodity-groups`
