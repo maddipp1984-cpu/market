@@ -24,7 +24,7 @@ public class SeriesTypeController {
             new ColumnMeta("id", "ID", "series_type_id", "NUMBER"),
             new ColumnMeta("code", "Kuerzel", "code", "TEXT"),
             new ColumnMeta("name", "Name", "name", "TEXT"),
-            new ColumnMeta("category", "Kategorie", "category", "TEXT")
+            new ColumnMeta("category", "Kategorie", "category", "NUMBER")
     );
 
     private static final Set<String> ALLOWED_SQL_COLUMNS = COLUMNS.stream()
