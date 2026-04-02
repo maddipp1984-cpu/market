@@ -10,6 +10,7 @@
     <item id="objekttypen" tabType="objekttypen" />
     <item id="einheiten" tabType="einheiten" />
     <item id="waehrungen" tabType="waehrungen" />
+    <item id="reihenarten" tabType="reihenarten" />
   </folder>
   <folder id="system" label="System">
     <folder id="batchplanung" label="Batchplanung">

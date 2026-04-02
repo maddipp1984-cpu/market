@@ -143,6 +143,14 @@ export interface BatchScheduleDto {
   parameters: Record<string, unknown>;
 }
 
+// Series Type
+export interface SeriesTypeDto {
+  id: number | null;
+  code: string;
+  name: string;
+  category: number;
+}
+
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData, TValue> {

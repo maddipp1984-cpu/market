@@ -1,4 +1,4 @@
-import type { ObjectResponse, TimeSeriesHeaderResponse, TimeSeriesValuesResponse, WriteValuesRequest, FilterRequest, TableResponse, FilterPreset, CreateFilterPresetRequest, BusinessPartnerDto, CurrencyDto, BatchScheduleDto, JobCatalogEntry } from './types';
+import type { ObjectResponse, TimeSeriesHeaderResponse, TimeSeriesValuesResponse, WriteValuesRequest, FilterRequest, TableResponse, FilterPreset, CreateFilterPresetRequest, BusinessPartnerDto, CurrencyDto, BatchScheduleDto, JobCatalogEntry, SeriesTypeDto } from './types';
 import type { EffectivePermission } from '../auth/AuthContext';
 import keycloak from '../auth/keycloak';
 
@@ -446,4 +446,38 @@ export async function fetchExecutionLog(execId: number, signal?: AbortSignal): P
     throw new Error(`HTTP ${res.status}`);
   }
   return res.text();
+}
+
+// ==================== Series Types ====================
+
+export async function fetchSeriesType(id: number, signal?: AbortSignal): Promise<SeriesTypeDto> {
+  const res = await authFetch(`/api/series-types/${id}`, { signal });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function saveSeriesType(dto: SeriesTypeDto): Promise<SeriesTypeDto> {
+  const isNew = dto.id === null;
+  const url = isNew ? '/api/series-types' : `/api/series-types/${dto.id}`;
+  const res = await authFetch(url, {
+    method: isNew ? 'POST' : 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dto),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function deleteSeriesType(id: number): Promise<void> {
+  const res = await authFetch(`/api/series-types/${id}`, { method: 'DELETE' });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
 }
