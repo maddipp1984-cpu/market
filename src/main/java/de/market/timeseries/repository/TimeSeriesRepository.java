@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.time.*;
 import java.util.*;
 
+import static de.market.jooq.generated.tables.TsHeader.TS_HEADER;
 import static org.jooq.impl.DSL.*;
 
 /**
@@ -82,6 +83,14 @@ public class TimeSeriesRepository {
                     .doUpdate()
                     .set(field(name("value")), value)
                     .execute();
+
+            LocalDate firstOfYear = LocalDate.of(date.getYear(), 1, 1);
+            LocalDate lastOfYear = LocalDate.of(date.getYear(), 12, 31);
+            dsl.update(TS_HEADER)
+                    .set(TS_HEADER.FIRST_DATE, least(TS_HEADER.FIRST_DATE, val(firstOfYear)))
+                    .set(TS_HEADER.LAST_DATE, greatest(TS_HEADER.LAST_DATE, val(lastOfYear)))
+                    .where(TS_HEADER.TS_ID.eq(tsId))
+                    .execute();
         } else {
             dsl.insertInto(table(name(dim.getTableName())))
                     .columns(field(name("ts_id")), field(name("ts_date")), field(name("value")))
@@ -89,6 +98,12 @@ public class TimeSeriesRepository {
                     .onConflict(field(name("ts_id")), field(name("ts_date")))
                     .doUpdate()
                     .set(field(name("value")), value)
+                    .execute();
+
+            dsl.update(TS_HEADER)
+                    .set(TS_HEADER.FIRST_DATE, least(TS_HEADER.FIRST_DATE, val(date)))
+                    .set(TS_HEADER.LAST_DATE, greatest(TS_HEADER.LAST_DATE, val(date)))
+                    .where(TS_HEADER.TS_ID.eq(tsId))
                     .execute();
         }
     }
