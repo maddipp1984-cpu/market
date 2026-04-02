@@ -1,5 +1,6 @@
 -- Schreibt ein ganzes Jahr aus einem flachen Array.
--- Splittet automatisch nach Tagen unter Berücksichtigung von DST.
+-- Splittet automatisch nach Tagen unter Beruecksichtigung von DST.
+-- Aktualisiert first_date/last_date in ts_header.
 CREATE OR REPLACE FUNCTION ts_write_15min_year(
     p_ts_id  BIGINT,
     p_year   INTEGER,
@@ -28,9 +29,14 @@ BEGIN
     END LOOP;
 
     IF v_offset - 1 != array_length(p_values, 1) THEN
-        RAISE EXCEPTION 'Array-Länge stimmt nicht: Erwartet %, erhalten %',
+        RAISE EXCEPTION 'Array-Laenge stimmt nicht: Erwartet %, erhalten %',
             v_offset - 1, array_length(p_values, 1);
     END IF;
+
+    UPDATE ts_header SET
+        first_date = LEAST(first_date, make_date(p_year, 1, 1)),
+        last_date  = GREATEST(last_date, make_date(p_year, 12, 31))
+    WHERE ts_id = p_ts_id;
 
     RETURN v_days;
 END;

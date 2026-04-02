@@ -1,4 +1,5 @@
 -- Schreibt einen Bereich (von-bis Datum) aus einem flachen Array.
+-- Aktualisiert first_date/last_date in ts_header.
 CREATE OR REPLACE FUNCTION ts_write_15min_range(
     p_ts_id  BIGINT,
     p_from   DATE,
@@ -23,6 +24,11 @@ BEGIN
         v_date := v_date + 1;
         v_days := v_days + 1;
     END LOOP;
+
+    UPDATE ts_header SET
+        first_date = LEAST(first_date, p_from),
+        last_date  = GREATEST(last_date, p_to - 1)
+    WHERE ts_id = p_ts_id;
 
     RETURN v_days;
 END;
