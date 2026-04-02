@@ -87,6 +87,7 @@
 - [x] **P1** — Externe REST-API unter `/public-api/...` einrichten: Eigene Controller, eigene DTOs, Basic Auth (HTTPS)
 - [x] **P2** — SecurityConfig erweitern: `/public-api/**` mit Basic Auth, getrennt von Keycloak-Auth fuer `/api/**`
 - [x] **P3** — Erster externer Endpoint: `POST /public-api/counterparts` (GP anlegen fuer Drittsysteme)
+- [ ] **P4** — HTTPS einrichten: TLS-Zertifikat konfigurieren (entweder Spring Boot embedded via `server.ssl.*` oder TLS-Termination am Reverse Proxy)
 
 ### Scheduling / Batchplanung
 - [x] **SCH1** — Backend: Quartz Scheduler, JobRegistry, AbstractBatchJob, REST-API, Demo-Job

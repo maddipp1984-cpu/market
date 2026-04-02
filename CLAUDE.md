@@ -4,6 +4,12 @@
 Performantes Zeitreihensystem für >10 Mio Zeitreihen mit TimescaleDB (PostgreSQL-Extension).
 Spring Boot 3.4.x Anwendung mit dreifachem Persistenz-Ansatz: jOOQ für Abfragen/Übersichten, JPA/Hibernate für Stammdaten-CRUD, Raw JDBC (via `dsl.connection()`) für Stored Procedures/Arrays.
 
+### Deployment
+- **On-Premise** beim Kunden, innerhalb des internen Netzwerks — nicht aus dem Internet erreichbar
+- **Interne API** (`/api/**`): Frontend-zu-Backend, Keycloak OAuth2
+- **Public API** (`/public-api/**`): Für andere interne Anwendungen des Kunden, Basic Auth über HTTPS
+- HTTPS wird empfohlen (auch intern), ist auf Anwendungsebene transparent (Reverse Proxy / TLS-Termination)
+
 ## Tech-Stack
 - **Java 17** (LTS), Gradle mit Spring Boot Plugin
 - **Spring Boot 3.4.1** (starter-web, starter-jooq, starter-data-jpa, starter-quartz)
