@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "market.public-api")
 public class PublicApiProperties {
 
-    private String username = "api-user";
-    private String password = "changeme";
+    private String username;
+    private String password;
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
