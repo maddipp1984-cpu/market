@@ -40,6 +40,7 @@ Spring Boot 3.4.x Anwendung mit dreifachem Persistenz-Ansatz: jOOQ für Abfragen
 - **`timeseries`** — Kern: Zeitreihen-CRUD, Aggregation, Übersichten
 - **`currency`** — Stammdaten-Modul: Währungen (JPA)
 - **`seriestype`** — Stammdaten-Modul: Reihenarten (JPA, Kategorie: Finanziell/Physikalisch)
+- **`commoditygroup`** — Stammdaten-Modul: Warengruppen (JPA)
 - **`businesspartner`** — Stammdaten-Modul: Geschäftspartner (JPA)
 - **`filterpreset`** — Seitenübergreifende Filter-Presets (jOOQ, JSONB)
 - **`scheduling`** — Batch-Job-System (Quartz)
