@@ -41,6 +41,7 @@ import de.market.jooq.generated.tables.TsAuthGroupMember;
 import de.market.jooq.generated.tables.TsAuthPermission;
 import de.market.jooq.generated.tables.TsAuthResource;
 import de.market.jooq.generated.tables.TsAuthUser;
+import de.market.jooq.generated.tables.TsCommodityGroup;
 import de.market.jooq.generated.tables.TsCurrency;
 import de.market.jooq.generated.tables.TsFilterPreset;
 import de.market.jooq.generated.tables.TsHeader;
@@ -1236,6 +1237,11 @@ public class Tables {
      * The table <code>public.ts_auth_user</code>.
      */
     public static final TsAuthUser TS_AUTH_USER = TsAuthUser.TS_AUTH_USER;
+
+    /**
+     * Warengruppen: Gruppierung von Waren (z.B. Gas, Strom)
+     */
+    public static final TsCommodityGroup TS_COMMODITY_GROUP = TsCommodityGroup.TS_COMMODITY_GROUP;
 
     /**
      * The table <code>public.ts_currency</code>.
