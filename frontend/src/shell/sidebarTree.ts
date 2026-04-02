@@ -29,6 +29,7 @@ export const defaultSidebarTree: SidebarNode[] = [
       { id: 'einheiten', label: 'Einheiten', tabType: 'einheiten' },
       { id: 'waehrungen', label: 'Waehrungen', tabType: 'waehrungen' },
       { id: 'reihenarten', label: 'Reihenarten', tabType: 'reihenarten' },
+      { id: 'warengruppen', label: 'Warengruppen', tabType: 'warengruppen' },
     ],
   },
   {

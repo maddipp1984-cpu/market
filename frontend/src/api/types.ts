@@ -151,6 +151,12 @@ export interface SeriesTypeDto {
   category: number;
 }
 
+// Commodity Group
+export interface CommodityGroupDto {
+  id: number | null;
+  name: string;
+}
+
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData, TValue> {

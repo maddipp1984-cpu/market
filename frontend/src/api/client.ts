@@ -1,4 +1,4 @@
-import type { ObjectResponse, TimeSeriesHeaderResponse, TimeSeriesValuesResponse, WriteValuesRequest, FilterRequest, TableResponse, FilterPreset, CreateFilterPresetRequest, BusinessPartnerDto, CurrencyDto, BatchScheduleDto, JobCatalogEntry, SeriesTypeDto } from './types';
+import type { ObjectResponse, TimeSeriesHeaderResponse, TimeSeriesValuesResponse, WriteValuesRequest, FilterRequest, TableResponse, FilterPreset, CreateFilterPresetRequest, BusinessPartnerDto, CurrencyDto, BatchScheduleDto, JobCatalogEntry, SeriesTypeDto, CommodityGroupDto } from './types';
 import type { EffectivePermission } from '../auth/AuthContext';
 import keycloak from '../auth/keycloak';
 
@@ -476,6 +476,40 @@ export async function saveSeriesType(dto: SeriesTypeDto): Promise<SeriesTypeDto>
 
 export async function deleteSeriesType(id: number): Promise<void> {
   const res = await authFetch(`/api/series-types/${id}`, { method: 'DELETE' });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+}
+
+// ==================== Commodity Groups ====================
+
+export async function fetchCommodityGroup(id: number, signal?: AbortSignal): Promise<CommodityGroupDto> {
+  const res = await authFetch(`/api/commodity-groups/${id}`, { signal });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function saveCommodityGroup(dto: CommodityGroupDto): Promise<CommodityGroupDto> {
+  const isNew = dto.id === null;
+  const url = isNew ? '/api/commodity-groups' : `/api/commodity-groups/${dto.id}`;
+  const res = await authFetch(url, {
+    method: isNew ? 'POST' : 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dto),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function deleteCommodityGroup(id: number): Promise<void> {
+  const res = await authFetch(`/api/commodity-groups/${id}`, { method: 'DELETE' });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(body.error || `HTTP ${res.status}`);

@@ -17,6 +17,8 @@ import { BusinessPartnerPage } from '../pages/BusinessPartnerPage';
 import { BusinessPartnerDetailPage } from '../pages/business-partner/BusinessPartnerDetailPage';
 import { ReihenartenPage } from '../pages/ReihenartenPage';
 import { ReihenartDetailPage } from '../pages/reihenart/ReihenartDetailPage';
+import { WarengruppenPage } from '../pages/WarengruppenPage';
+import { WarengruppeDetailPage } from '../pages/warengruppe/WarengruppeDetailPage';
 import { BatchSchedulePage } from '../pages/scheduling/BatchSchedulePage';
 import { BatchScheduleDetailPage } from '../pages/scheduling/BatchScheduleDetailPage';
 import { BatchHistoryPage } from '../pages/scheduling/BatchHistoryPage';
@@ -71,6 +73,8 @@ export const tabTypes: TabType[] = [
   { type: 'currency-detail', label: 'Waehrung', icon: iconObjects, component: CurrencyDetailPage },
   { type: 'reihenarten', label: 'Reihenarten', icon: iconObjects, singleton: true, component: ReihenartenPage },
   { type: 'reihenart-detail', label: 'Reihenart', icon: iconObjects, component: ReihenartDetailPage },
+  { type: 'warengruppen', label: 'Warengruppen', icon: iconObjects, singleton: true, component: WarengruppenPage },
+  { type: 'warengruppe-detail', label: 'Warengruppe', icon: iconObjects, component: WarengruppeDetailPage },
   { type: 'business-partners', label: 'Geschaeftspartner', icon: iconPartner, singleton: true, component: BusinessPartnerPage },
   { type: 'business-partner-detail', label: 'Geschaeftspartner', icon: iconPartner, component: BusinessPartnerDetailPage },
   { type: 'batch-schedules', label: 'Planungen', icon: iconSettings, singleton: true, component: BatchSchedulePage },

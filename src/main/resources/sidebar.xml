@@ -11,6 +11,7 @@
     <item id="einheiten" tabType="einheiten" />
     <item id="waehrungen" tabType="waehrungen" />
     <item id="reihenarten" tabType="reihenarten" />
+    <item id="warengruppen" tabType="warengruppen" />
   </folder>
   <folder id="system" label="System">
     <folder id="batchplanung" label="Batchplanung">
