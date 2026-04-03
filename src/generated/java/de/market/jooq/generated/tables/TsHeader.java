@@ -11,13 +11,11 @@ import de.market.jooq.generated.tables.TsCurrency.TsCurrencyPath;
 import de.market.jooq.generated.tables.TsObject.TsObjectPath;
 import de.market.jooq.generated.tables.TsSeriesType.TsSeriesTypePath;
 import de.market.jooq.generated.tables.TsUnit.TsUnitPath;
-import de.market.jooq.generated.tables.TsValuesDay.TsValuesDayPath;
 import de.market.jooq.generated.tables.TsValuesMonth.TsValuesMonthPath;
 import de.market.jooq.generated.tables.TsValuesYear.TsValuesYearPath;
-import de.market.jooq.generated.tables.TsValues_15min.TsValues_15minPath;
-import de.market.jooq.generated.tables.TsValues_1h.TsValues_1hPath;
 import de.market.jooq.generated.tables.records.TsHeaderRecord;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collection;
@@ -121,6 +119,16 @@ public class TsHeader extends TableImpl<TsHeaderRecord> {
      * The column <code>public.ts_header.series_type_id</code>.
      */
     public final TableField<TsHeaderRecord, Short> SERIES_TYPE_ID = createField(DSL.name("series_type_id"), SQLDataType.SMALLINT, this, "");
+
+    /**
+     * The column <code>public.ts_header.first_date</code>.
+     */
+    public final TableField<TsHeaderRecord, LocalDate> FIRST_DATE = createField(DSL.name("first_date"), SQLDataType.LOCALDATE, this, "");
+
+    /**
+     * The column <code>public.ts_header.last_date</code>.
+     */
+    public final TableField<TsHeaderRecord, LocalDate> LAST_DATE = createField(DSL.name("last_date"), SQLDataType.LOCALDATE, this, "");
 
     private TsHeader(Name alias, Table<TsHeaderRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
@@ -259,45 +267,6 @@ public class TsHeader extends TableImpl<TsHeaderRecord> {
             _tsSeriesType = new TsSeriesTypePath(this, Keys.TS_HEADER__TS_HEADER_SERIES_TYPE_ID_FKEY, null);
 
         return _tsSeriesType;
-    }
-
-    private transient TsValues_15minPath _tsValues_15min;
-
-    /**
-     * Get the implicit to-many join path to the
-     * <code>public.ts_values_15min</code> table
-     */
-    public TsValues_15minPath tsValues_15min() {
-        if (_tsValues_15min == null)
-            _tsValues_15min = new TsValues_15minPath(this, null, Keys.TS_VALUES_15MIN__TS_VALUES_15MIN_TS_ID_FKEY.getInverseKey());
-
-        return _tsValues_15min;
-    }
-
-    private transient TsValues_1hPath _tsValues_1h;
-
-    /**
-     * Get the implicit to-many join path to the
-     * <code>public.ts_values_1h</code> table
-     */
-    public TsValues_1hPath tsValues_1h() {
-        if (_tsValues_1h == null)
-            _tsValues_1h = new TsValues_1hPath(this, null, Keys.TS_VALUES_1H__TS_VALUES_1H_TS_ID_FKEY.getInverseKey());
-
-        return _tsValues_1h;
-    }
-
-    private transient TsValuesDayPath _tsValuesDay;
-
-    /**
-     * Get the implicit to-many join path to the
-     * <code>public.ts_values_day</code> table
-     */
-    public TsValuesDayPath tsValuesDay() {
-        if (_tsValuesDay == null)
-            _tsValuesDay = new TsValuesDayPath(this, null, Keys.TS_VALUES_DAY__TS_VALUES_DAY_TS_ID_FKEY.getInverseKey());
-
-        return _tsValuesDay;
     }
 
     private transient TsValuesMonthPath _tsValuesMonth;

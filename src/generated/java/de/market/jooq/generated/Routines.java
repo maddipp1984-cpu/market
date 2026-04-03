@@ -25,6 +25,13 @@ import de.market.jooq.generated.routines.DetachChunk;
 import de.market.jooq.generated.routines.DetachTablespace;
 import de.market.jooq.generated.routines.DetachTablespaces;
 import de.market.jooq.generated.routines.First;
+import de.market.jooq.generated.routines.GenDataAgent1;
+import de.market.jooq.generated.routines.GenDataAgent10;
+import de.market.jooq.generated.routines.GenDataAgent1Batch;
+import de.market.jooq.generated.routines.GenDataBatch;
+import de.market.jooq.generated.routines.GenerateTsBatch_9;
+import de.market.jooq.generated.routines.GenerateTsDataBatch;
+import de.market.jooq.generated.routines.GenerateTs_15minBatch;
 import de.market.jooq.generated.routines.GenerateUuidv7;
 import de.market.jooq.generated.routines.GetTelemetryReport;
 import de.market.jooq.generated.routines.Histogram;
@@ -1294,6 +1301,107 @@ public class Routines {
         f.set__2(__2);
 
         return f.asAggregateFunction();
+    }
+
+    /**
+     * Call <code>public.gen_data_agent1</code>
+     */
+    public static void genDataAgent1(
+          Configuration configuration
+        , Integer pFrom
+        , Integer pTo
+    ) {
+        GenDataAgent1 p = new GenDataAgent1();
+        p.setPFrom(pFrom);
+        p.setPTo(pTo);
+
+        p.execute(configuration);
+    }
+
+    /**
+     * Call <code>public.gen_data_agent10</code>
+     */
+    public static void genDataAgent10(
+          Configuration configuration
+    ) {
+        GenDataAgent10 p = new GenDataAgent10();
+
+        p.execute(configuration);
+    }
+
+    /**
+     * Call <code>public.gen_data_agent1_batch</code>
+     */
+    public static void genDataAgent1Batch(
+          Configuration configuration
+        , Integer pFrom
+        , Integer pTo
+    ) {
+        GenDataAgent1Batch p = new GenDataAgent1Batch();
+        p.setPFrom(pFrom);
+        p.setPTo(pTo);
+
+        p.execute(configuration);
+    }
+
+    /**
+     * Call <code>public.gen_data_batch</code>
+     */
+    public static void genDataBatch(
+          Configuration configuration
+        , Integer pFrom
+        , Integer pTo
+    ) {
+        GenDataBatch p = new GenDataBatch();
+        p.setPFrom(pFrom);
+        p.setPTo(pTo);
+
+        p.execute(configuration);
+    }
+
+    /**
+     * Call <code>public.generate_ts_15min_batch</code>
+     */
+    public static void generateTs_15minBatch(
+          Configuration configuration
+        , Long pFrom
+        , Long pTo
+    ) {
+        GenerateTs_15minBatch p = new GenerateTs_15minBatch();
+        p.setPFrom(pFrom);
+        p.setPTo(pTo);
+
+        p.execute(configuration);
+    }
+
+    /**
+     * Call <code>public.generate_ts_batch_9</code>
+     */
+    public static void generateTsBatch_9(
+          Configuration configuration
+        , Integer pStartId
+        , Integer pEndId
+    ) {
+        GenerateTsBatch_9 p = new GenerateTsBatch_9();
+        p.setPStartId(pStartId);
+        p.setPEndId(pEndId);
+
+        p.execute(configuration);
+    }
+
+    /**
+     * Call <code>public.generate_ts_data_batch</code>
+     */
+    public static void generateTsDataBatch(
+          Configuration configuration
+        , Integer pStartId
+        , Integer pEndId
+    ) {
+        GenerateTsDataBatch p = new GenerateTsDataBatch();
+        p.setPStartId(pStartId);
+        p.setPEndId(pEndId);
+
+        p.execute(configuration);
     }
 
     /**
@@ -4700,17 +4808,35 @@ public class Routines {
     public static Result<CreateHypertableRecord> createHypertable(
           Configuration configuration
         , Object relation
-        , Object dimension
+        , String timeColumnName
+        , String partitioningColumn
+        , Integer numberPartitions
+        , String associatedSchemaName
+        , String associatedTablePrefix
+        , Object chunkTimeInterval
         , Boolean createDefaultIndexes
         , Boolean ifNotExists
+        , String partitioningFunc
         , Boolean migrateData
+        , String chunkTargetSize
+        , String chunkSizingFunc
+        , String timePartitioningFunc
     ) {
         return configuration.dsl().selectFrom(de.market.jooq.generated.tables.CreateHypertable.CREATE_HYPERTABLE.call(
               relation
-            , dimension
+            , timeColumnName
+            , partitioningColumn
+            , numberPartitions
+            , associatedSchemaName
+            , associatedTablePrefix
+            , chunkTimeInterval
             , createDefaultIndexes
             , ifNotExists
+            , partitioningFunc
             , migrateData
+            , chunkTargetSize
+            , chunkSizingFunc
+            , timePartitioningFunc
         )).fetch();
     }
 
@@ -4725,17 +4851,35 @@ public class Routines {
     @Deprecated
     public static CreateHypertable createHypertable(
           Object relation
-        , Object dimension
+        , String timeColumnName
+        , String partitioningColumn
+        , Integer numberPartitions
+        , String associatedSchemaName
+        , String associatedTablePrefix
+        , Object chunkTimeInterval
         , Boolean createDefaultIndexes
         , Boolean ifNotExists
+        , String partitioningFunc
         , Boolean migrateData
+        , String chunkTargetSize
+        , String chunkSizingFunc
+        , String timePartitioningFunc
     ) {
         return de.market.jooq.generated.tables.CreateHypertable.CREATE_HYPERTABLE.call(
             relation,
-            dimension,
+            timeColumnName,
+            partitioningColumn,
+            numberPartitions,
+            associatedSchemaName,
+            associatedTablePrefix,
+            chunkTimeInterval,
             createDefaultIndexes,
             ifNotExists,
-            migrateData
+            partitioningFunc,
+            migrateData,
+            chunkTargetSize,
+            chunkSizingFunc,
+            timePartitioningFunc
         );
     }
 
@@ -4750,17 +4894,35 @@ public class Routines {
     @Deprecated
     public static CreateHypertable createHypertable(
           Field<Object> relation
-        , Field<Object> dimension
+        , Field<String> timeColumnName
+        , Field<String> partitioningColumn
+        , Field<Integer> numberPartitions
+        , Field<String> associatedSchemaName
+        , Field<String> associatedTablePrefix
+        , Field<Object> chunkTimeInterval
         , Field<Boolean> createDefaultIndexes
         , Field<Boolean> ifNotExists
+        , Field<String> partitioningFunc
         , Field<Boolean> migrateData
+        , Field<String> chunkTargetSize
+        , Field<String> chunkSizingFunc
+        , Field<String> timePartitioningFunc
     ) {
         return de.market.jooq.generated.tables.CreateHypertable.CREATE_HYPERTABLE.call(
             relation,
-            dimension,
+            timeColumnName,
+            partitioningColumn,
+            numberPartitions,
+            associatedSchemaName,
+            associatedTablePrefix,
+            chunkTimeInterval,
             createDefaultIndexes,
             ifNotExists,
-            migrateData
+            partitioningFunc,
+            migrateData,
+            chunkTargetSize,
+            chunkSizingFunc,
+            timePartitioningFunc
         );
     }
 

@@ -5,9 +5,7 @@ package de.market.jooq.generated.tables;
 
 
 import de.market.jooq.generated.Indexes;
-import de.market.jooq.generated.Keys;
 import de.market.jooq.generated.Public;
-import de.market.jooq.generated.tables.TsHeader.TsHeaderPath;
 import de.market.jooq.generated.tables.records.TsValuesDayRecord;
 
 import java.time.LocalDate;
@@ -17,14 +15,10 @@ import java.util.List;
 
 import org.jooq.Condition;
 import org.jooq.Field;
-import org.jooq.ForeignKey;
 import org.jooq.Index;
-import org.jooq.InverseForeignKey;
 import org.jooq.Name;
-import org.jooq.Path;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
-import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
 import org.jooq.Select;
@@ -102,37 +96,6 @@ public class TsValuesDay extends TableImpl<TsValuesDayRecord> {
         this(DSL.name("ts_values_day"), null);
     }
 
-    public <O extends Record> TsValuesDay(Table<O> path, ForeignKey<O, TsValuesDayRecord> childPath, InverseForeignKey<O, TsValuesDayRecord> parentPath) {
-        super(path, childPath, parentPath, TS_VALUES_DAY);
-    }
-
-    /**
-     * A subtype implementing {@link Path} for simplified path-based joins.
-     */
-    public static class TsValuesDayPath extends TsValuesDay implements Path<TsValuesDayRecord> {
-        public <O extends Record> TsValuesDayPath(Table<O> path, ForeignKey<O, TsValuesDayRecord> childPath, InverseForeignKey<O, TsValuesDayRecord> parentPath) {
-            super(path, childPath, parentPath);
-        }
-        private TsValuesDayPath(Name alias, Table<TsValuesDayRecord> aliased) {
-            super(alias, aliased);
-        }
-
-        @Override
-        public TsValuesDayPath as(String alias) {
-            return new TsValuesDayPath(DSL.name(alias), this);
-        }
-
-        @Override
-        public TsValuesDayPath as(Name alias) {
-            return new TsValuesDayPath(alias, this);
-        }
-
-        @Override
-        public TsValuesDayPath as(Table<?> alias) {
-            return new TsValuesDayPath(alias.getQualifiedName(), this);
-        }
-    }
-
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
@@ -140,24 +103,7 @@ public class TsValuesDay extends TableImpl<TsValuesDayRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IDX_DAY_PK, Indexes.TS_VALUES_DAY_TS_DATE_IDX);
-    }
-
-    @Override
-    public List<ForeignKey<TsValuesDayRecord, ?>> getReferences() {
-        return Arrays.asList(Keys.TS_VALUES_DAY__TS_VALUES_DAY_TS_ID_FKEY);
-    }
-
-    private transient TsHeaderPath _tsHeader;
-
-    /**
-     * Get the implicit join path to the <code>public.ts_header</code> table.
-     */
-    public TsHeaderPath tsHeader() {
-        if (_tsHeader == null)
-            _tsHeader = new TsHeaderPath(this, Keys.TS_VALUES_DAY__TS_VALUES_DAY_TS_ID_FKEY, null);
-
-        return _tsHeader;
+        return Arrays.asList(Indexes.IDX_DAY_PK, Indexes.TS_VALUES_DAY_NEW_TS_DATE_IDX);
     }
 
     @Override

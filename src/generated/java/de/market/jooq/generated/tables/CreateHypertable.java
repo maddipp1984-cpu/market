@@ -47,6 +47,16 @@ public class CreateHypertable extends TableImpl<CreateHypertableRecord> {
     public final TableField<CreateHypertableRecord, Integer> HYPERTABLE_ID = createField(DSL.name("hypertable_id"), SQLDataType.INTEGER, this, "");
 
     /**
+     * The column <code>public.create_hypertable.schema_name</code>.
+     */
+    public final TableField<CreateHypertableRecord, String> SCHEMA_NAME = createField(DSL.name("schema_name"), SQLDataType.VARCHAR, this, "");
+
+    /**
+     * The column <code>public.create_hypertable.table_name</code>.
+     */
+    public final TableField<CreateHypertableRecord, String> TABLE_NAME = createField(DSL.name("table_name"), SQLDataType.VARCHAR, this, "");
+
+    /**
      * The column <code>public.create_hypertable.created</code>.
      */
     public final TableField<CreateHypertableRecord, Boolean> CREATED = createField(DSL.name("created"), SQLDataType.BOOLEAN, this, "");
@@ -54,10 +64,19 @@ public class CreateHypertable extends TableImpl<CreateHypertableRecord> {
     private CreateHypertable(Name alias, Table<CreateHypertableRecord> aliased) {
         this(alias, aliased, new Field[] {
             DSL.val(null, DefaultDataType.getDefaultDataType("\"pg_catalog\".\"regclass\"")),
-            DSL.val(null, DefaultDataType.getDefaultDataType("\"_timescaledb_internal\".\"dimension_info\"")),
+            DSL.val(null, SQLDataType.VARCHAR),
+            DSL.val(null, SQLDataType.VARCHAR.defaultValue(DSL.field(DSL.raw("NULL::name"), SQLDataType.VARCHAR))),
+            DSL.val(null, SQLDataType.INTEGER.defaultValue(DSL.field(DSL.raw("NULL::integer"), SQLDataType.INTEGER))),
+            DSL.val(null, SQLDataType.VARCHAR.defaultValue(DSL.field(DSL.raw("NULL::name"), SQLDataType.VARCHAR))),
+            DSL.val(null, SQLDataType.VARCHAR.defaultValue(DSL.field(DSL.raw("NULL::name"), SQLDataType.VARCHAR))),
+            DSL.val(null, DefaultDataType.getDefaultDataType("\"pg_catalog\".\"anyelement\"").defaultValue(DSL.field(DSL.raw("NULL::bigint"), org.jooq.impl.SQLDataType.OTHER))),
             DSL.val(null, SQLDataType.BOOLEAN.defaultValue(DSL.field(DSL.raw("true"), SQLDataType.BOOLEAN))),
             DSL.val(null, SQLDataType.BOOLEAN.defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN))),
-            DSL.val(null, SQLDataType.BOOLEAN.defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN)))
+            DSL.val(null, SQLDataType.VARCHAR.defaultValue(DSL.field(DSL.raw("NULL::regproc"), SQLDataType.VARCHAR))),
+            DSL.val(null, SQLDataType.BOOLEAN.defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN))),
+            DSL.val(null, SQLDataType.CLOB.defaultValue(DSL.field(DSL.raw("NULL::text"), SQLDataType.CLOB))),
+            DSL.val(null, SQLDataType.VARCHAR.defaultValue(DSL.field(DSL.raw("'_timescaledb_functions.calculate_chunk_interval'::regproc"), SQLDataType.VARCHAR))),
+            DSL.val(null, SQLDataType.VARCHAR.defaultValue(DSL.field(DSL.raw("NULL::regproc"), SQLDataType.VARCHAR)))
         });
     }
 
@@ -139,17 +158,35 @@ public class CreateHypertable extends TableImpl<CreateHypertableRecord> {
      */
     public CreateHypertable call(
           Object relation
-        , Object dimension
+        , String timeColumnName
+        , String partitioningColumn
+        , Integer numberPartitions
+        , String associatedSchemaName
+        , String associatedTablePrefix
+        , Object chunkTimeInterval
         , Boolean createDefaultIndexes
         , Boolean ifNotExists
+        , String partitioningFunc
         , Boolean migrateData
+        , String chunkTargetSize
+        , String chunkSizingFunc
+        , String timePartitioningFunc
     ) {
         CreateHypertable result = new CreateHypertable(DSL.name("create_hypertable"), null, new Field[] {
             DSL.val(relation, DefaultDataType.getDefaultDataType("\"pg_catalog\".\"regclass\"")),
-            DSL.val(dimension, DefaultDataType.getDefaultDataType("\"_timescaledb_internal\".\"dimension_info\"")),
+            DSL.val(timeColumnName, SQLDataType.VARCHAR),
+            DSL.val(partitioningColumn, SQLDataType.VARCHAR.defaultValue(DSL.field(DSL.raw("NULL::name"), SQLDataType.VARCHAR))),
+            DSL.val(numberPartitions, SQLDataType.INTEGER.defaultValue(DSL.field(DSL.raw("NULL::integer"), SQLDataType.INTEGER))),
+            DSL.val(associatedSchemaName, SQLDataType.VARCHAR.defaultValue(DSL.field(DSL.raw("NULL::name"), SQLDataType.VARCHAR))),
+            DSL.val(associatedTablePrefix, SQLDataType.VARCHAR.defaultValue(DSL.field(DSL.raw("NULL::name"), SQLDataType.VARCHAR))),
+            DSL.val(chunkTimeInterval, DefaultDataType.getDefaultDataType("\"pg_catalog\".\"anyelement\"").defaultValue(DSL.field(DSL.raw("NULL::bigint"), org.jooq.impl.SQLDataType.OTHER))),
             DSL.val(createDefaultIndexes, SQLDataType.BOOLEAN.defaultValue(DSL.field(DSL.raw("true"), SQLDataType.BOOLEAN))),
             DSL.val(ifNotExists, SQLDataType.BOOLEAN.defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN))),
-            DSL.val(migrateData, SQLDataType.BOOLEAN.defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN)))
+            DSL.val(partitioningFunc, SQLDataType.VARCHAR.defaultValue(DSL.field(DSL.raw("NULL::regproc"), SQLDataType.VARCHAR))),
+            DSL.val(migrateData, SQLDataType.BOOLEAN.defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN))),
+            DSL.val(chunkTargetSize, SQLDataType.CLOB.defaultValue(DSL.field(DSL.raw("NULL::text"), SQLDataType.CLOB))),
+            DSL.val(chunkSizingFunc, SQLDataType.VARCHAR.defaultValue(DSL.field(DSL.raw("'_timescaledb_functions.calculate_chunk_interval'::regproc"), SQLDataType.VARCHAR))),
+            DSL.val(timePartitioningFunc, SQLDataType.VARCHAR.defaultValue(DSL.field(DSL.raw("NULL::regproc"), SQLDataType.VARCHAR)))
         });
 
         return aliased() ? result.as(getUnqualifiedName()) : result;
@@ -160,17 +197,35 @@ public class CreateHypertable extends TableImpl<CreateHypertableRecord> {
      */
     public CreateHypertable call(
           Field<Object> relation
-        , Field<Object> dimension
+        , Field<String> timeColumnName
+        , Field<String> partitioningColumn
+        , Field<Integer> numberPartitions
+        , Field<String> associatedSchemaName
+        , Field<String> associatedTablePrefix
+        , Field<Object> chunkTimeInterval
         , Field<Boolean> createDefaultIndexes
         , Field<Boolean> ifNotExists
+        , Field<String> partitioningFunc
         , Field<Boolean> migrateData
+        , Field<String> chunkTargetSize
+        , Field<String> chunkSizingFunc
+        , Field<String> timePartitioningFunc
     ) {
         CreateHypertable result = new CreateHypertable(DSL.name("create_hypertable"), null, new Field[] {
             relation,
-            dimension,
+            timeColumnName,
+            partitioningColumn,
+            numberPartitions,
+            associatedSchemaName,
+            associatedTablePrefix,
+            chunkTimeInterval,
             createDefaultIndexes,
             ifNotExists,
-            migrateData
+            partitioningFunc,
+            migrateData,
+            chunkTargetSize,
+            chunkSizingFunc,
+            timePartitioningFunc
         });
 
         return aliased() ? result.as(getUnqualifiedName()) : result;

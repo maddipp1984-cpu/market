@@ -45,6 +45,7 @@ import de.market.jooq.generated.tables.TsCommodityGroup;
 import de.market.jooq.generated.tables.TsCurrency;
 import de.market.jooq.generated.tables.TsFilterPreset;
 import de.market.jooq.generated.tables.TsHeader;
+import de.market.jooq.generated.tables.TsIndex;
 import de.market.jooq.generated.tables.TsObject;
 import de.market.jooq.generated.tables.TsObjectType;
 import de.market.jooq.generated.tables.TsQuery;
@@ -510,17 +511,35 @@ public class Public extends SchemaImpl {
     public static Result<CreateHypertableRecord> CREATE_HYPERTABLE(
           Configuration configuration
         , Object relation
-        , Object dimension
+        , String timeColumnName
+        , String partitioningColumn
+        , Integer numberPartitions
+        , String associatedSchemaName
+        , String associatedTablePrefix
+        , Object chunkTimeInterval
         , Boolean createDefaultIndexes
         , Boolean ifNotExists
+        , String partitioningFunc
         , Boolean migrateData
+        , String chunkTargetSize
+        , String chunkSizingFunc
+        , String timePartitioningFunc
     ) {
         return configuration.dsl().selectFrom(de.market.jooq.generated.tables.CreateHypertable.CREATE_HYPERTABLE.call(
               relation
-            , dimension
+            , timeColumnName
+            , partitioningColumn
+            , numberPartitions
+            , associatedSchemaName
+            , associatedTablePrefix
+            , chunkTimeInterval
             , createDefaultIndexes
             , ifNotExists
+            , partitioningFunc
             , migrateData
+            , chunkTargetSize
+            , chunkSizingFunc
+            , timePartitioningFunc
         )).fetch();
     }
 
@@ -535,17 +554,35 @@ public class Public extends SchemaImpl {
     @Deprecated
     public static CreateHypertable CREATE_HYPERTABLE(
           Object relation
-        , Object dimension
+        , String timeColumnName
+        , String partitioningColumn
+        , Integer numberPartitions
+        , String associatedSchemaName
+        , String associatedTablePrefix
+        , Object chunkTimeInterval
         , Boolean createDefaultIndexes
         , Boolean ifNotExists
+        , String partitioningFunc
         , Boolean migrateData
+        , String chunkTargetSize
+        , String chunkSizingFunc
+        , String timePartitioningFunc
     ) {
         return de.market.jooq.generated.tables.CreateHypertable.CREATE_HYPERTABLE.call(
             relation,
-            dimension,
+            timeColumnName,
+            partitioningColumn,
+            numberPartitions,
+            associatedSchemaName,
+            associatedTablePrefix,
+            chunkTimeInterval,
             createDefaultIndexes,
             ifNotExists,
-            migrateData
+            partitioningFunc,
+            migrateData,
+            chunkTargetSize,
+            chunkSizingFunc,
+            timePartitioningFunc
         );
     }
 
@@ -560,17 +597,35 @@ public class Public extends SchemaImpl {
     @Deprecated
     public static CreateHypertable CREATE_HYPERTABLE(
           Field<Object> relation
-        , Field<Object> dimension
+        , Field<String> timeColumnName
+        , Field<String> partitioningColumn
+        , Field<Integer> numberPartitions
+        , Field<String> associatedSchemaName
+        , Field<String> associatedTablePrefix
+        , Field<Object> chunkTimeInterval
         , Field<Boolean> createDefaultIndexes
         , Field<Boolean> ifNotExists
+        , Field<String> partitioningFunc
         , Field<Boolean> migrateData
+        , Field<String> chunkTargetSize
+        , Field<String> chunkSizingFunc
+        , Field<String> timePartitioningFunc
     ) {
         return de.market.jooq.generated.tables.CreateHypertable.CREATE_HYPERTABLE.call(
             relation,
-            dimension,
+            timeColumnName,
+            partitioningColumn,
+            numberPartitions,
+            associatedSchemaName,
+            associatedTablePrefix,
+            chunkTimeInterval,
             createDefaultIndexes,
             ifNotExists,
-            migrateData
+            partitioningFunc,
+            migrateData,
+            chunkTargetSize,
+            chunkSizingFunc,
+            timePartitioningFunc
         );
     }
 
@@ -1271,6 +1326,11 @@ public class Public extends SchemaImpl {
     public final TsHeader TS_HEADER = TsHeader.TS_HEADER;
 
     /**
+     * The table <code>public.ts_index</code>.
+     */
+    public final TsIndex TS_INDEX = TsIndex.TS_INDEX;
+
+    /**
      * The table <code>public.ts_object</code>.
      */
     public final TsObject TS_OBJECT = TsObject.TS_OBJECT;
@@ -1684,6 +1744,7 @@ public class Public extends SchemaImpl {
             TsCurrency.TS_CURRENCY,
             TsFilterPreset.TS_FILTER_PRESET,
             TsHeader.TS_HEADER,
+            TsIndex.TS_INDEX,
             TsObject.TS_OBJECT,
             TsObjectType.TS_OBJECT_TYPE,
             TsQuery.TS_QUERY,

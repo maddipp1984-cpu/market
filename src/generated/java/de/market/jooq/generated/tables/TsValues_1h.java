@@ -5,9 +5,7 @@ package de.market.jooq.generated.tables;
 
 
 import de.market.jooq.generated.Indexes;
-import de.market.jooq.generated.Keys;
 import de.market.jooq.generated.Public;
-import de.market.jooq.generated.tables.TsHeader.TsHeaderPath;
 import de.market.jooq.generated.tables.records.TsValues_1hRecord;
 
 import java.time.LocalDate;
@@ -17,14 +15,10 @@ import java.util.List;
 
 import org.jooq.Condition;
 import org.jooq.Field;
-import org.jooq.ForeignKey;
 import org.jooq.Index;
-import org.jooq.InverseForeignKey;
 import org.jooq.Name;
-import org.jooq.Path;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
-import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
 import org.jooq.Select;
@@ -102,37 +96,6 @@ public class TsValues_1h extends TableImpl<TsValues_1hRecord> {
         this(DSL.name("ts_values_1h"), null);
     }
 
-    public <O extends Record> TsValues_1h(Table<O> path, ForeignKey<O, TsValues_1hRecord> childPath, InverseForeignKey<O, TsValues_1hRecord> parentPath) {
-        super(path, childPath, parentPath, TS_VALUES_1H);
-    }
-
-    /**
-     * A subtype implementing {@link Path} for simplified path-based joins.
-     */
-    public static class TsValues_1hPath extends TsValues_1h implements Path<TsValues_1hRecord> {
-        public <O extends Record> TsValues_1hPath(Table<O> path, ForeignKey<O, TsValues_1hRecord> childPath, InverseForeignKey<O, TsValues_1hRecord> parentPath) {
-            super(path, childPath, parentPath);
-        }
-        private TsValues_1hPath(Name alias, Table<TsValues_1hRecord> aliased) {
-            super(alias, aliased);
-        }
-
-        @Override
-        public TsValues_1hPath as(String alias) {
-            return new TsValues_1hPath(DSL.name(alias), this);
-        }
-
-        @Override
-        public TsValues_1hPath as(Name alias) {
-            return new TsValues_1hPath(alias, this);
-        }
-
-        @Override
-        public TsValues_1hPath as(Table<?> alias) {
-            return new TsValues_1hPath(alias.getQualifiedName(), this);
-        }
-    }
-
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
@@ -140,24 +103,7 @@ public class TsValues_1h extends TableImpl<TsValues_1hRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IDX_1H_PK, Indexes.TS_VALUES_1H_TS_DATE_IDX);
-    }
-
-    @Override
-    public List<ForeignKey<TsValues_1hRecord, ?>> getReferences() {
-        return Arrays.asList(Keys.TS_VALUES_1H__TS_VALUES_1H_TS_ID_FKEY);
-    }
-
-    private transient TsHeaderPath _tsHeader;
-
-    /**
-     * Get the implicit join path to the <code>public.ts_header</code> table.
-     */
-    public TsHeaderPath tsHeader() {
-        if (_tsHeader == null)
-            _tsHeader = new TsHeaderPath(this, Keys.TS_VALUES_1H__TS_VALUES_1H_TS_ID_FKEY, null);
-
-        return _tsHeader;
+        return Arrays.asList(Indexes.IDX_1H_PK, Indexes.TS_VALUES_1H_NEW_TS_DATE_IDX);
     }
 
     @Override

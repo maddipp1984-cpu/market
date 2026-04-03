@@ -5,9 +5,7 @@ package de.market.jooq.generated.tables;
 
 
 import de.market.jooq.generated.Indexes;
-import de.market.jooq.generated.Keys;
 import de.market.jooq.generated.Public;
-import de.market.jooq.generated.tables.TsHeader.TsHeaderPath;
 import de.market.jooq.generated.tables.records.TsValues_15minRecord;
 
 import java.time.LocalDate;
@@ -17,14 +15,10 @@ import java.util.List;
 
 import org.jooq.Condition;
 import org.jooq.Field;
-import org.jooq.ForeignKey;
 import org.jooq.Index;
-import org.jooq.InverseForeignKey;
 import org.jooq.Name;
-import org.jooq.Path;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
-import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
 import org.jooq.Select;
@@ -102,37 +96,6 @@ public class TsValues_15min extends TableImpl<TsValues_15minRecord> {
         this(DSL.name("ts_values_15min"), null);
     }
 
-    public <O extends Record> TsValues_15min(Table<O> path, ForeignKey<O, TsValues_15minRecord> childPath, InverseForeignKey<O, TsValues_15minRecord> parentPath) {
-        super(path, childPath, parentPath, TS_VALUES_15MIN);
-    }
-
-    /**
-     * A subtype implementing {@link Path} for simplified path-based joins.
-     */
-    public static class TsValues_15minPath extends TsValues_15min implements Path<TsValues_15minRecord> {
-        public <O extends Record> TsValues_15minPath(Table<O> path, ForeignKey<O, TsValues_15minRecord> childPath, InverseForeignKey<O, TsValues_15minRecord> parentPath) {
-            super(path, childPath, parentPath);
-        }
-        private TsValues_15minPath(Name alias, Table<TsValues_15minRecord> aliased) {
-            super(alias, aliased);
-        }
-
-        @Override
-        public TsValues_15minPath as(String alias) {
-            return new TsValues_15minPath(DSL.name(alias), this);
-        }
-
-        @Override
-        public TsValues_15minPath as(Name alias) {
-            return new TsValues_15minPath(alias, this);
-        }
-
-        @Override
-        public TsValues_15minPath as(Table<?> alias) {
-            return new TsValues_15minPath(alias.getQualifiedName(), this);
-        }
-    }
-
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
@@ -141,23 +104,6 @@ public class TsValues_15min extends TableImpl<TsValues_15minRecord> {
     @Override
     public List<Index> getIndexes() {
         return Arrays.asList(Indexes.IDX_15MIN_PK, Indexes.TS_VALUES_15MIN_TS_DATE_IDX);
-    }
-
-    @Override
-    public List<ForeignKey<TsValues_15minRecord, ?>> getReferences() {
-        return Arrays.asList(Keys.TS_VALUES_15MIN__TS_VALUES_15MIN_TS_ID_FKEY);
-    }
-
-    private transient TsHeaderPath _tsHeader;
-
-    /**
-     * Get the implicit join path to the <code>public.ts_header</code> table.
-     */
-    public TsHeaderPath tsHeader() {
-        if (_tsHeader == null)
-            _tsHeader = new TsHeaderPath(this, Keys.TS_VALUES_15MIN__TS_VALUES_15MIN_TS_ID_FKEY, null);
-
-        return _tsHeader;
     }
 
     @Override

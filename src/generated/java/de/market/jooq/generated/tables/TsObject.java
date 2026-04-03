@@ -8,6 +8,7 @@ import de.market.jooq.generated.Indexes;
 import de.market.jooq.generated.Keys;
 import de.market.jooq.generated.Public;
 import de.market.jooq.generated.tables.TsHeader.TsHeaderPath;
+import de.market.jooq.generated.tables.TsIndex.TsIndexPath;
 import de.market.jooq.generated.tables.TsObjectType.TsObjectTypePath;
 import de.market.jooq.generated.tables.records.TsObjectRecord;
 
@@ -205,6 +206,19 @@ public class TsObject extends TableImpl<TsObjectRecord> {
             _tsHeader = new TsHeaderPath(this, null, Keys.TS_HEADER__FK_HEADER_OBJECT.getInverseKey());
 
         return _tsHeader;
+    }
+
+    private transient TsIndexPath _tsIndex;
+
+    /**
+     * Get the implicit to-many join path to the <code>public.ts_index</code>
+     * table
+     */
+    public TsIndexPath tsIndex() {
+        if (_tsIndex == null)
+            _tsIndex = new TsIndexPath(this, null, Keys.TS_INDEX__TS_INDEX_OBJECT_ID_FKEY.getInverseKey());
+
+        return _tsIndex;
     }
 
     @Override

@@ -6,6 +6,7 @@ package de.market.jooq.generated.tables.records;
 
 import de.market.jooq.generated.tables.TsHeader;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 import org.jooq.Record1;
@@ -164,6 +165,34 @@ public class TsHeaderRecord extends UpdatableRecordImpl<TsHeaderRecord> {
         return (Short) get(9);
     }
 
+    /**
+     * Setter for <code>public.ts_header.first_date</code>.
+     */
+    public void setFirstDate(LocalDate value) {
+        set(10, value);
+    }
+
+    /**
+     * Getter for <code>public.ts_header.first_date</code>.
+     */
+    public LocalDate getFirstDate() {
+        return (LocalDate) get(10);
+    }
+
+    /**
+     * Setter for <code>public.ts_header.last_date</code>.
+     */
+    public void setLastDate(LocalDate value) {
+        set(11, value);
+    }
+
+    /**
+     * Getter for <code>public.ts_header.last_date</code>.
+     */
+    public LocalDate getLastDate() {
+        return (LocalDate) get(11);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -187,7 +216,7 @@ public class TsHeaderRecord extends UpdatableRecordImpl<TsHeaderRecord> {
     /**
      * Create a detached, initialised TsHeaderRecord
      */
-    public TsHeaderRecord(Long tsId, String tsKey, Short timeDim, Short unitId, Short currencyId, Long objectId, String description, OffsetDateTime createdAt, OffsetDateTime updatedAt, Short seriesTypeId) {
+    public TsHeaderRecord(Long tsId, String tsKey, Short timeDim, Short unitId, Short currencyId, Long objectId, String description, OffsetDateTime createdAt, OffsetDateTime updatedAt, Short seriesTypeId, LocalDate firstDate, LocalDate lastDate) {
         super(TsHeader.TS_HEADER);
 
         setTsId(tsId);
@@ -200,6 +229,8 @@ public class TsHeaderRecord extends UpdatableRecordImpl<TsHeaderRecord> {
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
         setSeriesTypeId(seriesTypeId);
+        setFirstDate(firstDate);
+        setLastDate(lastDate);
         resetChangedOnNotNull();
     }
 }

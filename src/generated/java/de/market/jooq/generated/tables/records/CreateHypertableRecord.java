@@ -32,17 +32,45 @@ public class CreateHypertableRecord extends TableRecordImpl<CreateHypertableReco
     }
 
     /**
+     * Setter for <code>public.create_hypertable.schema_name</code>.
+     */
+    public void setSchemaName(String value) {
+        set(1, value);
+    }
+
+    /**
+     * Getter for <code>public.create_hypertable.schema_name</code>.
+     */
+    public String getSchemaName() {
+        return (String) get(1);
+    }
+
+    /**
+     * Setter for <code>public.create_hypertable.table_name</code>.
+     */
+    public void setTableName(String value) {
+        set(2, value);
+    }
+
+    /**
+     * Getter for <code>public.create_hypertable.table_name</code>.
+     */
+    public String getTableName() {
+        return (String) get(2);
+    }
+
+    /**
      * Setter for <code>public.create_hypertable.created</code>.
      */
     public void setCreated(Boolean value) {
-        set(1, value);
+        set(3, value);
     }
 
     /**
      * Getter for <code>public.create_hypertable.created</code>.
      */
     public Boolean getCreated() {
-        return (Boolean) get(1);
+        return (Boolean) get(3);
     }
 
     // -------------------------------------------------------------------------
@@ -59,10 +87,12 @@ public class CreateHypertableRecord extends TableRecordImpl<CreateHypertableReco
     /**
      * Create a detached, initialised CreateHypertableRecord
      */
-    public CreateHypertableRecord(Integer hypertableId, Boolean created) {
+    public CreateHypertableRecord(Integer hypertableId, String schemaName, String tableName, Boolean created) {
         super(CreateHypertable.CREATE_HYPERTABLE);
 
         setHypertableId(hypertableId);
+        setSchemaName(schemaName);
+        setTableName(tableName);
         setCreated(created);
         resetChangedOnNotNull();
     }

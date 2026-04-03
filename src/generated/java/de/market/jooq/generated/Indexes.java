@@ -73,7 +73,7 @@ public class Indexes {
     public static final Index IDX_QRTZ_T_STATE = Internal.createIndex(DSL.name("idx_qrtz_t_state"), QrtzTriggers.QRTZ_TRIGGERS, new OrderField[] { QrtzTriggers.QRTZ_TRIGGERS.SCHED_NAME, QrtzTriggers.QRTZ_TRIGGERS.TRIGGER_STATE }, false);
     public static final Index IDX_TS_QUERY_KEY = Internal.createIndex(DSL.name("idx_ts_query_key"), TsQuery.TS_QUERY, new OrderField[] { TsQuery.TS_QUERY.QUERY_KEY }, false);
     public static final Index TS_VALUES_15MIN_TS_DATE_IDX = Internal.createIndex(DSL.name("ts_values_15min_ts_date_idx"), TsValues_15min.TS_VALUES_15MIN, new OrderField[] { TsValues_15min.TS_VALUES_15MIN.TS_DATE.desc() }, false);
-    public static final Index TS_VALUES_1H_TS_DATE_IDX = Internal.createIndex(DSL.name("ts_values_1h_ts_date_idx"), TsValues_1h.TS_VALUES_1H, new OrderField[] { TsValues_1h.TS_VALUES_1H.TS_DATE.desc() }, false);
-    public static final Index TS_VALUES_DAY_TS_DATE_IDX = Internal.createIndex(DSL.name("ts_values_day_ts_date_idx"), TsValuesDay.TS_VALUES_DAY, new OrderField[] { TsValuesDay.TS_VALUES_DAY.TS_DATE.desc() }, false);
+    public static final Index TS_VALUES_1H_NEW_TS_DATE_IDX = Internal.createIndex(DSL.name("ts_values_1h_new_ts_date_idx"), TsValues_1h.TS_VALUES_1H, new OrderField[] { TsValues_1h.TS_VALUES_1H.TS_DATE.desc() }, false);
+    public static final Index TS_VALUES_DAY_NEW_TS_DATE_IDX = Internal.createIndex(DSL.name("ts_values_day_new_ts_date_idx"), TsValuesDay.TS_VALUES_DAY, new OrderField[] { TsValuesDay.TS_VALUES_DAY.TS_DATE.desc() }, false);
     public static final Index TS_VALUES_MONTH_TS_DATE_IDX = Internal.createIndex(DSL.name("ts_values_month_ts_date_idx"), TsValuesMonth.TS_VALUES_MONTH, new OrderField[] { TsValuesMonth.TS_VALUES_MONTH.TS_DATE.desc() }, false);
 }
