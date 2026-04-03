@@ -35,8 +35,7 @@ Spring Boot 3.4.x Anwendung mit dreifachem Persistenz-Ansatz: jOOQ für Abfragen
 - **Header-Tabelle** (`ts_header`): Metadaten (Key, Dimension, Einheit, optional Objekt-Zuordnung)
 - **Objekt-Tabellen** (`ts_object`, `ts_object_type`): Übergeordnete Objekte mit 1:n zu Zeitreihen
 - **Separate Werte-Tabellen** pro Dimension: Unterschiedliche Chunk-Größen/Kompression
-- **TimescaleDB Hypertables** für 15min, 1h, Tag, Monat (nicht für Jahr)
-- **Hash-Partitionierung** auf `ts_id` für schnellen Einzelreihen-Zugriff
+- **TimescaleDB Hypertables** für 15min, 1h, Tag, Monat (nicht für Jahr), Range-only auf `ts_date`
 
 ### Modul-Architektur
 - **`de.market`** als Basis-Package — `@SpringBootApplication` in `MarketApplication`
