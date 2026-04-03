@@ -12,6 +12,7 @@
     <item id="waehrungen" tabType="waehrungen" />
     <item id="reihenarten" tabType="reihenarten" />
     <item id="warengruppen" tabType="warengruppen" />
+    <item id="indices" tabType="indices" />
   </folder>
   <folder id="system" label="System">
     <folder id="batchplanung" label="Batchplanung">

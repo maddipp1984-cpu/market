@@ -19,6 +19,8 @@ import { ReihenartenPage } from '../pages/ReihenartenPage';
 import { ReihenartDetailPage } from '../pages/reihenart/ReihenartDetailPage';
 import { WarengruppenPage } from '../pages/WarengruppenPage';
 import { WarengruppeDetailPage } from '../pages/warengruppe/WarengruppeDetailPage';
+import { IndicesPage } from '../pages/index/IndicesPage';
+import { IndexDetailPage } from '../pages/index/IndexDetailPage';
 import { BatchSchedulePage } from '../pages/scheduling/BatchSchedulePage';
 import { BatchScheduleDetailPage } from '../pages/scheduling/BatchScheduleDetailPage';
 import { BatchHistoryPage } from '../pages/scheduling/BatchHistoryPage';
@@ -75,6 +77,8 @@ export const tabTypes: TabType[] = [
   { type: 'reihenart-detail', label: 'Reihenart', icon: iconObjects, component: ReihenartDetailPage },
   { type: 'warengruppen', label: 'Warengruppen', icon: iconObjects, singleton: true, component: WarengruppenPage },
   { type: 'warengruppe-detail', label: 'Warengruppe', icon: iconObjects, component: WarengruppeDetailPage },
+  { type: 'indices', label: 'Indices', icon: iconObjects, singleton: true, component: IndicesPage },
+  { type: 'index-detail', label: 'Index', icon: iconObjects, component: IndexDetailPage },
   { type: 'business-partners', label: 'Geschaeftspartner', icon: iconPartner, singleton: true, component: BusinessPartnerPage },
   { type: 'business-partner-detail', label: 'Geschaeftspartner', icon: iconPartner, component: BusinessPartnerDetailPage },
   { type: 'batch-schedules', label: 'Planungen', icon: iconSettings, singleton: true, component: BatchSchedulePage },
