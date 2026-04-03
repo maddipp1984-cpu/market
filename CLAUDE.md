@@ -50,6 +50,7 @@ Spring Boot 3.4.x Anwendung mit dreifachem Persistenz-Ansatz: jOOQ für Abfragen
 - **`filterpreset`** — Seitenübergreifende Filter-Presets (jOOQ, JSONB)
 - **`scheduling`** — Batch-Job-System (Quartz)
 - **`publicapi`** — Public REST-API für Drittsysteme (Basic Auth, eigene DTOs)
+- **`index`** — Stammdaten-Modul: Preisindices (JPA + jOOQ, 1:1 Zeitreihe)
 - **`benchmark`** — Standalone Lese-Benchmark
 - **Schichten-Regel**: `REST-Controller → Service → Repository`
 - **Neue Module** folgen dem Pattern: `modul/model/`, `modul/repository/`, `modul/service/`, `modul/rest/dto/`
@@ -80,6 +81,7 @@ Alle Endpoints folgen dem Pattern `/api/{modul}` mit Standard-CRUD (GET, POST, P
 | Währungen | `/api/currencies` | `/query` (POST mit Filter) |
 | Reihenarten | `/api/series-types` | `/query` (POST mit Filter), Kategorie: 1=Finanziell, 2=Physikalisch |
 | Warengruppen | `/api/commodity-groups` | `/query` (POST mit Filter) |
+| Indices | `/api/indices` | `/query` (POST mit Filter), 1:1 Zeitreihe, Kontextmenü mit Editor |
 | Filter-Presets | `/api/filter-presets` | `/{id}/default` (PUT) |
 | Batch-Schedules | `/api/batch-schedules` | `/{id}/trigger` (POST, manuell auslösen) |
 | Batch-Historie | `/api/batch-history` | `/{execId}/log` (Logfile) |
@@ -209,6 +211,18 @@ src/main/java/de/market/
             dto/
                 BusinessPartnerDto.java    -- Request/Response DTO
                 ContactPersonDto.java      -- Ansprechpartner DTO
+    index/                                 -- Stammdaten-Modul: Preisindices (JPA + jOOQ)
+        model/
+            IndexEntity.java               -- @Entity auf ts_index
+        repository/
+            IndexJpaRepository.java        -- JpaRepository (Einzel-CRUD)
+            IndexOverviewRepository.java   -- jOOQ für Übersicht (JOIN ts_index + ts_object + ts_header)
+        service/
+            IndexService.java              -- @Service extends AbstractCrudService
+        rest/
+            IndexController.java           -- @RestController /api/indices
+            dto/
+                IndexDto.java              -- Request/Response DTO
     filterpreset/                          -- Filter-Presets (seitenübergreifend, jOOQ + JSONB)
         model/
             FilterPreset.java              -- POJO

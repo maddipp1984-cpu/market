@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-04-03 — Preisindex-Modul
+- Neue Tabelle `ts_index` mit FK auf `ts_object` (ON DELETE CASCADE)
+- Eigenstaendiges Backend-Modul (JPA + jOOQ) mit CRUD-API `/api/indices`
+- Automatische Erstellung von ts_object (Typ INDEX) + ts_header beim Anlegen
+- Kaskadierendes Loeschen (Werte → Header → Object, ts_index per CASCADE)
+- Frontend: Uebersichtsseite mit Kontextmenue (Zeitreihe anzeigen/bearbeiten)
+- Frontend: Detailmaske mit eingebettetem TimeSeriesEditor
+- Von/Bis-Dialog fuer Zeitreihen-Bearbeitung
+
 ## 2026-04-02 — TimescaleDB-Optimierung (TS1+TS2)
 - Hash-Partitionierung von 3 Hypertables entfernt (15min, 1h, day) — Single-Node braucht kein Hash
 - first_date/last_date Spalten in ts_header, gepflegt durch Write- und Delete-Procedures + writeSimple()
