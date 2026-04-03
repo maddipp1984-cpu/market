@@ -122,7 +122,9 @@ public class IndexService extends AbstractCrudService<IndexDto, IndexEntity, Lon
             headerRepo.delete(h.getTsId());
         }
 
-        // ts_object löschen — ts_index wird per CASCADE mitgelöscht
+        // ts_index explizit löschen (vor ts_object, um JPA Persistence Context sauber zu halten)
+        indexRepo.deleteById(id);
+        indexRepo.flush();
         objectRepo.delete(entity.getObjectId());
     }
 

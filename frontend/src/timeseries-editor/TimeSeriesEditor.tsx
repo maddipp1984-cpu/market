@@ -22,9 +22,10 @@ interface TimeSeriesEditorProps {
   start: string;
   end: string;
   aggregateMode?: string;
+  readOnly?: boolean;
 }
 
-export function TimeSeriesEditor({ tsIds, start, end, aggregateMode }: TimeSeriesEditorProps) {
+export function TimeSeriesEditor({ tsIds, start, end, aggregateMode, readOnly }: TimeSeriesEditorProps) {
   const { headers, rows, edits, hasEdits, loading, saving, error, loadTiming, load, updateValue, save } = useMultiTimeSeries();
   const { showMessage } = useMessageBar();
   const loadedRef = useRef('');
@@ -83,7 +84,7 @@ export function TimeSeriesEditor({ tsIds, start, end, aggregateMode }: TimeSerie
           Zuruecksetzen
         </Button>
       )}
-      {hasEdits && (
+      {hasEdits && !readOnly && (
         <Button variant="success" type="button" onClick={async () => {
           const ok = await save();
           if (ok) {
@@ -189,7 +190,7 @@ export function TimeSeriesEditor({ tsIds, start, end, aggregateMode }: TimeSerie
           edits={isAggregated ? EMPTY_EDITS : edits}
           dimension={viewDimension}
           decimals={decimals}
-          readOnly={isAggregated}
+          readOnly={isAggregated || readOnly}
           onEdit={updateValue}
         />
       )}

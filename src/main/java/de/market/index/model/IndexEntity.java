@@ -15,10 +15,10 @@ public class IndexEntity {
     @Column(name = "object_id", nullable = false, unique = true)
     private Long objectId;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
     private OffsetDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "updated_at", nullable = false, insertable = false)
     private OffsetDateTime updatedAt;
 
     public Long getId() { return id; }

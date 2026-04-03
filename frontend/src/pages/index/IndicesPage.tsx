@@ -118,8 +118,8 @@ function DateRangeDialog({ onConfirm, onCancel }: {
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-sm)', marginTop: 'var(--space-md)' }}>
           <button onClick={onCancel} style={{ padding: '6px 16px' }}>Abbrechen</button>
-          <button onClick={() => { if (from && to) onConfirm(from, to); }}
-            disabled={!from || !to}
+          <button onClick={() => { if (from && to && from <= to) onConfirm(from, to); }}
+            disabled={!from || !to || from > to}
             style={{ padding: '6px 16px', background: 'var(--color-accent)', color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)' }}>
             Oeffnen
           </button>

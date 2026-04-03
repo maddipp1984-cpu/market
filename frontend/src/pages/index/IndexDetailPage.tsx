@@ -169,6 +169,7 @@ export function IndexDetailPage({ tabId }: { tabId: string }) {
             tsIds={tsIds}
             start={editorStart}
             end={editorEnd}
+            readOnly={editorMode === 'view'}
           />
         </div>
       )}
