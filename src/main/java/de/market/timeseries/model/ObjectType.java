@@ -5,7 +5,8 @@ public enum ObjectType {
     CONTRACT_VHP(1, "Vertrag VHP"),
     CONTRACT(2, "Vertrag"),
     CONTRACT_VERANS(3, "Vertragsanschluss"),
-    ANS(4, "Anschluss");
+    ANS(4, "Anschluss"),
+    INDEX(5, "Index");
 
     private final int code;
     private final String description;
