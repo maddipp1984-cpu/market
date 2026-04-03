@@ -64,6 +64,10 @@ public class IndexService extends AbstractCrudService<IndexDto, IndexEntity, Lon
     public IndexDto create(IndexDto dto) {
         validate(dto);
 
+        if (objectRepo.findByKey(dto.getName()).isPresent()) {
+            throw new IllegalStateException("Name bereits vergeben: " + dto.getName());
+        }
+
         // 1. ts_object erstellen
         TsObject obj = new TsObject(ObjectType.INDEX, dto.getName(), dto.getDescription());
         long objectId = objectRepo.create(obj);
@@ -118,7 +122,8 @@ public class IndexService extends AbstractCrudService<IndexDto, IndexEntity, Lon
             headerRepo.delete(h.getTsId());
         }
 
-        indexRepo.deleteById(id);
+        // ts_object löschen — ts_index wird per CASCADE mitgelöscht
+        objectRepo.delete(entity.getObjectId());
     }
 
     @Override
