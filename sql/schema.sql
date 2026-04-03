@@ -82,7 +82,8 @@ INSERT INTO ts_object_type (type_id, type_key, description) VALUES
     (1, 'CONTRACT_VHP',    'Vertrag VHP'),
     (2, 'CONTRACT',        'Vertrag'),
     (3, 'CONTRACT_VERANS', 'Vertragsanschluss'),
-    (4, 'ANS',             'Anschluss');
+    (4, 'ANS',             'Anschluss'),
+    (5, 'INDEX',            'Index');
 
 -- Objekte
 CREATE TABLE ts_object (
@@ -125,6 +126,16 @@ COMMENT ON COLUMN ts_header.unit_id IS 'Referenz auf ts_unit';
 COMMENT ON COLUMN ts_header.currency_id IS 'Nur bei Preiszeitreihen, sonst NULL';
 CREATE INDEX idx_header_time_dim ON ts_header (time_dim);
 CREATE INDEX idx_header_object ON ts_header (object_id);
+
+-- ============================================================
+-- Index-Tabelle (Preisindices, Temperaturkurven etc.)
+-- ============================================================
+CREATE TABLE ts_index (
+    index_id    BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    object_id   BIGINT NOT NULL UNIQUE REFERENCES ts_object(object_id) ON DELETE CASCADE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
 -- ============================================================
 -- 2. Viertelstundenwerte (horizontal: 1 Zeile/Tag, 92-100 Werte)
