@@ -1,4 +1,4 @@
-import type { ObjectResponse, TimeSeriesHeaderResponse, TimeSeriesValuesResponse, WriteValuesRequest, FilterRequest, TableResponse, FilterPreset, CreateFilterPresetRequest, BusinessPartnerDto, CurrencyDto, BatchScheduleDto, JobCatalogEntry, SeriesTypeDto, CommodityGroupDto } from './types';
+import type { ObjectResponse, TimeSeriesHeaderResponse, TimeSeriesValuesResponse, WriteValuesRequest, FilterRequest, TableResponse, FilterPreset, CreateFilterPresetRequest, BusinessPartnerDto, CurrencyDto, BatchScheduleDto, JobCatalogEntry, SeriesTypeDto, CommodityGroupDto, IndexDto } from './types';
 import type { EffectivePermission } from '../auth/AuthContext';
 import keycloak from '../auth/keycloak';
 
@@ -510,6 +510,40 @@ export async function saveCommodityGroup(dto: CommodityGroupDto): Promise<Commod
 
 export async function deleteCommodityGroup(id: number): Promise<void> {
   const res = await authFetch(`/api/commodity-groups/${id}`, { method: 'DELETE' });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+}
+
+// ==================== Indices ====================
+
+export async function fetchIndex(id: number, signal?: AbortSignal): Promise<IndexDto> {
+  const res = await authFetch(`/api/indices/${id}`, { signal });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function saveIndex(dto: IndexDto): Promise<IndexDto> {
+  const isNew = dto.id === null;
+  const url = isNew ? '/api/indices' : `/api/indices/${dto.id}`;
+  const res = await authFetch(url, {
+    method: isNew ? 'POST' : 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dto),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function deleteIndex(id: number): Promise<void> {
+  const res = await authFetch(`/api/indices/${id}`, { method: 'DELETE' });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(body.error || `HTTP ${res.status}`);

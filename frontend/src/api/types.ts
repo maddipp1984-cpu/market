@@ -157,6 +157,17 @@ export interface CommodityGroupDto {
   name: string;
 }
 
+// Index
+export interface IndexDto {
+  id: number | null;
+  name: string;
+  description: string | null;
+  timeDim: number;
+  unitId: number | null;
+  currencyId: number | null;
+  tsId: number | null;
+}
+
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData, TValue> {
