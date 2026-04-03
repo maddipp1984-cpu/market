@@ -99,6 +99,13 @@
 ### Datenbereinigung
 - [x] **B1** — Verwaiste Header loeschen: Jetzt als Batch-Job (CleanupOrphanedHeadersJob) im Scheduling-System
 
+### Preisindex-Modul (Follow-ups)
+- [ ] **IDX1** — Einheit/Waehrung-Dropdowns statt ID-Nummernfelder in IndexDetailPage (Daten aus `/api/einheiten` bzw. `/api/currencies` laden)
+- [ ] **IDX2** — DateRangeDialog als Shared Component nach `frontend/src/shared/` extrahieren (Shared-Component-Pflicht)
+- [ ] **IDX3** — "Zeitreihe anzeigen": first_date/last_date aus Header nutzen statt Fallback 2020-2030 (Performance bei 15min-Indices)
+- [ ] **IDX4** — tsKey-Generierung: Sonderzeichen sanitizen oder objectId/UUID-Suffix verwenden (Kollisionsrisiko bei Loeschen+Neuanlage)
+- [ ] **IDX5** — Versionierung von Indices (spaeteres Feature, eigene Spec noetig)
+
 ### Sonstiges
 - [x] **S1** — TimescaleDB per Docker aufsetzen und Schema testen
 - [ ] **S2** — Integrationstests mit Testcontainers
