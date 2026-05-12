@@ -4,13 +4,11 @@ import de.market.currency.model.CurrencyEntity;
 import de.market.currency.repository.CurrencyJpaRepository;
 import de.market.currency.repository.CurrencyOverviewRepository;
 import de.market.currency.rest.dto.CurrencyDto;
+import de.market.shared.repository.AbstractOverviewRepository;
 import de.market.shared.service.AbstractCrudService;
-import org.jooq.Condition;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Map;
 
 @Service
 @Transactional
@@ -24,57 +22,36 @@ public class CurrencyService extends AbstractCrudService<CurrencyDto, CurrencyEn
         this.overviewRepository = overviewRepository;
     }
 
-    @Transactional(readOnly = true)
-    public List<Map<String, Object>> findAllAsRows() {
-        return overviewRepository.findAllAsRows();
-    }
+    @Override
+    protected JpaRepository<CurrencyEntity, Short> getRepository() { return repository; }
 
-    @Transactional(readOnly = true)
-    public List<Map<String, Object>> findFiltered(Condition condition) {
-        return overviewRepository.findFiltered(condition);
-    }
+    @Override
+    protected AbstractOverviewRepository getOverviewRepository() { return overviewRepository; }
 
-    @Transactional(readOnly = true)
-    public CurrencyDto findById(Short id) {
-        CurrencyEntity entity = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Waehrung nicht gefunden: id=" + id));
-        return toDto(entity);
-    }
+    @Override
+    protected String getEntityName() { return "Waehrung"; }
 
-    public CurrencyDto create(CurrencyDto dto) {
-        validate(dto);
+    @Override
+    protected void prepareForCreate(CurrencyEntity entity) { entity.setId(null); }
+
+    @Override
+    protected void checkUniqueOnCreate(CurrencyDto dto) {
         if (repository.existsByIsoCode(dto.getIsoCode())) {
             throw new IllegalStateException("ISO-Code bereits vergeben: " + dto.getIsoCode());
         }
-        CurrencyEntity entity = toEntity(dto);
-        entity.setId(null);
-        return toDto(repository.save(entity));
     }
 
-    public CurrencyDto update(Short id, CurrencyDto dto) {
-        validate(dto);
-        CurrencyEntity existing = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Waehrung nicht gefunden: id=" + id));
-
+    @Override
+    protected void checkUniqueOnUpdate(CurrencyDto dto, Short id) {
         if (repository.existsByIsoCodeAndIdNot(dto.getIsoCode(), id)) {
             throw new IllegalStateException("ISO-Code bereits vergeben: " + dto.getIsoCode());
         }
-
-        existing.setIsoCode(dto.getIsoCode());
-        existing.setDescription(dto.getDescription());
-        return toDto(repository.save(existing));
     }
 
-    public void delete(Short id) {
-        if (!repository.existsById(id)) {
-            throw new IllegalArgumentException("Waehrung nicht gefunden: id=" + id);
-        }
-        try {
-            repository.deleteById(id);
-            repository.flush();
-        } catch (Exception e) {
-            throw new IllegalStateException("Waehrung wird noch von Zeitreihen referenziert und kann nicht geloescht werden");
-        }
+    @Override
+    protected void copyFieldsForUpdate(CurrencyEntity existing, CurrencyDto dto) {
+        existing.setIsoCode(dto.getIsoCode());
+        existing.setDescription(dto.getDescription());
     }
 
     @Override

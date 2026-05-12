@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { DetailPage, type DetailMode, type ValidationResult } from '../../shared/detail-page/DetailPage';
+import { useDetailPage } from '../../shared/detail-page/useDetailPage';
+import { LoadingIndicator } from '../../shared/LoadingIndicator';
 import { Card } from '../../shared/Card';
 import { FormField } from '../../shared/FormField';
 import { useTabContext } from '../../shell/TabContext';
@@ -7,6 +9,7 @@ import { useMessageBar } from '../../shell/MessageBarContext';
 import { fetchSchedule, saveSchedule, deleteSchedule, triggerSchedule, fetchJobCatalog } from '../../api/client';
 import type { BatchScheduleDto, JobCatalogEntry, JobParameterDef } from '../../api/types';
 import { Button } from '../../shared/Button';
+import '../../shared/FormLayout.css';
 import './BatchScheduleDetailPage.css';
 
 const emptySchedule = (): BatchScheduleDto => ({
@@ -38,13 +41,19 @@ export function BatchScheduleDetailPage({ tabId }: { tabId: string }) {
   const mode: DetailMode = isTriggerMode ? 'view' : (rawMode as DetailMode);
   const entityId = params?.entityId as number | undefined;
 
-  const [data, setData] = useState<BatchScheduleDto>(emptySchedule);
-  const [dirty, setDirty] = useState(false);
-  const [loading, setLoading] = useState(mode !== 'new');
+  const {
+    data, dirty, loading,
+    setData, setDirty, setLoading, updateField, handleSaveSuccess,
+  } = useDetailPage<BatchScheduleDto>({
+    tabId,
+    defaultData: emptySchedule(),
+    pageKey: 'batch-schedules',
+    labelPrefix: 'Planung',
+  });
+
   const [triggering, setTriggering] = useState(false);
   const [catalog, setCatalog] = useState<JobCatalogEntry[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
-
 
   // Load job catalog
   useEffect(() => {
@@ -68,24 +77,14 @@ export function BatchScheduleDetailPage({ tabId }: { tabId: string }) {
     fetchSchedule(entityId).then(result => {
       if (cancelled) return;
       setData(result);
+      setLoading(false);
       updateTabLabel(tabId, isTriggerMode ? `Start: ${result.name}` : `Planung: ${result.name}`);
-      setLoading(false);
     }).catch((err) => {
-      showMessage(err instanceof Error ? err.message : 'Laden fehlgeschlagen', 'error');
       setLoading(false);
+      showMessage(err instanceof Error ? err.message : 'Laden fehlgeschlagen', 'error');
     });
     return () => { cancelled = true; };
-  }, [entityId, mode, tabId, updateTabLabel, showMessage]);
-
-  // Selected job from catalog
-  const selectedJob = useMemo(() => {
-    return catalog.find(j => j.jobKey === data.jobKey) ?? null;
-  }, [catalog, data.jobKey]);
-
-  const updateField = useCallback(<K extends keyof BatchScheduleDto>(field: K, value: BatchScheduleDto[K]) => {
-    setData(prev => ({ ...prev, [field]: value }));
-    setDirty(true);
-  }, []);
+  }, [entityId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const updateParam = useCallback((name: string, value: unknown) => {
     setData(prev => ({
@@ -93,7 +92,12 @@ export function BatchScheduleDetailPage({ tabId }: { tabId: string }) {
       parameters: { ...prev.parameters, [name]: value },
     }));
     setDirty(true);
-  }, []);
+  }, [setData, setDirty]);
+
+  // Selected job from catalog
+  const selectedJob = useMemo(() => {
+    return catalog.find(j => j.jobKey === data.jobKey) ?? null;
+  }, [catalog, data.jobKey]);
 
   // When job selection changes, populate default parameters
   const handleJobChange = useCallback((jobKey: string) => {
@@ -114,7 +118,7 @@ export function BatchScheduleDetailPage({ tabId }: { tabId: string }) {
       parameters: defaults,
     }));
     setDirty(true);
-  }, [catalog, data.jobKey, data.name]);
+  }, [catalog, data.jobKey, data.name, setData, setDirty]);
 
   const validate = useCallback((): ValidationResult => {
     const errors: { field: string; message: string }[] = [];
@@ -126,7 +130,6 @@ export function BatchScheduleDetailPage({ tabId }: { tabId: string }) {
     if (data.scheduleType === 'INTERVAL' && (!data.intervalSeconds || data.intervalSeconds <= 0)) {
       errors.push({ field: 'intervalSeconds', message: 'Intervall (> 0)' });
     }
-    // Validate required parameters
     if (selectedJob) {
       for (const p of selectedJob.parameters) {
         if (p.required) {
@@ -144,11 +147,7 @@ export function BatchScheduleDetailPage({ tabId }: { tabId: string }) {
     const saved = await saveSchedule(data);
     setData(saved);
     updateTabLabel(tabId, `Planung: ${saved.name}`);
-  }, [data, tabId, updateTabLabel]);
-
-  const handleSaveSuccess = useCallback(() => {
-    setDirty(false);
-  }, []);
+  }, [data, tabId, updateTabLabel, setData]);
 
   const handleDelete = entityId ? async () => {
     await deleteSchedule(entityId);
@@ -160,7 +159,6 @@ export function BatchScheduleDetailPage({ tabId }: { tabId: string }) {
 
   const handleTrigger = useCallback(async () => {
     if (!entityId) return;
-    // Validate required parameters
     if (selectedJob) {
       for (const p of selectedJob.parameters) {
         if (p.required) {
@@ -187,10 +185,9 @@ export function BatchScheduleDetailPage({ tabId }: { tabId: string }) {
   const isDisabled = mode === 'view' && !isTriggerMode;
   const isScheduleDisabled = mode === 'view' || isTriggerMode;
   const isNew = mode === 'new';
+  const isLoading = loading || catalogLoading;
 
-  if (loading || catalogLoading) {
-    return <div style={{ padding: 'var(--space-xl)', color: 'var(--color-text-secondary)' }}>Lade...</div>;
-  }
+  if (isLoading) return <LoadingIndicator />;
 
   const iconPlay = (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -224,12 +221,11 @@ export function BatchScheduleDetailPage({ tabId }: { tabId: string }) {
       onNew={isTriggerMode ? undefined : handleNew}
       extraActions={triggerAction}
     >
-      {/* Job & Schedule */}
       <Card>
-        <div style={{ padding: 'var(--space-md)', display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
-          <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
+        <div className="form-section" style={{ gap: 'var(--space-md)' }}>
+          <div className="form-row">
             {isNew ? (
-              <div style={{ flex: 1 }}>
+              <div className="form-row-grow">
                 <FormField label="Job">
                   <select
                     value={data.jobKey}
@@ -243,13 +239,13 @@ export function BatchScheduleDetailPage({ tabId }: { tabId: string }) {
                 </FormField>
               </div>
             ) : (
-              <div style={{ flex: 1 }}>
+              <div className="form-row-grow">
                 <FormField label="Job">
                   <input value={selectedJob?.name ?? data.jobKey} disabled />
                 </FormField>
               </div>
             )}
-            <div style={{ flex: 1 }}>
+            <div className="form-row-grow">
               <FormField label="Name">
                 <input
                   value={data.name}
@@ -275,7 +271,7 @@ export function BatchScheduleDetailPage({ tabId }: { tabId: string }) {
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: 'var(--space-md)', alignItems: 'end' }}>
+          <div className="form-row" style={{ alignItems: 'end' }}>
             <FormField label="Schedule-Typ">
               <select
                 value={data.scheduleType}
@@ -289,7 +285,7 @@ export function BatchScheduleDetailPage({ tabId }: { tabId: string }) {
             </FormField>
 
             {data.scheduleType === 'CRON' && (
-              <div style={{ flex: 1 }}>
+              <div className="form-row-grow">
                 <FormField label="Cron-Expression">
                   <input
                     value={data.cronExpression || ''}
@@ -343,7 +339,7 @@ export function BatchScheduleDetailPage({ tabId }: { tabId: string }) {
       {/* Parameter */}
       {selectedJob && selectedJob.parameters.length > 0 && (
         <Card>
-          <div style={{ padding: 'var(--space-md)', display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+          <div className="form-section" style={{ gap: 'var(--space-md)' }}>
             <h3 style={{ margin: 0, fontSize: 'var(--font-size-md)', color: 'var(--color-text-primary)' }}>
               Parameter
             </h3>

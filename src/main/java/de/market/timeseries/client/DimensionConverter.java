@@ -517,7 +517,7 @@ public class DimensionConverter {
         }
     }
 
-    private static int slotOffsetForTime(LocalDate date, LocalDateTime dateTime,
+    public static int slotOffsetForTime(LocalDate date, LocalDateTime dateTime,
                                           TimeDimension dim) {
         java.time.ZonedDateTime startOfDay = date.atStartOfDay(TimeSeriesSlice.ZONE);
         java.time.ZonedDateTime target = date.atTime(dateTime.toLocalTime())

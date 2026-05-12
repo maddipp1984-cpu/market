@@ -80,4 +80,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleAuthentication(AuthenticationException ex) {
         return ResponseEntity.status(401).body(Map.of("error", "Nicht authentifiziert"));
     }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleGeneric(Exception ex) {
+        log.error("Unbehandelter Fehler", ex);
+        return ResponseEntity.internalServerError().body(Map.of(
+                "error", "Interner Server-Fehler"
+        ));
+    }
 }

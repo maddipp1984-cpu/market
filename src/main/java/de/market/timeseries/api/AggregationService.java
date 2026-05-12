@@ -1,7 +1,9 @@
 package de.market.timeseries.api;
 
 import de.market.timeseries.client.AggregationFunction;
+import de.market.timeseries.client.DimensionConverter;
 import de.market.timeseries.client.TimeSeriesClient;
+import de.market.timeseries.client.UnitConverter;
 import de.market.timeseries.model.TimeDimension;
 import de.market.timeseries.model.TimeSeriesHeader;
 import de.market.timeseries.model.TimeSeriesSlice;
@@ -12,8 +14,6 @@ import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
-import de.market.timeseries.client.DimensionConverter;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -62,6 +62,11 @@ public class AggregationService {
     ) {}
 
     public AggregationResult aggregate(List<Long> tsIds, LocalDateTime start, LocalDateTime end) {
+        return aggregate(tsIds, start, end, AggregationFunction.SUM);
+    }
+
+    public AggregationResult aggregate(List<Long> tsIds, LocalDateTime start, LocalDateTime end,
+                                       AggregationFunction func) {
         if (tsIds == null || tsIds.size() < 2) {
             throw new IllegalArgumentException("Mindestens 2 Zeitreihen erforderlich");
         }
@@ -118,42 +123,58 @@ public class AggregationService {
             return new AggregationResult(headers, targetDim, targetUnit, sumSlice);
         }
 
-        // 6. Gruppiert: Pro Dimension per SQL summieren, dann disaggregieren + zusammenfuehren
-        //    Statt N parallele Reads nur max 5 SQL-Queries (eine pro Dimension)
-        Map<TimeDimension, List<Long>> idsByDim = new LinkedHashMap<>();
+        // 6. Gruppiert: Pro (Dimension, Unit) per SQL summieren,
+        //    dann Einheit konvertieren, disaggregieren + zusammenfuehren
+        //    Statt N parallele Reads nur wenige SQL-Queries (eine pro Dim+Unit-Gruppe)
+        Map<TimeDimension, Map<Unit, List<Long>>> idsByDimAndUnit = new LinkedHashMap<>();
         for (TimeSeriesHeader h : headers) {
-            idsByDim.computeIfAbsent(h.getTimeDimension(), k -> new ArrayList<>()).add(h.getTsId());
+            idsByDimAndUnit
+                    .computeIfAbsent(h.getTimeDimension(), k -> new LinkedHashMap<>())
+                    .computeIfAbsent(h.getUnit(), k -> new ArrayList<>())
+                    .add(h.getTsId());
         }
 
         long t2 = System.currentTimeMillis();
-        log.info("Aggregation gruppiert: {} Dimensionen, {} Zeitreihen",
-                idsByDim.size(), headers.size());
+        int groupCount = idsByDimAndUnit.values().stream().mapToInt(Map::size).sum();
+        log.info("Aggregation gruppiert: {} Dimension+Unit-Gruppen, {} Zeitreihen",
+                groupCount, headers.size());
 
-        // Pro Dimension parallel per SQL summieren
+        // Pro (Dimension, Unit)-Gruppe parallel per SQL summieren
         List<CompletableFuture<TimeSeriesSlice>> groupFutures = new ArrayList<>();
-        for (Map.Entry<TimeDimension, List<Long>> entry : idsByDim.entrySet()) {
-            TimeDimension dim = entry.getKey();
-            List<Long> ids = entry.getValue();
-            groupFutures.add(CompletableFuture.supplyAsync(() -> {
-                try {
-                    TimeSeriesSlice groupSum;
-                    if (dim.useTimestamptz()) {
-                        groupSum = tsRepo.readSumSubdaily(ids, dim, start, end);
-                    } else {
-                        groupSum = tsRepo.readSumSimple(ids, dim, start, end);
-                    }
-                    log.info("  Gruppe {}: {} ZR summiert, {} Werte",
-                            dim, ids.size(), groupSum.size());
+        for (Map.Entry<TimeDimension, Map<Unit, List<Long>>> dimEntry : idsByDimAndUnit.entrySet()) {
+            TimeDimension dim = dimEntry.getKey();
+            for (Map.Entry<Unit, List<Long>> unitEntry : dimEntry.getValue().entrySet()) {
+                Unit unit = unitEntry.getKey();
+                List<Long> ids = unitEntry.getValue();
+                groupFutures.add(CompletableFuture.supplyAsync(() -> {
+                    try {
+                        TimeSeriesSlice groupSum;
+                        if (dim.useTimestamptz()) {
+                            groupSum = tsRepo.readSumSubdaily(ids, dim, start, end);
+                        } else {
+                            groupSum = tsRepo.readSumSimple(ids, dim, start, end);
+                        }
+                        log.info("  Gruppe {}/{}: {} ZR summiert, {} Werte",
+                                dim, unit.getSymbol(), ids.size(), groupSum.size());
 
-                    // Disaggregieren auf Zieldimension falls noetig
-                    if (dim != targetDim) {
-                        groupSum = DimensionConverter.disaggregate(groupSum, targetDim, AggregationFunction.SUM);
+                        // Auf Ziel-Einheit konvertieren
+                        if (unit != targetUnit) {
+                            if (unit.isCrossDomainConvertibleTo(targetUnit)) {
+                                groupSum = UnitConverter.convertCrossDomain(groupSum, unit, targetUnit);
+                            } else {
+                                groupSum = UnitConverter.convert(groupSum, unit, targetUnit);
+                            }
+                        }
+                        // Disaggregieren auf Zieldimension falls noetig
+                        if (dim != targetDim) {
+                            groupSum = DimensionConverter.disaggregate(groupSum, targetDim, func);
+                        }
+                        return groupSum;
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
                     }
-                    return groupSum;
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }, aggregationExecutor));
+                }, aggregationExecutor));
+            }
         }
 
         // Auf alle Gruppen-Ergebnisse warten

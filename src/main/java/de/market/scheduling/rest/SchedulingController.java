@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@RequestMapping("/api")
 public class SchedulingController {
 
     private static final List<ColumnMeta> SCHEDULE_COLUMNS = List.of(
@@ -48,41 +49,41 @@ public class SchedulingController {
 
     // --- Job-Katalog ---
 
-    @GetMapping("/api/batch-jobs/catalog")
+    @GetMapping("/batch-jobs/catalog")
     public ResponseEntity<List<JobCatalogDto>> getCatalog() {
         return ResponseEntity.ok(service.getJobCatalog());
     }
 
     // --- Schedules ---
 
-    @GetMapping("/api/batch-schedules")
+    @GetMapping("/batch-schedules")
     public ResponseEntity<TableResponse> getAllSchedules() {
         List<Map<String, Object>> data = service.findAllSchedulesAsRows();
         return ResponseEntity.ok(new TableResponse(SCHEDULE_COLUMNS, data));
     }
 
-    @GetMapping("/api/batch-schedules/{id}")
+    @GetMapping("/batch-schedules/{id}")
     public ResponseEntity<BatchScheduleDto> getScheduleById(@PathVariable int id) {
         return ResponseEntity.ok(service.findScheduleById(id));
     }
 
-    @PostMapping("/api/batch-schedules")
+    @PostMapping("/batch-schedules")
     public ResponseEntity<BatchScheduleDto> createSchedule(@RequestBody BatchScheduleDto dto) {
         return ResponseEntity.ok(service.createSchedule(dto));
     }
 
-    @PutMapping("/api/batch-schedules/{id}")
+    @PutMapping("/batch-schedules/{id}")
     public ResponseEntity<BatchScheduleDto> updateSchedule(@PathVariable int id, @RequestBody BatchScheduleDto dto) {
         return ResponseEntity.ok(service.updateSchedule(id, dto));
     }
 
-    @DeleteMapping("/api/batch-schedules/{id}")
+    @DeleteMapping("/batch-schedules/{id}")
     public ResponseEntity<Void> deleteSchedule(@PathVariable int id) {
         service.deleteSchedule(id);
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/api/batch-schedules/{id}/trigger")
+    @PostMapping("/batch-schedules/{id}/trigger")
     public ResponseEntity<Void> triggerSchedule(@PathVariable int id,
                                                  @RequestBody(required = false) Map<String, Object> adhocParameters) {
         service.triggerManually(id, adhocParameters);
@@ -91,21 +92,21 @@ public class SchedulingController {
 
     // --- Historie ---
 
-    @GetMapping("/api/batch-history")
+    @GetMapping("/batch-history")
     public ResponseEntity<TableResponse> getFullHistory(
             @RequestParam(defaultValue = "100") int limit) {
         List<Map<String, Object>> data = service.getFullHistory(limit);
         return ResponseEntity.ok(new TableResponse(HISTORY_COLUMNS, data));
     }
 
-    @GetMapping("/api/batch-schedules/{id}/history")
+    @GetMapping("/batch-schedules/{id}/history")
     public ResponseEntity<List<Map<String, Object>>> getScheduleHistory(
             @PathVariable int id,
             @RequestParam(defaultValue = "50") int limit) {
         return ResponseEntity.ok(service.getHistory(id, limit));
     }
 
-    @GetMapping(value = "/api/batch-history/{execId}/log", produces = MediaType.TEXT_PLAIN_VALUE)
+    @GetMapping(value = "/batch-history/{execId}/log", produces = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<String> getLogByExecutionId(@PathVariable long execId) {
         return ResponseEntity.ok(service.getLogContentByExecutionId(execId));
     }

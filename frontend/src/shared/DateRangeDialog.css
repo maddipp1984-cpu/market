@@ -1,0 +1,67 @@
+.date-range-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+}
+
+.date-range-modal {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  min-width: 320px;
+  box-shadow: var(--shadow-lg);
+}
+
+.date-range-title {
+  margin: 0 0 var(--space-md);
+  color: var(--color-text-primary);
+}
+
+.date-range-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.date-range-field {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.date-range-field-label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.date-range-input {
+  display: block;
+  width: 100%;
+}
+
+.date-range-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+.date-range-cancel-btn {
+  padding: 6px 16px;
+}
+
+.date-range-confirm-btn {
+  padding: 6px 16px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+}
+
+.date-range-confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

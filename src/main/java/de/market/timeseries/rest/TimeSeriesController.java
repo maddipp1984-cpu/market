@@ -2,6 +2,7 @@ package de.market.timeseries.rest;
 
 import de.market.timeseries.api.AggregationService;
 import de.market.timeseries.api.TimeSeriesService;
+import de.market.timeseries.client.AggregationFunction;
 import de.market.timeseries.model.Currency;
 import de.market.timeseries.model.TimeDimension;
 import de.market.timeseries.model.TimeSeriesHeader;
@@ -97,16 +98,18 @@ public class TimeSeriesController {
 
     @PostMapping("/aggregate")
     public ResponseEntity<AggregateResponse> aggregate(@RequestBody AggregateRequest req)  {
+        AggregationFunction func = req.getFunctionOrDefault();
         AggregationService.AggregationResult result =
-                aggregationService.aggregate(req.getTsIds(), req.getStart(), req.getEnd());
+                aggregationService.aggregate(req.getTsIds(), req.getStart(), req.getEnd(), func);
 
+        String funcName = func.name();
         String keys = result.headers().stream()
                 .map(TimeSeriesHeader::getTsKey).collect(Collectors.joining(", "));
 
         TimeSeriesHeaderResponse headerResp = new TimeSeriesHeaderResponse();
-        headerResp.setSynthetic(-1, "SUM(" + keys + ")", result.targetDimension().name(),
+        headerResp.setSynthetic(-1, funcName + "(" + keys + ")", result.targetDimension().name(),
                 result.targetUnit().getSymbol(), null, null,
-                "Summierung von " + result.headers().size() + " Zeitreihen");
+                funcName + " von " + result.headers().size() + " Zeitreihen");
 
         TimeSeriesValuesResponse valuesResp = TimeSeriesValuesResponse.from(result.sumSlice());
         return ResponseEntity.ok(new AggregateResponse(headerResp, valuesResp));

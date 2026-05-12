@@ -1,12 +1,14 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
-import { DetailPage, type DetailMode, type ValidationResult } from '../../shared/detail-page/DetailPage';
+import { useCallback, useMemo } from 'react';
+import { DetailPage, type ValidationResult } from '../../shared/detail-page/DetailPage';
+import { useDetailPage } from '../../shared/detail-page/useDetailPage';
+import { LoadingIndicator } from '../../shared/LoadingIndicator';
 import { Card } from '../../shared/Card';
 import { FormField } from '../../shared/FormField';
 import { TimeSeriesEditor } from '../../timeseries-editor/TimeSeriesEditor';
 import { useTabContext } from '../../shell/TabContext';
-import { useMessageBar } from '../../shell/MessageBarContext';
 import { fetchIndex, saveIndex, deleteIndex } from '../../api/client';
 import type { IndexDto } from '../../api/types';
+import '../../shared/FormLayout.css';
 
 const DIM_OPTIONS = [
   { value: 1, label: '15 Minuten' },
@@ -17,47 +19,28 @@ const DIM_OPTIONS = [
 ];
 
 export function IndexDetailPage({ tabId }: { tabId: string }) {
-  const { getTabParams, openTab, updateTabLabel } = useTabContext();
-  const { showMessage } = useMessageBar();
+  const { getTabParams, openTab } = useTabContext();
   const params = getTabParams(tabId);
-  const mode = (params?.mode as DetailMode) ?? 'view';
-  const entityId = params?.entityId as number | undefined;
   const editorMode = params?.editorMode as 'view' | 'edit' | undefined;
   const dateFrom = params?.dateFrom as string | undefined;
   const dateTo = params?.dateTo as string | undefined;
 
-  const [data, setData] = useState<IndexDto>({
-    id: null,
-    name: '',
-    description: null,
-    timeDim: 3,
-    unitId: null,
-    currencyId: null,
-    tsId: null,
+  const {
+    mode, data, dirty, loading,
+    updateField, handleSave, handleSaveSuccess, handleDelete,
+  } = useDetailPage<IndexDto>({
+    tabId,
+    defaultData: { id: null, name: '', description: null, timeDim: 3, unitId: null, currencyId: null, tsId: null },
+    fetchFn: fetchIndex,
+    saveFn: saveIndex,
+    deleteFn: deleteIndex,
+    pageKey: 'indices',
+    labelPrefix: 'Index',
   });
-  const [dirty, setDirty] = useState(false);
-  const [loading, setLoading] = useState(mode !== 'new');
 
-  useEffect(() => {
-    if (mode === 'new' || !entityId) return;
-    let cancelled = false;
-    setLoading(true);
-    fetchIndex(entityId).then(result => {
-      if (cancelled) return;
-      setData(result);
-      updateTabLabel(tabId, `Index: ${result.name}`);
-      setLoading(false);
-    }).catch((err) => {
-      showMessage(err instanceof Error ? err.message : 'Laden fehlgeschlagen', 'error');
-      setLoading(false);
-    });
-    return () => { cancelled = true; };
-  }, [entityId, mode, tabId, updateTabLabel]);
-
-  const updateField = useCallback((field: keyof IndexDto, value: unknown) => {
-    setData(prev => ({ ...prev, [field]: value }));
-    setDirty(true);
-  }, []);
+  const handleNew = useCallback(() => {
+    openTab('index-detail', { mode: 'new' });
+  }, [openTab]);
 
   const validate = useCallback((): ValidationResult => {
     const errors: { field: string; message: string }[] = [];
@@ -69,24 +52,6 @@ export function IndexDetailPage({ tabId }: { tabId: string }) {
     return { valid: errors.length === 0, errors };
   }, [data]);
 
-  const handleSave = useCallback(async () => {
-    const saved = await saveIndex(data);
-    setData(saved);
-    updateTabLabel(tabId, `Index: ${saved.name}`);
-  }, [data, tabId, updateTabLabel]);
-
-  const handleSaveSuccess = useCallback(() => {
-    setDirty(false);
-  }, []);
-
-  const handleDelete = entityId ? async () => {
-    await deleteIndex(entityId);
-  } : undefined;
-
-  const handleNew = useCallback(() => {
-    openTab('index-detail', { mode: 'new' });
-  }, [openTab]);
-
   const isDisabled = mode === 'view';
   const isExisting = data.id !== null;
 
@@ -94,9 +59,7 @@ export function IndexDetailPage({ tabId }: { tabId: string }) {
   const editorEnd = dateTo ?? '2030-12-31';
   const tsIds = useMemo(() => data.tsId ? [data.tsId] : [], [data.tsId]);
 
-  if (loading) {
-    return <div style={{ padding: 'var(--space-xl)', color: 'var(--color-text-secondary)' }}>Lade...</div>;
-  }
+  if (loading) return <LoadingIndicator />;
 
   return (
     <DetailPage
@@ -111,9 +74,9 @@ export function IndexDetailPage({ tabId }: { tabId: string }) {
       onNew={handleNew}
     >
       <Card>
-        <div style={{ padding: 'var(--space-md)', display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-          <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
-            <div style={{ flex: 1 }}>
+        <div className="form-section">
+          <div className="form-row">
+            <div className="form-row-grow">
               <FormField label="Name">
                 <input
                   value={data.name}
@@ -135,7 +98,7 @@ export function IndexDetailPage({ tabId }: { tabId: string }) {
               </select>
             </FormField>
           </div>
-          <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
+          <div className="form-row">
             <FormField label="Einheit (Unit-ID)">
               <input
                 type="number"
@@ -164,7 +127,7 @@ export function IndexDetailPage({ tabId }: { tabId: string }) {
       </Card>
 
       {isExisting && data.tsId && editorMode && (
-        <div style={{ marginTop: 'var(--space-md)' }}>
+        <div className="form-card-gap">
           <TimeSeriesEditor
             tsIds={tsIds}
             start={editorStart}

@@ -317,73 +317,63 @@ export const adminSetFieldRestrictions = (groupId: number, restrictions: { resou
 // Resources
 export const adminGetResources = () => adminFetch<AdminResource[]>('/resources');
 
+// ==================== CRUD Factory ====================
+
+interface CrudApi<T extends { id: number | null }> {
+  fetch: (id: number, signal?: AbortSignal) => Promise<T>;
+  save: (dto: T) => Promise<T>;
+  delete: (id: number) => Promise<void>;
+}
+
+function createCrudApi<T extends { id: number | null }>(basePath: string): CrudApi<T> {
+  const fetch = async (id: number, signal?: AbortSignal): Promise<T> => {
+    const res = await authFetch(`${basePath}/${id}`, { signal });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(body.error || `HTTP ${res.status}`);
+    }
+    return res.json();
+  };
+
+  const save = async (dto: T): Promise<T> => {
+    const isNew = dto.id === null;
+    const url = isNew ? basePath : `${basePath}/${dto.id}`;
+    const res = await authFetch(url, {
+      method: isNew ? 'POST' : 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dto),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(body.error || `HTTP ${res.status}`);
+    }
+    return res.json();
+  };
+
+  const del = async (id: number): Promise<void> => {
+    const res = await authFetch(`${basePath}/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(body.error || `HTTP ${res.status}`);
+    }
+  };
+
+  return { fetch, save, delete: del };
+}
+
 // ==================== Currencies ====================
 
-export async function fetchCurrency(id: number, signal?: AbortSignal): Promise<CurrencyDto> {
-  const res = await authFetch(`/api/currencies/${id}`, { signal });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-export async function saveCurrency(dto: CurrencyDto): Promise<CurrencyDto> {
-  const isNew = dto.id === null;
-  const url = isNew ? '/api/currencies' : `/api/currencies/${dto.id}`;
-  const res = await authFetch(url, {
-    method: isNew ? 'POST' : 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(dto),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-export async function deleteCurrency(id: number): Promise<void> {
-  const res = await authFetch(`/api/currencies/${id}`, { method: 'DELETE' });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-}
+const currencyApi = createCrudApi<CurrencyDto>('/api/currencies');
+export const fetchCurrency = currencyApi.fetch;
+export const saveCurrency = currencyApi.save;
+export const deleteCurrency = currencyApi.delete;
 
 // ==================== Business Partners ====================
 
-export async function fetchBusinessPartner(id: number, signal?: AbortSignal): Promise<BusinessPartnerDto> {
-  const res = await authFetch(`/api/business-partners/${id}`, { signal });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-export async function saveBusinessPartner(dto: BusinessPartnerDto): Promise<BusinessPartnerDto> {
-  const isNew = dto.id === null;
-  const url = isNew ? '/api/business-partners' : `/api/business-partners/${dto.id}`;
-  const res = await authFetch(url, {
-    method: isNew ? 'POST' : 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(dto),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-export async function deleteBusinessPartner(id: number): Promise<void> {
-  const res = await authFetch(`/api/business-partners/${id}`, { method: 'DELETE' });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-}
+const businessPartnerApi = createCrudApi<BusinessPartnerDto>('/api/business-partners');
+export const fetchBusinessPartner = businessPartnerApi.fetch;
+export const saveBusinessPartner = businessPartnerApi.save;
+export const deleteBusinessPartner = businessPartnerApi.delete;
 
 // ==================== Batch Scheduling ====================
 
@@ -396,37 +386,10 @@ export async function fetchJobCatalog(signal?: AbortSignal): Promise<JobCatalogE
   return res.json();
 }
 
-export async function fetchSchedule(id: number, signal?: AbortSignal): Promise<BatchScheduleDto> {
-  const res = await authFetch(`/api/batch-schedules/${id}`, { signal });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-export async function saveSchedule(dto: BatchScheduleDto): Promise<BatchScheduleDto> {
-  const isNew = dto.id === null;
-  const url = isNew ? '/api/batch-schedules' : `/api/batch-schedules/${dto.id}`;
-  const res = await authFetch(url, {
-    method: isNew ? 'POST' : 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(dto),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-export async function deleteSchedule(id: number): Promise<void> {
-  const res = await authFetch(`/api/batch-schedules/${id}`, { method: 'DELETE' });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-}
+const scheduleApi = createCrudApi<BatchScheduleDto>('/api/batch-schedules');
+export const fetchSchedule = scheduleApi.fetch;
+export const saveSchedule = scheduleApi.save;
+export const deleteSchedule = scheduleApi.delete;
 
 export async function triggerSchedule(id: number, parameters?: Record<string, unknown>): Promise<void> {
   const res = await authFetch(`/api/batch-schedules/${id}/trigger`, {
@@ -450,102 +413,21 @@ export async function fetchExecutionLog(execId: number, signal?: AbortSignal): P
 
 // ==================== Series Types ====================
 
-export async function fetchSeriesType(id: number, signal?: AbortSignal): Promise<SeriesTypeDto> {
-  const res = await authFetch(`/api/series-types/${id}`, { signal });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-export async function saveSeriesType(dto: SeriesTypeDto): Promise<SeriesTypeDto> {
-  const isNew = dto.id === null;
-  const url = isNew ? '/api/series-types' : `/api/series-types/${dto.id}`;
-  const res = await authFetch(url, {
-    method: isNew ? 'POST' : 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(dto),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-export async function deleteSeriesType(id: number): Promise<void> {
-  const res = await authFetch(`/api/series-types/${id}`, { method: 'DELETE' });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-}
+const seriesTypeApi = createCrudApi<SeriesTypeDto>('/api/series-types');
+export const fetchSeriesType = seriesTypeApi.fetch;
+export const saveSeriesType = seriesTypeApi.save;
+export const deleteSeriesType = seriesTypeApi.delete;
 
 // ==================== Commodity Groups ====================
 
-export async function fetchCommodityGroup(id: number, signal?: AbortSignal): Promise<CommodityGroupDto> {
-  const res = await authFetch(`/api/commodity-groups/${id}`, { signal });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-export async function saveCommodityGroup(dto: CommodityGroupDto): Promise<CommodityGroupDto> {
-  const isNew = dto.id === null;
-  const url = isNew ? '/api/commodity-groups' : `/api/commodity-groups/${dto.id}`;
-  const res = await authFetch(url, {
-    method: isNew ? 'POST' : 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(dto),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-export async function deleteCommodityGroup(id: number): Promise<void> {
-  const res = await authFetch(`/api/commodity-groups/${id}`, { method: 'DELETE' });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-}
+const commodityGroupApi = createCrudApi<CommodityGroupDto>('/api/commodity-groups');
+export const fetchCommodityGroup = commodityGroupApi.fetch;
+export const saveCommodityGroup = commodityGroupApi.save;
+export const deleteCommodityGroup = commodityGroupApi.delete;
 
 // ==================== Indices ====================
 
-export async function fetchIndex(id: number, signal?: AbortSignal): Promise<IndexDto> {
-  const res = await authFetch(`/api/indices/${id}`, { signal });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-export async function saveIndex(dto: IndexDto): Promise<IndexDto> {
-  const isNew = dto.id === null;
-  const url = isNew ? '/api/indices' : `/api/indices/${dto.id}`;
-  const res = await authFetch(url, {
-    method: isNew ? 'POST' : 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(dto),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-export async function deleteIndex(id: number): Promise<void> {
-  const res = await authFetch(`/api/indices/${id}`, { method: 'DELETE' });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `HTTP ${res.status}`);
-  }
-}
+const indexApi = createCrudApi<IndexDto>('/api/indices');
+export const fetchIndex = indexApi.fetch;
+export const saveIndex = indexApi.save;
+export const deleteIndex = indexApi.delete;

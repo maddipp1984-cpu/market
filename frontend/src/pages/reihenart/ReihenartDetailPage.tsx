@@ -1,11 +1,13 @@
-import { useState, useCallback, useEffect } from 'react';
-import { DetailPage, type DetailMode, type ValidationResult } from '../../shared/detail-page/DetailPage';
+import { useCallback } from 'react';
+import { DetailPage, type ValidationResult } from '../../shared/detail-page/DetailPage';
+import { useDetailPage } from '../../shared/detail-page/useDetailPage';
+import { LoadingIndicator } from '../../shared/LoadingIndicator';
 import { Card } from '../../shared/Card';
 import { FormField } from '../../shared/FormField';
 import { useTabContext } from '../../shell/TabContext';
-import { useMessageBar } from '../../shell/MessageBarContext';
 import { fetchSeriesType, saveSeriesType, deleteSeriesType } from '../../api/client';
 import type { SeriesTypeDto } from '../../api/types';
+import '../../shared/FormLayout.css';
 
 const CATEGORIES = [
   { value: 1, label: 'Finanziell' },
@@ -13,41 +15,25 @@ const CATEGORIES = [
 ];
 
 export function ReihenartDetailPage({ tabId }: { tabId: string }) {
-  const { getTabParams, openTab, updateTabLabel } = useTabContext();
-  const { showMessage } = useMessageBar();
-  const params = getTabParams(tabId);
-  const mode = (params?.mode as DetailMode) ?? 'view';
-  const entityId = params?.entityId as number | undefined;
+  const { openTab } = useTabContext();
 
-  const [data, setData] = useState<SeriesTypeDto>({
-    id: null,
-    code: '',
-    name: '',
-    category: 1,
+  const {
+    mode, data, dirty, loading,
+    updateField, handleSave, handleSaveSuccess, handleDelete,
+  } = useDetailPage<SeriesTypeDto>({
+    tabId,
+    defaultData: { id: null, code: '', name: '', category: 1 },
+    fetchFn: fetchSeriesType,
+    saveFn: saveSeriesType,
+    deleteFn: deleteSeriesType,
+    pageKey: 'series-types',
+    labelPrefix: 'Reihenart',
+    labelField: 'code' as keyof SeriesTypeDto,
   });
-  const [dirty, setDirty] = useState(false);
-  const [loading, setLoading] = useState(mode !== 'new');
 
-  useEffect(() => {
-    if (mode === 'new' || !entityId) return;
-    let cancelled = false;
-    setLoading(true);
-    fetchSeriesType(entityId).then(result => {
-      if (cancelled) return;
-      setData(result);
-      updateTabLabel(tabId, `Reihenart: ${result.code}`);
-      setLoading(false);
-    }).catch((err) => {
-      showMessage(err instanceof Error ? err.message : 'Laden fehlgeschlagen', 'error');
-      setLoading(false);
-    });
-    return () => { cancelled = true; };
-  }, [entityId, mode, tabId, updateTabLabel, showMessage]);
-
-  const updateField = useCallback((field: keyof SeriesTypeDto, value: unknown) => {
-    setData(prev => ({ ...prev, [field]: value }));
-    setDirty(true);
-  }, []);
+  const handleNew = useCallback(() => {
+    openTab('reihenart-detail', { mode: 'new' });
+  }, [openTab]);
 
   const validate = useCallback((): ValidationResult => {
     const errors: { field: string; message: string }[] = [];
@@ -56,29 +42,9 @@ export function ReihenartDetailPage({ tabId }: { tabId: string }) {
     return { valid: errors.length === 0, errors };
   }, [data]);
 
-  const handleSave = useCallback(async () => {
-    const saved = await saveSeriesType(data);
-    setData(saved);
-    updateTabLabel(tabId, `Reihenart: ${saved.code}`);
-  }, [data, tabId, updateTabLabel]);
-
-  const handleSaveSuccess = useCallback(() => {
-    setDirty(false);
-  }, []);
-
-  const handleDelete = entityId ? async () => {
-    await deleteSeriesType(entityId);
-  } : undefined;
-
-  const handleNew = useCallback(() => {
-    openTab('reihenart-detail', { mode: 'new' });
-  }, [openTab]);
-
   const isDisabled = mode === 'view';
 
-  if (loading) {
-    return <div style={{ padding: 'var(--space-xl)', color: 'var(--color-text-secondary)' }}>Lade...</div>;
-  }
+  if (loading) return <LoadingIndicator />;
 
   return (
     <DetailPage
@@ -93,8 +59,8 @@ export function ReihenartDetailPage({ tabId }: { tabId: string }) {
       onNew={handleNew}
     >
       <Card>
-        <div style={{ padding: 'var(--space-md)', display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-          <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
+        <div className="form-section">
+          <div className="form-row">
             <FormField label="Kuerzel">
               <input
                 value={data.code}
@@ -102,7 +68,7 @@ export function ReihenartDetailPage({ tabId }: { tabId: string }) {
                 disabled={isDisabled}
               />
             </FormField>
-            <div style={{ flex: 1 }}>
+            <div className="form-row-grow">
               <FormField label="Name">
                 <input
                   value={data.name}

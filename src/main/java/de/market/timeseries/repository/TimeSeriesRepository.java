@@ -1,5 +1,6 @@
 package de.market.timeseries.repository;
 
+import de.market.timeseries.client.DimensionConverter;
 import de.market.timeseries.model.TimeDimension;
 import de.market.timeseries.model.TimeSeriesSlice;
 
@@ -243,10 +244,10 @@ public class TimeSeriesRepository {
             int toSlot = expectedSlots;
 
             if (day.equals(firstDay)) {
-                fromSlot = slotOffset(day, start.toLocalTime(), interval);
+                fromSlot = DimensionConverter.slotOffsetForTime(day, start, dim);
             }
             if (day.equals(end.toLocalDate()) && !end.toLocalTime().equals(LocalTime.MIDNIGHT)) {
-                toSlot = slotOffset(day, end.toLocalTime(), interval);
+                toSlot = DimensionConverter.slotOffsetForTime(day, end, dim);
             }
 
             double[] slice = Arrays.copyOfRange(fullDay, fromSlot, toSlot);
@@ -261,13 +262,6 @@ public class TimeSeriesRepository {
             offset += chunk.length;
         }
         return values;
-    }
-
-    static int slotOffset(LocalDate date, LocalTime time, Duration interval) {
-        ZonedDateTime startOfDay = date.atStartOfDay(TimeSeriesSlice.ZONE);
-        ZonedDateTime target = date.atTime(time).atZone(TimeSeriesSlice.ZONE);
-        long seconds = Duration.between(startOfDay, target).getSeconds();
-        return (int) (seconds / interval.getSeconds());
     }
 
     private static void requireSubdaily(TimeDimension dim, String method) {

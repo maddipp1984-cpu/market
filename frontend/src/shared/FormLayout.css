@@ -1,0 +1,19 @@
+.form-section {
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.form-row {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.form-row > .form-row-grow {
+  flex: 1;
+}
+
+.form-card-gap {
+  margin-top: var(--space-md);
+}

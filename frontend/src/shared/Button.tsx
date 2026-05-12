@@ -1,7 +1,7 @@
 import './Button.css';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'success' | 'ghost';
+  variant?: 'primary' | 'success' | 'ghost' | 'danger';
   icon?: boolean;
 }
 

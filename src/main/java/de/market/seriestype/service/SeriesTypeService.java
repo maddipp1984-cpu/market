@@ -5,13 +5,11 @@ import de.market.seriestype.model.SeriesTypeEntity;
 import de.market.seriestype.repository.SeriesTypeJpaRepository;
 import de.market.seriestype.repository.SeriesTypeOverviewRepository;
 import de.market.seriestype.rest.dto.SeriesTypeDto;
+import de.market.shared.repository.AbstractOverviewRepository;
 import de.market.shared.service.AbstractCrudService;
-import org.jooq.Condition;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Map;
 
 @Service
 @Transactional
@@ -25,58 +23,37 @@ public class SeriesTypeService extends AbstractCrudService<SeriesTypeDto, Series
         this.overviewRepository = overviewRepository;
     }
 
-    @Transactional(readOnly = true)
-    public List<Map<String, Object>> findAllAsRows() {
-        return overviewRepository.findAllAsRows();
-    }
+    @Override
+    protected JpaRepository<SeriesTypeEntity, Short> getRepository() { return repository; }
 
-    @Transactional(readOnly = true)
-    public List<Map<String, Object>> findFiltered(Condition condition) {
-        return overviewRepository.findFiltered(condition);
-    }
+    @Override
+    protected AbstractOverviewRepository getOverviewRepository() { return overviewRepository; }
 
-    @Transactional(readOnly = true)
-    public SeriesTypeDto findById(Short id) {
-        SeriesTypeEntity entity = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Reihenart nicht gefunden: id=" + id));
-        return toDto(entity);
-    }
+    @Override
+    protected String getEntityName() { return "Reihenart"; }
 
-    public SeriesTypeDto create(SeriesTypeDto dto) {
-        validate(dto);
+    @Override
+    protected void prepareForCreate(SeriesTypeEntity entity) { entity.setId(null); }
+
+    @Override
+    protected void checkUniqueOnCreate(SeriesTypeDto dto) {
         if (repository.existsByCode(dto.getCode())) {
             throw new IllegalStateException("Kuerzel bereits vergeben: " + dto.getCode());
         }
-        SeriesTypeEntity entity = toEntity(dto);
-        entity.setId(null);
-        return toDto(repository.save(entity));
     }
 
-    public SeriesTypeDto update(Short id, SeriesTypeDto dto) {
-        validate(dto);
-        SeriesTypeEntity existing = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Reihenart nicht gefunden: id=" + id));
-
+    @Override
+    protected void checkUniqueOnUpdate(SeriesTypeDto dto, Short id) {
         if (repository.existsByCodeAndIdNot(dto.getCode(), id)) {
             throw new IllegalStateException("Kuerzel bereits vergeben: " + dto.getCode());
         }
+    }
 
+    @Override
+    protected void copyFieldsForUpdate(SeriesTypeEntity existing, SeriesTypeDto dto) {
         existing.setCode(dto.getCode());
         existing.setName(dto.getName());
         existing.setCategory((short) dto.getCategory());
-        return toDto(repository.save(existing));
-    }
-
-    public void delete(Short id) {
-        if (!repository.existsById(id)) {
-            throw new IllegalArgumentException("Reihenart nicht gefunden: id=" + id);
-        }
-        try {
-            repository.deleteById(id);
-            repository.flush();
-        } catch (Exception e) {
-            throw new IllegalStateException("Reihenart wird noch von Zeitreihen referenziert und kann nicht geloescht werden");
-        }
     }
 
     @Override

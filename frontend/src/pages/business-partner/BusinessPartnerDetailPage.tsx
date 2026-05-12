@@ -1,10 +1,11 @@
-import { useState, useCallback, useEffect } from 'react';
-import { DetailPage, type DetailMode, type ValidationResult } from '../../shared/detail-page/DetailPage';
+import { useState, useCallback } from 'react';
+import { DetailPage, type ValidationResult } from '../../shared/detail-page/DetailPage';
+import { useDetailPage } from '../../shared/detail-page/useDetailPage';
+import { LoadingIndicator } from '../../shared/LoadingIndicator';
 import { TreeNavigation } from '../../shared/tree-navigation/TreeNavigation';
 import { StammdatenFrame } from './frames/StammdatenFrame';
 import { AnsprechpartnerFrame } from './frames/AnsprechpartnerFrame';
 import { useTabContext } from '../../shell/TabContext';
-import { useMessageBar } from '../../shell/MessageBarContext';
 import { fetchBusinessPartner, saveBusinessPartner, deleteBusinessPartner } from '../../api/client';
 import type { BusinessPartnerDto } from '../../api/types';
 import type { TreeNodeDef, FrameProps } from '../../shared/tree-navigation/types';
@@ -25,44 +26,28 @@ const frames: Record<string, React.ComponentType<FrameProps<BusinessPartnerDto>>
 };
 
 export function BusinessPartnerDetailPage({ tabId }: { tabId: string }) {
-  const { getTabParams, openTab, updateTabLabel } = useTabContext();
-  const { showMessage } = useMessageBar();
-  const params = getTabParams(tabId);
-  const mode = (params?.mode as DetailMode) ?? 'view';
-  const entityId = params?.entityId as number | undefined;
-
-  const [data, setData] = useState<BusinessPartnerDto>({
-    id: null,
-    shortName: '',
-    name: '',
-    notes: null,
-    contacts: [],
-  });
-  const [dirty, setDirty] = useState(false);
-  const [loading, setLoading] = useState(mode !== 'new');
+  const { openTab } = useTabContext();
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
 
-  useEffect(() => {
-    if (mode === 'new' || !entityId) return;
-    let cancelled = false;
-    setLoading(true);
-    fetchBusinessPartner(entityId).then(result => {
-      if (cancelled) return;
-      setData(result);
-      updateTabLabel(tabId, `GP: ${result.shortName}`);
-      setLoading(false);
-    }).catch((err) => {
-      showMessage(err instanceof Error ? err.message : 'Laden fehlgeschlagen', 'error');
-      setLoading(false);
-    });
-    return () => { cancelled = true; };
-  }, [entityId, mode, tabId, updateTabLabel]);
+  const {
+    mode, data, dirty, loading,
+    setData, setDirty, handleSave, handleSaveSuccess, handleDelete,
+  } = useDetailPage<BusinessPartnerDto>({
+    tabId,
+    defaultData: { id: null, shortName: '', name: '', notes: null, contacts: [] },
+    fetchFn: fetchBusinessPartner,
+    saveFn: saveBusinessPartner,
+    deleteFn: deleteBusinessPartner,
+    pageKey: 'business-partners',
+    labelPrefix: 'GP',
+    labelField: 'shortName' as keyof BusinessPartnerDto,
+  });
 
   const handleDataChange = useCallback((updated: BusinessPartnerDto) => {
     setData(updated);
     setDirty(true);
     setValidationErrors({});
-  }, []);
+  }, [setData, setDirty]);
 
   const validate = useCallback((): ValidationResult => {
     const errors: Record<string, string[]> = {};
@@ -91,28 +76,11 @@ export function BusinessPartnerDetailPage({ tabId }: { tabId: string }) {
     return { valid: allErrors.length === 0, errors: allErrors };
   }, [data]);
 
-  const handleSave = useCallback(async () => {
-    const saved = await saveBusinessPartner(data);
-    setData(saved);
-    updateTabLabel(tabId, `GP: ${saved.shortName}`);
-  }, [data, tabId, updateTabLabel]);
-
-  const handleSaveSuccess = useCallback(() => {
-    setDirty(false);
-    setValidationErrors({});
-  }, []);
-
-  const handleDelete = entityId ? async () => {
-    await deleteBusinessPartner(entityId);
-  } : undefined;
-
   const handleNew = useCallback(() => {
     openTab('business-partner-detail', { mode: 'new' });
   }, [openTab]);
 
-  if (loading) {
-    return <div style={{ padding: 'var(--space-xl)', color: 'var(--color-text-secondary)' }}>Lade...</div>;
-  }
+  if (loading) return <LoadingIndicator />;
 
   return (
     <DetailPage
@@ -122,7 +90,10 @@ export function BusinessPartnerDetailPage({ tabId }: { tabId: string }) {
       dirty={dirty}
       validate={validate}
       onSave={handleSave}
-      onSaveSuccess={handleSaveSuccess}
+      onSaveSuccess={() => {
+        handleSaveSuccess();
+        setValidationErrors({});
+      }}
       onDelete={handleDelete}
       onNew={handleNew}
       contentClassName="detail-page-content--no-padding"

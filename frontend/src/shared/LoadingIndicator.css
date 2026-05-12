@@ -1,0 +1,5 @@
+.loading-indicator {
+  padding: var(--space-xl);
+  color: var(--color-text-secondary);
+  text-align: center;
+}

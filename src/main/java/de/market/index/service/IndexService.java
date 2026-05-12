@@ -4,6 +4,7 @@ import de.market.index.model.IndexEntity;
 import de.market.index.repository.IndexJpaRepository;
 import de.market.index.repository.IndexOverviewRepository;
 import de.market.index.rest.dto.IndexDto;
+import de.market.shared.repository.AbstractOverviewRepository;
 import de.market.shared.service.AbstractCrudService;
 import de.market.timeseries.model.ObjectType;
 import de.market.timeseries.model.TimeDimension;
@@ -15,12 +16,11 @@ import de.market.timeseries.repository.ObjectRepository;
 import de.market.timeseries.repository.TimeSeriesRepository;
 import de.market.timeseries.model.TsObject;
 
-import org.jooq.Condition;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
 
 @Service
 @Transactional
@@ -44,23 +44,36 @@ public class IndexService extends AbstractCrudService<IndexDto, IndexEntity, Lon
         this.tsRepo = tsRepo;
     }
 
-    @Transactional(readOnly = true)
-    public List<Map<String, Object>> findAllAsRows() {
-        return overviewRepo.findAllAsRows();
+    @Override
+    protected JpaRepository<IndexEntity, Long> getRepository() { return indexRepo; }
+
+    @Override
+    protected AbstractOverviewRepository getOverviewRepository() { return overviewRepo; }
+
+    @Override
+    protected String getEntityName() { return "Index"; }
+
+    @Override
+    protected void prepareForCreate(IndexEntity entity) { entity.setId(null); }
+
+    @Override
+    protected void checkUniqueOnCreate(IndexDto dto) {
+        // uniqueness via ObjectRepository in create()
     }
 
-    @Transactional(readOnly = true)
-    public List<Map<String, Object>> findFiltered(Condition condition) {
-        return overviewRepo.findFiltered(condition);
+    @Override
+    protected void checkUniqueOnUpdate(IndexDto dto, Long id) {
+        // uniqueness via ObjectRepository in update()
     }
 
-    @Transactional(readOnly = true)
-    public IndexDto findById(Long id) {
-        IndexEntity entity = indexRepo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Index nicht gefunden: id=" + id));
-        return toDto(entity);
+    @Override
+    protected void copyFieldsForUpdate(IndexEntity existing, IndexDto dto) {
+        // Fields live in ts_object, handled in update()
     }
 
+    // ---- create/update/delete vollstaendig ueberschrieben (Multi-Table-Orchestrierung) ----
+
+    @Override
     public IndexDto create(IndexDto dto) {
         validate(dto);
 
@@ -91,6 +104,7 @@ public class IndexService extends AbstractCrudService<IndexDto, IndexEntity, Lon
         return toDto(entity);
     }
 
+    @Override
     public IndexDto update(Long id, IndexDto dto) {
         validate(dto);
         IndexEntity entity = indexRepo.findById(id)
@@ -112,6 +126,7 @@ public class IndexService extends AbstractCrudService<IndexDto, IndexEntity, Lon
         return toDto(entity);
     }
 
+    @Override
     public void delete(Long id) {
         IndexEntity entity = indexRepo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Index nicht gefunden: id=" + id));
@@ -122,7 +137,7 @@ public class IndexService extends AbstractCrudService<IndexDto, IndexEntity, Lon
             headerRepo.delete(h.getTsId());
         }
 
-        // ts_index explizit löschen (vor ts_object, um JPA Persistence Context sauber zu halten)
+        // ts_index explizit loeschen (vor ts_object, um JPA Persistence Context sauber zu halten)
         indexRepo.deleteById(id);
         indexRepo.flush();
         objectRepo.delete(entity.getObjectId());

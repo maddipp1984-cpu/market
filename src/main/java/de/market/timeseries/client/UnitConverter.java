@@ -11,16 +11,15 @@ import java.time.ZonedDateTime;
 
 /**
  * Konvertiert Werte zwischen Units (Faktor, Offset, Power↔Energy).
- * Package-private, wird vom TimeSeriesClient orchestriert.
  */
-class UnitConverter {
+public class UnitConverter {
 
     private static final double CELSIUS_TO_KELVIN_OFFSET = 273.15;
 
     /**
      * Faktor- oder Offset-Konvertierung (gleiche Kategorie).
      */
-    static TimeSeriesSlice convert(TimeSeriesSlice slice, Unit source, Unit target) {
+    public static TimeSeriesSlice convert(TimeSeriesSlice slice, Unit source, Unit target) {
         if (source == target) return slice;
         validateSameCategory(source, target);
 
@@ -44,10 +43,25 @@ class UnitConverter {
     }
 
     /**
+     * Cross-Domain Konvertierung (Power↔Energy). Dispatched an die spezifischen Methoden.
+     */
+    public static TimeSeriesSlice convertCrossDomain(TimeSeriesSlice slice, Unit source, Unit target) {
+        if (source.getCategory() == Unit.UnitCategory.ACTIVE_POWER
+                && target.getCategory() == Unit.UnitCategory.ENERGY) {
+            return convertPowerToEnergy(slice, source, target);
+        } else if (source.getCategory() == Unit.UnitCategory.ENERGY
+                && target.getCategory() == Unit.UnitCategory.ACTIVE_POWER) {
+            return convertEnergyToPower(slice, source, target);
+        }
+        throw new IllegalArgumentException(
+                "Cross-Domain Konvertierung nicht unterstuetzt: " + source + " -> " + target);
+    }
+
+    /**
      * Power → Energy: Wert × Stunden des Intervalls.
      * Konvertiert zuerst Power in kW (Base), dann × Stunden = kWh, dann in Target-Energy.
      */
-    static TimeSeriesSlice convertPowerToEnergy(TimeSeriesSlice slice, Unit source, Unit target) {
+    public static TimeSeriesSlice convertPowerToEnergy(TimeSeriesSlice slice, Unit source, Unit target) {
         TimeDimension dim = slice.getDimension();
         double[] src = slice.getValues();
         double[] result = new double[src.length];
@@ -85,7 +99,7 @@ class UnitConverter {
      * Energy → Power: Wert ÷ Stunden des Intervalls.
      * Konvertiert zuerst Energy in kWh (Base), dann ÷ Stunden = kW, dann in Target-Power.
      */
-    static TimeSeriesSlice convertEnergyToPower(TimeSeriesSlice slice, Unit source, Unit target) {
+    public static TimeSeriesSlice convertEnergyToPower(TimeSeriesSlice slice, Unit source, Unit target) {
         TimeDimension dim = slice.getDimension();
         double[] src = slice.getValues();
         double[] result = new double[src.length];

@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { Button } from '../Button';
+import { ConfirmDialog } from '../ConfirmDialog';
 import { useTabContext } from '../../shell/TabContext';
 import { useAuth } from '../../auth/AuthContext';
 import { useMessageBar } from '../../shell/MessageBarContext';
@@ -167,18 +168,11 @@ export function DetailPage({
       </div>
 
       {confirmDelete && (
-        <div className="detail-page-modal-backdrop" onClick={() => setConfirmDelete(false)}>
-          <div className="detail-page-modal" onClick={e => e.stopPropagation()}>
-            <h3>Wirklich loeschen?</h3>
-            <p>Dieser Vorgang kann nicht rueckgaengig gemacht werden.</p>
-            <div className="detail-page-modal-actions">
-              <Button variant="ghost" onClick={handleDelete} disabled={deleting} className="detail-page-delete-btn">
-                {deleting ? 'Loeschen...' : 'Ja, loeschen'}
-              </Button>
-              <Button variant="ghost" onClick={() => setConfirmDelete(false)}>Abbrechen</Button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmDelete(false)}
+          loading={deleting}
+        />
       )}
     </div>
   );

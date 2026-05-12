@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { OverviewPage } from '../../shared/overview-page/OverviewPage';
 import type { ContextAction } from '../../shared/overview-page/VirtualTable';
+import { DateRangeDialog } from '../../shared/DateRangeDialog';
 import { useTabContext } from '../../shell/TabContext';
 import { deleteIndex } from '../../api/client';
 
@@ -83,48 +84,3 @@ export function IndicesPage({ tabId }: { tabId: string }) {
   );
 }
 
-function DateRangeDialog({ onConfirm, onCancel }: {
-  onConfirm: (from: string, to: string) => void;
-  onCancel: () => void;
-}) {
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
-
-  return (
-    <div style={{
-      position: 'fixed', inset: 0,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 9999,
-    }} onClick={onCancel}>
-      <div style={{
-        background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)',
-        padding: 'var(--space-lg)', minWidth: '320px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-      }} onClick={e => e.stopPropagation()}>
-        <h3 style={{ margin: '0 0 var(--space-md)', color: 'var(--color-text-primary)' }}>
-          Zeitraum waehlen
-        </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-          <label style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
-            Von
-            <input type="date" value={from} onChange={e => setFrom(e.target.value)}
-              style={{ display: 'block', width: '100%', marginTop: '4px' }} />
-          </label>
-          <label style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
-            Bis
-            <input type="date" value={to} onChange={e => setTo(e.target.value)}
-              style={{ display: 'block', width: '100%', marginTop: '4px' }} />
-          </label>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-sm)', marginTop: 'var(--space-md)' }}>
-          <button onClick={onCancel} style={{ padding: '6px 16px' }}>Abbrechen</button>
-          <button onClick={() => { if (from && to && from <= to) onConfirm(from, to); }}
-            disabled={!from || !to || from > to}
-            style={{ padding: '6px 16px', background: 'var(--color-accent)', color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)' }}>
-            Oeffnen
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}

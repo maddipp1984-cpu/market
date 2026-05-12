@@ -29,45 +29,7 @@
 
 
 .detail-page-delete-btn {
-  color: var(--color-error, #ef4444);
-}
-
-
-.detail-page-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.detail-page-modal {
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-  padding: var(--space-lg);
-  min-width: 360px;
-  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.2));
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
-.detail-page-modal h3 {
-  margin: 0;
-}
-
-.detail-page-modal p {
-  margin: 0;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-.detail-page-modal-actions {
-  display: flex;
-  gap: var(--space-sm);
-  margin-top: var(--space-sm);
+  color: var(--color-error);
 }
 
 /* Kein Padding wenn TreeNavigation als Kind vorhanden */

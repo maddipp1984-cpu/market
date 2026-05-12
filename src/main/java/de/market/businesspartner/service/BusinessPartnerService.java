@@ -7,7 +7,10 @@ import de.market.businesspartner.repository.BusinessPartnerOverviewRepository;
 import de.market.businesspartner.repository.BusinessPartnerRepository;
 import de.market.businesspartner.rest.dto.BusinessPartnerDto;
 import de.market.businesspartner.rest.dto.ContactPersonDto;
+import de.market.shared.repository.AbstractOverviewRepository;
 import de.market.shared.service.AbstractCrudService;
+import org.jooq.Condition;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,40 +31,68 @@ public class BusinessPartnerService extends AbstractCrudService<BusinessPartnerD
         this.overviewRepository = overviewRepository;
     }
 
-    public List<Map<String, Object>> findAllAsRows() {
-        return overviewRepository.findAllAsRows();
-    }
+    @Override
+    protected JpaRepository<BusinessPartner, Long> getRepository() { return repository; }
 
-    @Transactional(readOnly = true)
-    public BusinessPartnerDto findById(Long id) {
-        BusinessPartner entity = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Geschaeftspartner nicht gefunden: id=" + id));
-        return toDto(entity);
-    }
+    @Override
+    protected AbstractOverviewRepository getOverviewRepository() { return overviewRepository; }
 
-    public BusinessPartnerDto create(BusinessPartnerDto dto) {
-        validate(dto);
+    @Override
+    protected String getEntityName() { return "Geschaeftspartner"; }
+
+    @Override
+    protected void prepareForCreate(BusinessPartner entity) { entity.setId(null); }
+
+    @Override
+    protected void checkUniqueOnCreate(BusinessPartnerDto dto) {
         if (repository.existsByShortName(dto.getShortName())) {
             throw new IllegalStateException("Kurzbezeichnung bereits vergeben: " + dto.getShortName());
         }
+    }
+
+    @Override
+    protected void checkUniqueOnUpdate(BusinessPartnerDto dto, Long id) {
+        if (repository.existsByShortNameAndIdNot(dto.getShortName(), id)) {
+            throw new IllegalStateException("Kurzbezeichnung bereits vergeben: " + dto.getShortName());
+        }
+    }
+
+    @Override
+    protected void copyFieldsForUpdate(BusinessPartner existing, BusinessPartnerDto dto) {
+        existing.setShortName(dto.getShortName());
+        existing.setName(dto.getName());
+        existing.setNotes(dto.getNotes());
+        // Kontakte: via Override in update() — hier nur Stammdaten
+    }
+
+    // ---- Custom findFiltered (Step 5 vorbereitet) ----
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<Map<String, Object>> findFiltered(Condition condition) {
+        return overviewRepository.findFiltered(condition);
+    }
+
+    // ---- create/update/delete mit Nested-Child-Management ----
+
+    @Override
+    public BusinessPartnerDto create(BusinessPartnerDto dto) {
+        validate(dto);
+        checkUniqueOnCreate(dto);
         BusinessPartner entity = toEntity(dto);
-        entity.setId(null);
+        prepareForCreate(entity);
         return toDto(repository.save(entity));
     }
 
+    @Override
     public BusinessPartnerDto update(Long id, BusinessPartnerDto dto) {
         validate(dto);
         BusinessPartner existing = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Geschaeftspartner nicht gefunden: id=" + id));
+        checkUniqueOnUpdate(dto, id);
+        copyFieldsForUpdate(existing, dto);
 
-        if (repository.existsByShortNameAndIdNot(dto.getShortName(), id)) {
-            throw new IllegalStateException("Kurzbezeichnung bereits vergeben: " + dto.getShortName());
-        }
-
-        existing.setShortName(dto.getShortName());
-        existing.setName(dto.getName());
-        existing.setNotes(dto.getNotes());
-
+        // Nested-Child-Management: Kontakte ersetzen
         existing.getContacts().clear();
         if (dto.getContacts() != null) {
             for (ContactPersonDto cpDto : dto.getContacts()) {
@@ -72,11 +103,17 @@ public class BusinessPartnerService extends AbstractCrudService<BusinessPartnerD
         return toDto(repository.save(existing));
     }
 
+    @Override
     public void delete(Long id) {
         if (!repository.existsById(id)) {
             throw new IllegalArgumentException("Geschaeftspartner nicht gefunden: id=" + id);
         }
-        repository.deleteById(id);
+        try {
+            repository.deleteById(id);
+            repository.flush();
+        } catch (Exception e) {
+            throw new IllegalStateException("Geschaeftspartner wird noch referenziert und kann nicht geloescht werden");
+        }
     }
 
     @Override

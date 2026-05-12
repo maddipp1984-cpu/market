@@ -5,6 +5,7 @@ import { fetchTable, type TimingInfo } from '../../api/client';
 import { Button } from '../Button';
 import { StatusMessage } from '../StatusMessage';
 import { Card } from '../Card';
+import { ConfirmDialog } from '../ConfirmDialog';
 import { VirtualTable, type ColumnOverride, type ContextAction } from './VirtualTable';
 import { FilterBuilder } from './FilterBuilder';
 import { useFilterPresets } from './useFilterPresets';
@@ -22,6 +23,7 @@ interface OverviewPageProps {
   onNew?: () => void;
   newLabel?: string;
   columnOverrides?: Record<string, ColumnOverride>;
+  hiddenColumns?: string[];
   emptyMessage?: string;
   onRowDoubleClick?: (row: Record<string, unknown>) => void;
   onDelete?: (rows: Record<string, unknown>[]) => Promise<void>;
@@ -36,6 +38,7 @@ export function OverviewPage({
   onNew,
   newLabel = 'Neu',
   columnOverrides = {},
+  hiddenColumns = [],
   emptyMessage = 'Keine Daten vorhanden',
   onRowDoubleClick,
   onDelete,
@@ -59,6 +62,15 @@ export function OverviewPage({
 
   const hasDeletePerm = canDeletePerm(effectiveResourceKey);
   const selectable = !!(onDelete || extraContextActions);
+
+  // Merge hiddenColumns into columnOverrides
+  const effectiveOverrides = useMemo(() => {
+    const merged = { ...columnOverrides };
+    for (const col of hiddenColumns) {
+      merged[col] = { ...merged[col], hidden: true };
+    }
+    return merged;
+  }, [columnOverrides, hiddenColumns]);
 
   const loadData = useCallback(async (filter?: FilterRequest, signal?: AbortSignal) => {
     setLoading(true);
@@ -148,11 +160,11 @@ export function OverviewPage({
     for (const col of columns) {
       merged[col.key] = { header: col.label };
     }
-    for (const [key, override] of Object.entries(columnOverrides)) {
+    for (const [key, override] of Object.entries(effectiveOverrides)) {
       merged[key] = { ...merged[key], ...override };
     }
     return merged;
-  }, [columns, columnOverrides]);
+  }, [columns, effectiveOverrides]);
 
   // Build context actions from props
   const contextActions = useMemo((): ContextAction[] => {
@@ -287,27 +299,14 @@ export function OverviewPage({
       </div>
 
       {pendingDelete && (
-        <div className="overview-confirm-backdrop" onClick={() => setPendingDelete(null)}>
-          <div className="overview-confirm-modal" onClick={e => e.stopPropagation()}>
-            <h3>Wirklich loeschen?</h3>
-            <p>
-              {pendingDelete.length === 1
-                ? 'Dieser Eintrag wird unwiderruflich geloescht.'
-                : `${pendingDelete.length} Eintraege werden unwiderruflich geloescht.`}
-            </p>
-            <div className="overview-confirm-actions">
-              <Button
-                variant="ghost"
-                onClick={() => handleDeleteConfirmed(pendingDelete)}
-                disabled={deleting}
-                className="overview-delete-btn"
-              >
-                {deleting ? 'Loeschen...' : 'Ja, loeschen'}
-              </Button>
-              <Button variant="ghost" onClick={() => setPendingDelete(null)}>Abbrechen</Button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          message={pendingDelete.length === 1
+            ? 'Dieser Eintrag wird unwiderruflich geloescht.'
+            : `${pendingDelete.length} Eintraege werden unwiderruflich geloescht.`}
+          onConfirm={() => handleDeleteConfirmed(pendingDelete)}
+          onCancel={() => setPendingDelete(null)}
+          loading={deleting}
+        />
       )}
     </div>
   );

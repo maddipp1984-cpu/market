@@ -69,6 +69,16 @@
   transform: none;
 }
 
+/* Danger (rot) */
+.btn-danger {
+  background: linear-gradient(135deg, var(--color-error-text), #b91c1c);
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.3);
+}
+
+.btn-danger:not(:disabled):hover {
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
+}
+
 /* Icon-only */
 .btn-icon {
   display: inline-flex;
